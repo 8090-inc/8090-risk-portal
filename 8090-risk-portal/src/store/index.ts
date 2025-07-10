@@ -3,6 +3,7 @@ export { useRiskStore } from './riskStore';
 export { useControlStore } from './controlStore';
 export { useRelationshipStore } from './relationshipStore';
 export { useUIStore } from './uiStore';
+export { useFilterStore } from './filterStore';
 
 // Import stores for initialization
 import { useRiskStore } from './riskStore';

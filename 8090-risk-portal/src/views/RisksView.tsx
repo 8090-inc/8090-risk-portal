@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Download, RefreshCw, FileSpreadsheet } from 'lucide-react';
 import { useRiskStore } from '../store';
+import { useFilterStore } from '../store/filterStore';
 import { RiskSummaryStats } from '../components/risks/RiskSummaryStats';
-import { RiskFilters } from '../components/risks/RiskFilters';
 import { RiskTable } from '../components/risks/RiskTable';
 import { PageHeader } from '../components/layout/PageHeader';
 import { Button } from '../components/ui/Button';
+import { AdvancedFilterPanel } from '../components/common/AdvancedFilterPanel';
 import { exportRisksToExcel, exportRisksToCSV } from '../utils/exportUtils';
 import type { Risk } from '../types';
 
@@ -20,31 +21,63 @@ export const RisksView: React.FC = () => {
     getStatistics 
   } = useRiskStore();
 
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedLevels, setSelectedLevels] = useState<string[]>([]);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const { activeFilters } = useFilterStore();
+  const riskFilters = activeFilters.risks;
 
   useEffect(() => {
     loadRisks();
   }, [loadRisks]);
+
+  const filteredRisks = useMemo(() => {
+    let filtered = [...risks];
+
+    // Apply category filter
+    if (riskFilters?.categories && riskFilters.categories.length > 0) {
+      filtered = filtered.filter(risk => 
+        riskFilters.categories!.includes(risk.riskCategory)
+      );
+    }
+
+    // Apply level filter
+    if (riskFilters?.levels && riskFilters.levels.length > 0) {
+      filtered = filtered.filter(risk => 
+        riskFilters.levels!.includes(risk.residualScoring.riskLevelCategory)
+      );
+    }
+
+    // Apply has controls filter
+    if (riskFilters?.hasControls !== undefined) {
+      filtered = filtered.filter(risk => 
+        riskFilters.hasControls ? risk.relatedControlIds.length > 0 : risk.relatedControlIds.length === 0
+      );
+    }
+
+    // Apply search term
+    if (riskFilters?.searchTerm) {
+      const searchLower = riskFilters.searchTerm.toLowerCase();
+      filtered = filtered.filter(risk =>
+        risk.risk.toLowerCase().includes(searchLower) ||
+        risk.riskDescription.toLowerCase().includes(searchLower) ||
+        risk.id.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return filtered;
+  }, [risks, riskFilters]);
 
   const handleRowClick = (risk: Risk) => {
     navigate(`/risks/${risk.id}`);
   };
 
   const handleExportExcel = () => {
-    exportRisksToExcel(risks, `risk-register-${new Date().toISOString().split('T')[0]}.xlsx`);
+    exportRisksToExcel(filteredRisks, `risk-register-${new Date().toISOString().split('T')[0]}.xlsx`);
     setExportMenuOpen(false);
   };
 
   const handleExportCSV = () => {
-    exportRisksToCSV(risks, `risk-register-${new Date().toISOString().split('T')[0]}.csv`);
+    exportRisksToCSV(filteredRisks, `risk-register-${new Date().toISOString().split('T')[0]}.csv`);
     setExportMenuOpen(false);
-  };
-
-  const handleClearFilters = () => {
-    setSelectedCategories([]);
-    setSelectedLevels([]);
   };
 
   const stats = getStatistics();
@@ -109,30 +142,22 @@ export const RisksView: React.FC = () => {
 
       <RiskSummaryStats statistics={stats} />
 
-      <div className="bg-white shadow rounded-lg p-6 space-y-6">
-        <RiskFilters
-          selectedCategories={selectedCategories}
-          selectedLevels={selectedLevels}
-          onCategoryChange={setSelectedCategories}
-          onLevelChange={setSelectedLevels}
-          onClearAll={handleClearFilters}
-        />
+      <AdvancedFilterPanel type="risks" />
 
-        <div className="mt-6">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <RefreshCw className="h-8 w-8 animate-spin text-8090-primary" />
-            </div>
-          ) : (
-            <RiskTable
-              risks={risks}
-              searchTerm=""
-              selectedCategories={selectedCategories}
-              selectedLevels={selectedLevels}
-              onRowClick={handleRowClick}
-            />
-          )}
-        </div>
+      <div className="bg-white shadow rounded-lg p-6">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <RefreshCw className="h-8 w-8 animate-spin text-8090-primary" />
+          </div>
+        ) : (
+          <RiskTable
+            risks={filteredRisks}
+            searchTerm={riskFilters?.searchTerm || ""}
+            selectedCategories={riskFilters?.categories || []}
+            selectedLevels={riskFilters?.levels || []}
+            onRowClick={handleRowClick}
+          />
+        )}
       </div>
     </div>
   );

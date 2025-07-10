@@ -1,11 +1,11 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Download, Filter } from 'lucide-react';
+import React, { useMemo, useEffect } from 'react';
+import { Download } from 'lucide-react';
 import { useControlStore } from '../store';
-import type { ControlCategory } from '../types';
+import { useFilterStore } from '../store/filterStore';
 import { ControlSummaryCard } from '../components/controls/ControlSummaryCard';
 import { ControlsTable } from '../components/controls/ControlsTable';
 import { CategorySidebar } from '../components/controls/CategorySidebar';
-import { StatusFilter } from '../components/controls/StatusFilter';
+import { AdvancedFilterPanel } from '../components/common/AdvancedFilterPanel';
 import { Button } from '../components/ui/Button';
 import { useAsyncOperation } from '../hooks/useErrorHandler';
 
@@ -15,14 +15,11 @@ export const ControlsView: React.FC = () => {
     isLoading, 
     error,
     loadControls,
-    filteredControls,
-    setFilters,
     statistics
   } = useControlStore();
 
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedStatuses, setSelectedStatuses] = useState<Array<'Implemented' | 'In Progress' | 'Planned' | 'Not Started' | undefined>>([]);
-  const [showFilters, setShowFilters] = useState(false);
+  const { activeFilters, setControlFilters } = useFilterStore();
+  const controlFilters = activeFilters.controls;
 
   const { execute: loadControlsAsync } = useAsyncOperation(loadControls, {
     onError: (error) => {
@@ -36,12 +33,51 @@ export const ControlsView: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => {
-    setFilters({
-      categories: selectedCategories as ControlCategory[],
-      implementationStatus: selectedStatuses
-    });
-  }, [selectedCategories, selectedStatuses, setFilters]);
+  const filteredControls = useMemo(() => {
+    let filtered = [...controls];
+
+    // Apply category filter
+    if (controlFilters?.categories && controlFilters.categories.length > 0) {
+      filtered = filtered.filter(control => 
+        controlFilters.categories!.includes(control.category)
+      );
+    }
+
+    // Apply status filter
+    if (controlFilters?.statuses && controlFilters.statuses.length > 0) {
+      filtered = filtered.filter(control => 
+        controlFilters.statuses!.includes(control.implementationStatus || 'Not Implemented')
+      );
+    }
+
+    // Apply effectiveness filter
+    if (controlFilters?.effectiveness && controlFilters.effectiveness.length > 0) {
+      filtered = filtered.filter(control => 
+        controlFilters.effectiveness!.includes(control.effectiveness || 'Not Assessed')
+      );
+    }
+
+    // Apply compliance score range
+    if (controlFilters?.complianceRange) {
+      const [min, max] = controlFilters.complianceRange;
+      filtered = filtered.filter(control => {
+        const score = control.complianceScore || 0;
+        return score >= min && score <= max;
+      });
+    }
+
+    // Apply search term
+    if (controlFilters?.searchTerm) {
+      const searchLower = controlFilters.searchTerm.toLowerCase();
+      filtered = filtered.filter(control =>
+        control.mitigationDescription.toLowerCase().includes(searchLower) ||
+        control.mitigationID.toLowerCase().includes(searchLower) ||
+        control.category.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return filtered;
+  }, [controls, controlFilters]);
 
   const categories = useMemo(() => {
     const categoryMap = new Map<string, number>();
@@ -65,15 +101,16 @@ export const ControlsView: React.FC = () => {
   }, [statistics]);
 
   const handleCategoryToggle = (category: string) => {
-    setSelectedCategories(prev =>
-      prev.includes(category)
-        ? prev.filter(c => c !== category)
-        : [...prev, category]
-    );
+    const currentCategories = controlFilters?.categories || [];
+    setControlFilters({
+      categories: currentCategories.includes(category)
+        ? currentCategories.filter(c => c !== category)
+        : [...currentCategories, category]
+    });
   };
 
   const handleClearCategories = () => {
-    setSelectedCategories([]);
+    setControlFilters({ categories: [] });
   };
 
   const handleExport = () => {
@@ -116,7 +153,7 @@ export const ControlsView: React.FC = () => {
       <div className="w-64 flex-shrink-0 bg-white border-r border-gray-200 p-4 overflow-y-auto overflow-x-hidden">
         <CategorySidebar
           categories={categories}
-          selectedCategories={selectedCategories}
+          selectedCategories={controlFilters?.categories || []}
           onCategoryToggle={handleCategoryToggle}
           onClearAll={handleClearCategories}
         />
@@ -155,68 +192,27 @@ export const ControlsView: React.FC = () => {
             />
           </div>
 
-          {/* Filters */}
-          <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-4">
-                <StatusFilter
-                  selectedStatuses={selectedStatuses}
-                  onStatusChange={setSelectedStatuses}
-                />
-              </div>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setShowFilters(!showFilters)}
-                  icon={<Filter className="h-4 w-4" />}
-                >
-                  {showFilters ? 'Hide' : 'Show'} Filters
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleExport}
-                  icon={<Download className="h-4 w-4" />}
-                >
-                  Export
-                </Button>
-              </div>
-            </div>
+          {/* Advanced Filters */}
+          <AdvancedFilterPanel type="controls" />
 
-            {/* Active Filters */}
-            {(selectedCategories.length > 0 || selectedStatuses.length > 0) && (
-              <div className="flex items-center space-x-2 text-sm">
-                <span className="text-gray-500">Active filters:</span>
-                {selectedCategories.map(cat => (
-                  <span key={cat} className="px-2 py-1 bg-8090-primary/10 text-8090-primary rounded">
-                    {cat}
-                  </span>
-                ))}
-                {selectedStatuses.map(status => (
-                  <span key={status} className="px-2 py-1 bg-gray-100 text-gray-700 rounded">
-                    {status}
-                  </span>
-                ))}
-                <button
-                  onClick={() => {
-                    setSelectedCategories([]);
-                    setSelectedStatuses([]);
-                  }}
-                  className="text-8090-primary hover:underline"
-                >
-                  Clear all
-                </button>
-              </div>
-            )}
+          {/* Export Button */}
+          <div className="mb-6 flex justify-end">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleExport}
+              icon={<Download className="h-4 w-4" />}
+            >
+              Export
+            </Button>
           </div>
 
           {/* Controls Table */}
           <ControlsTable
             controls={filteredControls}
-            searchTerm=""
-            selectedCategories={selectedCategories}
-            selectedStatuses={selectedStatuses.filter(s => s !== undefined) as string[]}
+            searchTerm={controlFilters?.searchTerm || ""}
+            selectedCategories={controlFilters?.categories || []}
+            selectedStatuses={controlFilters?.statuses || []}
           />
         </div>
       </div>
