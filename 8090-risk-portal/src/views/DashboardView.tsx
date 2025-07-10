@@ -14,6 +14,7 @@ import {
 import { useRiskStore, useControlStore } from '../store';
 import { Card } from '../components/ui/Card';
 import { RiskLevelBadge } from '../components/risks/RiskLevelBadge';
+import { DataStatus } from '../components/data/DataStatus';
 import type { Risk, Control } from '../types';
 import { cn } from '../utils/cn';
 
@@ -406,10 +407,10 @@ export const DashboardView: React.FC = () => {
         </Card>
       </div>
 
-      {/* Priority Risks and Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Priority Risks, Quick Actions, and Data Status */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Priority Risks */}
-        <Card>
+        <Card className="lg:col-span-1">
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900 flex items-center">
@@ -428,7 +429,7 @@ export const DashboardView: React.FC = () => {
         </Card>
 
         {/* Quick Actions */}
-        <Card>
+        <Card className="lg:col-span-1">
           <div className="p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
               <Clock className="h-5 w-5 mr-2 text-8090-primary" />
@@ -492,6 +493,22 @@ export const DashboardView: React.FC = () => {
             </div>
           </div>
         </Card>
+
+        {/* Data Status */}
+        <div className="lg:col-span-1">
+          <DataStatus
+            lastUpdated={localStorage.getItem('dataLastUpdated') || undefined}
+            recordCount={{
+              risks: risks.length,
+              controls: controls.length
+            }}
+            validationStatus="valid"
+            onRefresh={() => {
+              loadRisks();
+              loadControls();
+            }}
+          />
+        </div>
       </div>
     </div>
   );
