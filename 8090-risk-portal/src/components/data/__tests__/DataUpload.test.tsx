@@ -1,13 +1,14 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { vi } from 'vitest';
 import { DataUpload } from '../DataUpload';
 
 describe('DataUpload Component', () => {
-  const mockOnDataImport = jest.fn();
-  const mockOnClose = jest.fn();
+  const mockOnDataImport = vi.fn();
+  const mockOnClose = vi.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('renders without crashing', () => {
@@ -22,7 +23,7 @@ describe('DataUpload Component', () => {
     expect(screen.getByText(/Drag and drop your Excel file here/)).toBeInTheDocument();
   });
 
-  it('calls onClose when close button is clicked', () => {
+  it('calls onClose when X button is clicked', () => {
     render(
       <DataUpload 
         onDataImport={mockOnDataImport}
@@ -30,8 +31,24 @@ describe('DataUpload Component', () => {
       />
     );
     
-    const closeButton = screen.getByRole('button', { name: /close/i });
+    // The X button is the first button in the document (in the header)
+    const buttons = screen.getAllByRole('button');
+    const closeButton = buttons[0]; // X button
     fireEvent.click(closeButton);
+    
+    expect(mockOnClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls onClose when Cancel button is clicked', () => {
+    render(
+      <DataUpload 
+        onDataImport={mockOnDataImport}
+        onClose={mockOnClose}
+      />
+    );
+    
+    const cancelButton = screen.getByRole('button', { name: /cancel/i });
+    fireEvent.click(cancelButton);
     
     expect(mockOnClose).toHaveBeenCalledTimes(1);
   });
