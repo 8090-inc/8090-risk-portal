@@ -1,4 +1,4 @@
-import { AppError } from '../../types/error.types';
+import { AppError } from '../../types';
 
 class ErrorService {
   private errors: AppError[] = [];
@@ -54,4 +54,4 @@ declare global {
 
 window.errorService = errorService;
 
-export default errorService;
+export { errorService };

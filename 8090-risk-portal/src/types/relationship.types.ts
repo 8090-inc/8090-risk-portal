@@ -1,7 +1,7 @@
 // Relationship types for connecting risks and controls
 
-import { Risk, RiskCategory, RiskLevelCategory } from './risk.types';
-import { Control, ControlCategory } from './control.types';
+import type { RiskCategory, RiskLevelCategory } from './risk.types';
+import type { Control, ControlCategory } from './control.types';
 
 // Risk-Control relationship
 export interface RiskControlRelationship {

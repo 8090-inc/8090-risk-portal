@@ -1,4 +1,4 @@
-import { 
+import type { 
   Risk, 
   Control, 
   RiskScoring,
@@ -8,10 +8,10 @@ import {
   RiskLikelihood,
   RiskImpact
 } from '../types';
-import { 
+import type { 
   RiskMapRow, 
   ControlsMappingRow, 
-  ExcelData 
+  ExcelDataV2 as ExcelData 
 } from '../services/excel/excelParserV2';
 
 // Generate a URL-safe ID from a string
@@ -117,16 +117,16 @@ export const buildRelationships = (data: ExcelData): {
   const controlToRisks = new Map<string, string[]>();
   
   // Simple keyword-based matching for now
-  data.riskMap.forEach(risk => {
+  data.riskMap.forEach((risk: RiskMapRow) => {
     const riskId = generateId(risk.risk);
     const relatedControls: string[] = [];
     
-    data.controlsMapping.forEach(control => {
-      const riskKeywords = risk.risk.toLowerCase().split(' ').filter(w => w.length > 3);
+    data.controlsMapping.forEach((control: ControlsMappingRow) => {
+      const riskKeywords = risk.risk.toLowerCase().split(' ').filter((w: string) => w.length > 3);
       const controlDesc = control.mitigationDescription.toLowerCase();
       
       // Check if control description mentions risk keywords
-      const isRelated = riskKeywords.some(keyword => controlDesc.includes(keyword));
+      const isRelated = riskKeywords.some((keyword: string) => controlDesc.includes(keyword));
       
       // Also check specific mappings based on risk categories
       const categoryMatch = (
@@ -166,13 +166,13 @@ export const transformExcelData = (data: ExcelData): {
 } => {
   const { riskToControls, controlToRisks } = buildRelationships(data);
   
-  const risks = data.riskMap.map(row => {
+  const risks = data.riskMap.map((row: RiskMapRow) => {
     const riskId = generateId(row.risk);
     const relatedControlIds = riskToControls.get(riskId) || [];
     return transformRiskMapRow(row, relatedControlIds);
   });
   
-  const controls = data.controlsMapping.map(row => {
+  const controls = data.controlsMapping.map((row: ControlsMappingRow) => {
     const relatedRiskIds = controlToRisks.get(row.mitigationID) || [];
     return transformControlRow(row, relatedRiskIds);
   });

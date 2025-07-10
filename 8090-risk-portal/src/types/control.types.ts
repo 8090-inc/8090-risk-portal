@@ -37,6 +37,9 @@ export interface Control {
   lastAssessmentDate?: Date;
   nextAssessmentDate?: Date;
   
+  // Compliance score (calculated from compliance mappings)
+  complianceScore?: number; // 0-1 representing percentage
+  
   // Metadata
   lastUpdated?: Date;
   createdAt?: Date;

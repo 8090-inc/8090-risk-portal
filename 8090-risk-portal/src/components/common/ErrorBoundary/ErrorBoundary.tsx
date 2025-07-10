@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { AlertTriangle } from 'lucide-react';
 
 interface Props {
@@ -33,6 +33,8 @@ class ErrorBoundary extends Component<Props, State> {
     // Log to error service
     if (window.errorService) {
       window.errorService.logError({
+        id: `err_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        category: 'system-error',
         code: 'REACT_ERROR_BOUNDARY',
         message: error.message,
         details: { error, errorInfo },

@@ -5,10 +5,10 @@ import {
   RiskFilters, 
   RiskSort, 
   RiskStatistics,
-  RiskValidationError,
   CreateRiskInput,
   UpdateRiskInput
 } from '../types';
+import { RiskValidationError } from '../types/error.types';
 import { transformExcelData, validateRisk } from '../utils/dataTransformers';
 import extractedData from '../data/extracted-excel-data.json';
 

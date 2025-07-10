@@ -82,7 +82,7 @@ describe('State Management Stores', () => {
   
   describe('RiskStore', () => {
     it('should load risks from Excel data', async () => {
-      const { loadRisks, risks } = useRiskStore.getState();
+      const { loadRisks } = useRiskStore.getState();
       
       await act(async () => {
         await loadRisks();
@@ -216,7 +216,7 @@ describe('State Management Stores', () => {
   
   describe('UIStore', () => {
     it('should manage notifications', () => {
-      const { addNotification, removeNotification, notifications } = useUIStore.getState();
+      const { addNotification, removeNotification } = useUIStore.getState();
       
       act(() => {
         addNotification({

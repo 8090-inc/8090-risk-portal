@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+@plugin "@tailwindcss/forms";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  /* 8090 Brand Colors */
+  --color-8090-primary: #0066CC;
+  --color-8090-secondary: #FF6B35;
+  --color-8090-dark: #1A1A2E;
+  
+  /* 8090 Gray Scale */
+  --color-8090-gray-50: #F8F9FA;
+  --color-8090-gray-100: #E9ECEF;
+  --color-8090-gray-200: #DEE2E6;
+  --color-8090-gray-300: #CED4DA;
+  --color-8090-gray-400: #ADB5BD;
+  --color-8090-gray-500: #6C757D;
+  --color-8090-gray-600: #495057;
+  --color-8090-gray-700: #343A40;
+  --color-8090-gray-800: #212529;
+  --color-8090-gray-900: #0F0F0F;
+  
+  /* Risk Level Colors */
+  --color-risk-critical: #DC3545;
+  --color-risk-high: #FD7E14;
+  --color-risk-medium: #FFC107;
+  --color-risk-low: #28A745;
+  
+  /* Status Colors */
+  --color-status-implemented: #28A745;
+  --color-status-in-progress: #17A2B8;
+  --color-status-not-implemented: #6C757D;
+  --color-status-overdue: #DC3545;
+  --color-status-due-soon: #FFC107;
+  
+  /* Typography */
+  --font-family-sans: Inter, system-ui, sans-serif;
+}
+
+@source "./index.html";
+@source "./src/**/*.{js,ts,jsx,tsx}";

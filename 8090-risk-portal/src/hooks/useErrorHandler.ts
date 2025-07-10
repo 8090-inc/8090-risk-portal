@@ -1,14 +1,12 @@
 import { useEffect, useCallback, useState } from 'react';
 import { useUIStore } from '../store';
 import { errorService } from '../services/error/errorService';
-import { 
+import type { 
   AppError, 
-  ErrorSeverity,
-  isApiError,
-  isValidationError,
   ApiError,
   ValidationError
 } from '../types';
+import { isApiError, isValidationError } from '../types';
 
 export const useErrorHandler = () => {
   const { showError, showWarning, showInfo } = useUIStore();

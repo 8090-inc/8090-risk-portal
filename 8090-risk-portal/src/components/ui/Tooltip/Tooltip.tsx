@@ -19,7 +19,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const targetRef = useRef<HTMLElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
     const updatePosition = () => {
@@ -83,7 +83,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
     setIsVisible(false);
   };
   
-  const clonedChild = React.cloneElement(children, {
+  const clonedChild = React.cloneElement(children as React.ReactElement<any>, {
     ref: targetRef,
     onMouseEnter: handleMouseEnter,
     onMouseLeave: handleMouseLeave,

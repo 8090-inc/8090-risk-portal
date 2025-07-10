@@ -1,15 +1,42 @@
 // Central export for all types
 
-// Risk types
-export * from './risk.types';
+// Risk types (excluding RiskValidationError which conflicts with error.types)
+export { 
+  type Risk,
+  type RiskScoring,
+  type RiskLevelCategory,
+  type RiskLikelihood,
+  type RiskImpact,
+  type RiskCategory,
+  type RiskFilters,
+  type RiskSort,
+  type RiskStatistics,
+  type CreateRiskInput,
+  type UpdateRiskInput,
+  type RiskValidation,
+  type RiskValidationError as RiskValidationErrorInterface
+} from './risk.types';
 
-// Control types
-export * from './control.types';
+// Control types (excluding ControlValidationError which conflicts with error.types)
+export {
+  type Control,
+  type ControlCategory,
+  type ControlFilters,
+  type ControlSort,
+  type ControlStatistics,
+  type ControlAssessment,
+  type CreateControlInput,
+  type UpdateControlInput,
+  type ControlValidation,
+  type ControlValidationError as ControlValidationErrorInterface,
+  type ComplianceMatrix,
+  type ControlImplementationPlan
+} from './control.types';
 
 // Relationship types
 export * from './relationship.types';
 
-// Error types
+// Error types (including the class versions of validation errors)
 export * from './error.types';
 
 // Common types used across the application
@@ -65,7 +92,7 @@ export interface SearchParams {
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
-  error?: AppError;
+  error?: import('./error.types').AppError;
   metadata?: {
     timestamp: Date;
     requestId: string;

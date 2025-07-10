@@ -2,11 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { 
   Risk, 
   Control, 
-  RiskValidationError,
-  ControlValidationError,
   isApiError,
   isValidationError
 } from '../index';
+import { RiskValidationError, ControlValidationError } from '../error.types';
 import { 
   transformRiskMapRow, 
   transformControlRow, 

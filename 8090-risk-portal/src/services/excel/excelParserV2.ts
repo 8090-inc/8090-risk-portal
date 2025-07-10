@@ -64,7 +64,6 @@ export class ExcelParserV2 {
     const categories = new Set<string>();
     
     // Headers are in row 2 (index 2)
-    const headerRow = 2;
     const dataStartRow = 4; // Data starts from row 4
     
     let currentCategory = '';

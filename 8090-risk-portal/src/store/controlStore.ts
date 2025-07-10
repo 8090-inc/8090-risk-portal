@@ -5,11 +5,11 @@ import {
   ControlFilters, 
   ControlSort, 
   ControlStatistics,
-  ControlValidationError,
   CreateControlInput,
   UpdateControlInput,
   ControlAssessment
 } from '../types';
+import { ControlValidationError } from '../types/error.types';
 import { transformExcelData, validateControl } from '../utils/dataTransformers';
 import extractedData from '../data/extracted-excel-data.json';
 

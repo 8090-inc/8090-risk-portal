@@ -1,8 +1,10 @@
-import { AppError } from '../../types/error.types';
-import errorService from '../../services/error/errorService';
+import type { AppError } from '../../types';
+import { errorService } from '../../services/error/errorService';
 
 export const handleApiError = (error: any): AppError => {
   const appError: AppError = {
+    id: `err_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    category: 'api-error',
     code: error.response?.status?.toString() || 'API_ERROR',
     message: error.response?.data?.message || error.message || 'An API error occurred',
     details: {
@@ -21,6 +23,8 @@ export const handleApiError = (error: any): AppError => {
 
 export const handleValidationError = (field: string, value: any, expectedType: string): AppError => {
   const error: AppError = {
+    id: `err_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    category: 'data-validation',
     code: 'VALIDATION_ERROR',
     message: `Invalid value for field "${field}". Expected ${expectedType}.`,
     details: { field, value, expectedType },
@@ -34,6 +38,8 @@ export const handleValidationError = (field: string, value: any, expectedType: s
 
 export const handleUnexpectedError = (error: Error): AppError => {
   const appError: AppError = {
+    id: `err_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    category: 'system-error',
     code: 'UNEXPECTED_ERROR',
     message: error.message || 'An unexpected error occurred',
     details: {

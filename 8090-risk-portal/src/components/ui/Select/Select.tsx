@@ -6,13 +6,21 @@ interface SelectOption {
   label: string;
 }
 
-interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+interface SelectProps {
   label?: string;
   error?: string;
   helpText?: string;
   options: SelectOption[];
   placeholder?: string;
   fullWidth?: boolean;
+  multiple?: boolean;
+  value?: string | string[];
+  onChange?: (value: string | string[]) => void;
+  className?: string;
+  id?: string;
+  name?: string;
+  disabled?: boolean;
+  required?: boolean;
 }
 
 export const Select: React.FC<SelectProps> = ({
@@ -24,7 +32,12 @@ export const Select: React.FC<SelectProps> = ({
   fullWidth = false,
   className,
   id,
-  ...props
+  multiple,
+  value,
+  onChange,
+  name,
+  disabled,
+  required
 }) => {
   const selectId = id || `select-${Math.random().toString(36).substr(2, 9)}`;
   
@@ -48,7 +61,21 @@ export const Select: React.FC<SelectProps> = ({
         aria-describedby={
           error ? `${selectId}-error` : helpText ? `${selectId}-help` : undefined
         }
-        {...props}
+        multiple={multiple}
+        value={value}
+        onChange={(e) => {
+          if (onChange) {
+            if (multiple) {
+              const selectedOptions = Array.from(e.target.selectedOptions).map(opt => opt.value);
+              onChange(selectedOptions);
+            } else {
+              onChange(e.target.value);
+            }
+          }
+        }}
+        name={name}
+        disabled={disabled}
+        required={required}
       >
         <option value="">{placeholder}</option>
         {options.map((option) => (

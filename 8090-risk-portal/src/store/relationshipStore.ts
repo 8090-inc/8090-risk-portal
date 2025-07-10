@@ -11,7 +11,7 @@ import {
   Risk,
   Control
 } from '../types';
-import { transformExcelData, buildRelationships } from '../utils/dataTransformers';
+import { transformExcelData } from '../utils/dataTransformers';
 import extractedData from '../data/extracted-excel-data.json';
 
 interface RelationshipState {
@@ -50,8 +50,8 @@ interface RelationshipState {
 // Helper to create risk-control relationships from mapping
 const createRiskControlRelationships = (
   riskToControls: Map<string, string[]>,
-  risks: Risk[],
-  controls: Control[]
+  _risks: Risk[],
+  _controls: Control[]
 ): RiskControlRelationship[] => {
   const relationships: RiskControlRelationship[] = [];
   
