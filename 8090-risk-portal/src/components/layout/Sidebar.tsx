@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Shield, 
@@ -13,6 +13,7 @@ import {
 import { useUIStore } from '../../store';
 import { cn } from '../../utils/cn';
 import { GlobalSearch } from '../common/GlobalSearch';
+import { AdvancedFilterPanel } from '../common/AdvancedFilterPanel';
 
 interface NavItemProps {
   to: string;
@@ -43,8 +44,18 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, collapsed }) => {
 
 export const Sidebar: React.FC = () => {
   const { sidebarCollapsed, toggleSidebar } = useUIStore();
+  const location = useLocation();
 
   const iconSize = sidebarCollapsed ? "h-6 w-6" : "h-5 w-5";
+  
+  // Determine which filter type to show based on current route
+  const getFilterType = (): 'risks' | 'controls' | null => {
+    if (location.pathname.startsWith('/risks')) return 'risks';
+    if (location.pathname.startsWith('/controls')) return 'controls';
+    return null;
+  };
+  
+  const filterType = getFilterType();
   
   const navItems = [
     { to: '/dashboard', icon: <LayoutDashboard className={iconSize} />, label: 'Dashboard' },
@@ -56,11 +67,11 @@ export const Sidebar: React.FC = () => {
 
   return (
     <aside className={cn(
-      "fixed left-0 top-0 h-full bg-white border-r border-gray-200 transition-all duration-300 z-10",
+      "fixed left-0 top-0 h-full bg-white border-r border-gray-200 transition-all duration-300 z-10 flex flex-col",
       sidebarCollapsed ? "w-20" : "w-64"
     )}>
       {/* Logo */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200">
+      <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 flex-shrink-0">
         {!sidebarCollapsed ? (
           <div className="flex items-center space-x-3">
             <div className="h-8 w-8 bg-8090-primary rounded-lg flex items-center justify-center">
@@ -75,26 +86,36 @@ export const Sidebar: React.FC = () => {
         )}
       </div>
 
-      {/* Search - Only show when expanded */}
-      {!sidebarCollapsed && (
-        <div className="px-4 py-3">
-          <GlobalSearch />
-        </div>
-      )}
+      {/* Scrollable content */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Search - Only show when expanded */}
+        {!sidebarCollapsed && (
+          <div className="px-4 py-3 border-b border-gray-100">
+            <GlobalSearch />
+          </div>
+        )}
 
-      {/* Navigation */}
-      <nav className="p-4 space-y-2">
-        {navItems.map((item) => (
-          <NavItem
-            key={item.to}
-            {...item}
-            collapsed={sidebarCollapsed}
-          />
-        ))}
-      </nav>
+        {/* Navigation */}
+        <nav className="p-4 space-y-2">
+          {navItems.map((item) => (
+            <NavItem
+              key={item.to}
+              {...item}
+              collapsed={sidebarCollapsed}
+            />
+          ))}
+        </nav>
+
+        {/* Filters - Only show when expanded and on relevant pages */}
+        {!sidebarCollapsed && filterType && (
+          <div className="px-4 py-4 border-t border-gray-200">
+            <AdvancedFilterPanel type={filterType} />
+          </div>
+        )}
+      </div>
 
       {/* Settings - Bottom */}
-      <div className="absolute bottom-8 left-0 right-0 px-4 space-y-2">
+      <div className="flex-shrink-0 px-4 py-4 border-t border-gray-200 space-y-2">
         <NavItem
           to="/settings"
           icon={<Settings className={iconSize} />}

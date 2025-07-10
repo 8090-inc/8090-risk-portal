@@ -4,8 +4,6 @@ import { useControlStore } from '../store';
 import { useFilterStore } from '../store/filterStore';
 import { ControlSummaryCard } from '../components/controls/ControlSummaryCard';
 import { ControlsTable } from '../components/controls/ControlsTable';
-import { CategorySidebar } from '../components/controls/CategorySidebar';
-import { FilterSidebarLayout } from '../components/layout/FilterSidebarLayout';
 import { Button } from '../components/ui/Button';
 import { useAsyncOperation } from '../hooks/useErrorHandler';
 
@@ -18,7 +16,7 @@ export const ControlsView: React.FC = () => {
     statistics
   } = useControlStore();
 
-  const { activeFilters, setControlFilters } = useFilterStore();
+  const { activeFilters } = useFilterStore();
   const controlFilters = activeFilters.controls;
 
   const { execute: loadControlsAsync } = useAsyncOperation(loadControls, {
@@ -79,17 +77,6 @@ export const ControlsView: React.FC = () => {
     return filtered;
   }, [controls, controlFilters]);
 
-  const categories = useMemo(() => {
-    const categoryMap = new Map<string, number>();
-    controls.forEach(control => {
-      const count = categoryMap.get(control.category) || 0;
-      categoryMap.set(control.category, count + 1);
-    });
-    return Array.from(categoryMap.entries())
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count);
-  }, [controls]);
-
   const summaryStats = useMemo(() => {
     if (!statistics) return { ok: 0, attention: 0, pending: 0 };
     
@@ -99,19 +86,6 @@ export const ControlsView: React.FC = () => {
       pending: statistics.byImplementationStatus['In Progress'] || 0
     };
   }, [statistics]);
-
-  const handleCategoryToggle = (category: string) => {
-    const currentCategories = controlFilters?.categories || [];
-    setControlFilters({
-      categories: currentCategories.includes(category)
-        ? currentCategories.filter(c => c !== category)
-        : [...currentCategories, category]
-    });
-  };
-
-  const handleClearCategories = () => {
-    setControlFilters({ categories: [] });
-  };
 
   const handleExport = () => {
     // TODO: Implement export functionality
@@ -148,27 +122,14 @@ export const ControlsView: React.FC = () => {
   }
 
   return (
-    <FilterSidebarLayout 
-      filterType="controls"
-      sidebarContent={
-        <div className="mt-6">
-          <CategorySidebar
-            categories={categories}
-            selectedCategories={controlFilters?.categories || []}
-            onCategoryToggle={handleCategoryToggle}
-            onClearAll={handleClearCategories}
-          />
-        </div>
-      }
-    >
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Controls</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Manage and monitor your AI risk control implementations
-          </p>
-        </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Controls</h1>
+        <p className="mt-1 text-sm text-gray-600">
+          Manage and monitor your AI risk control implementations
+        </p>
+      </div>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -212,8 +173,7 @@ export const ControlsView: React.FC = () => {
             selectedCategories={controlFilters?.categories || []}
             selectedStatuses={controlFilters?.statuses || []}
           />
-        </div>
       </div>
-    </FilterSidebarLayout>
+    </div>
   );
 };

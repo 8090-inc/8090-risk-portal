@@ -7,7 +7,6 @@ import { RiskSummaryStats } from '../components/risks/RiskSummaryStats';
 import { RiskTable } from '../components/risks/RiskTable';
 import { PageHeader } from '../components/layout/PageHeader';
 import { Button } from '../components/ui/Button';
-import { FilterSidebarLayout } from '../components/layout/FilterSidebarLayout';
 import { exportRisksToExcel, exportRisksToCSV } from '../utils/exportUtils';
 import type { Risk } from '../types';
 
@@ -83,9 +82,8 @@ export const RisksView: React.FC = () => {
   const stats = getStatistics();
 
   return (
-    <FilterSidebarLayout filterType="risks">
-      <div className="space-y-6">
-        <PageHeader
+    <div className="space-y-6">
+      <PageHeader
           title="Risk Register"
           description="Comprehensive view of all identified AI risks and their mitigation status"
           actions={
@@ -157,8 +155,7 @@ export const RisksView: React.FC = () => {
               onRowClick={handleRowClick}
             />
           )}
-        </div>
       </div>
-    </FilterSidebarLayout>
+    </div>
   );
 };
