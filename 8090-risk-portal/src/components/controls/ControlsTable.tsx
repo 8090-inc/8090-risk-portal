@@ -65,7 +65,7 @@ export const ControlsTable: React.FC<ControlsTableProps> = ({
         header: 'Control ID',
         cell: info => (
           <Link to={`/controls/${info.getValue()}`} className="text-8090-primary hover:underline font-medium">
-            {info.getValue()}
+            {info.getValue().toUpperCase()}
           </Link>
         )
       }),
