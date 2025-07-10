@@ -8,7 +8,8 @@ import {
   FileText, 
   Settings,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Search
 } from 'lucide-react';
 import { useUIStore } from '../../store';
 import { cn } from '../../utils/cn';
@@ -88,13 +89,6 @@ export const Sidebar: React.FC = () => {
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto">
-        {/* Search - Only show when expanded */}
-        {!sidebarCollapsed && (
-          <div className="px-4 py-3 border-b border-gray-100">
-            <GlobalSearch />
-          </div>
-        )}
-
         {/* Navigation */}
         <nav className="p-4 space-y-2">
           {navItems.map((item) => (
@@ -106,10 +100,26 @@ export const Sidebar: React.FC = () => {
           ))}
         </nav>
 
-        {/* Filters - Only show when expanded and on relevant pages */}
-        {!sidebarCollapsed && filterType && (
-          <div className="px-4 py-4 border-t border-gray-200">
-            <AdvancedFilterPanel type={filterType} />
+        {/* Search & Filters Section - Only show when expanded */}
+        {!sidebarCollapsed && (
+          <div className="px-4 py-4 border-t border-gray-200 space-y-4">
+            {/* Section Header */}
+            <div className="flex items-center space-x-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              <Search className="h-3 w-3" />
+              <span>Search & Filters</span>
+            </div>
+            
+            {/* Global Search */}
+            <div>
+              <GlobalSearch />
+            </div>
+
+            {/* Advanced Filters - Only show on relevant pages */}
+            {filterType && (
+              <div className="pt-2">
+                <AdvancedFilterPanel type={filterType} />
+              </div>
+            )}
           </div>
         )}
       </div>
