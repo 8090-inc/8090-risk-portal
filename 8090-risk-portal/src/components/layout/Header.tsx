@@ -1,11 +1,9 @@
 import React from 'react';
 import { Bell, User, Menu } from 'lucide-react';
-import { SearchBar } from '../common/SearchBar';
 import { useUIStore } from '../../store';
 
 export const Header: React.FC = () => {
   const { toggleSidebar } = useUIStore();
-  const [searchValue, setSearchValue] = React.useState('');
 
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center px-6">
@@ -18,13 +16,7 @@ export const Header: React.FC = () => {
           <Menu className="h-5 w-5 text-gray-600" />
         </button>
 
-        {/* Global Search */}
-        <SearchBar
-          value={searchValue}
-          onChange={setSearchValue}
-          placeholder="Search risks, controls, or documents..."
-          className="w-96"
-        />
+        {/* Page title or breadcrumbs can go here */}
       </div>
 
       {/* Right Side Actions */}

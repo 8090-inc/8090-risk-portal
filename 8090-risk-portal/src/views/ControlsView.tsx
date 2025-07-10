@@ -6,7 +6,6 @@ import { ControlSummaryCard } from '../components/controls/ControlSummaryCard';
 import { ControlsTable } from '../components/controls/ControlsTable';
 import { CategorySidebar } from '../components/controls/CategorySidebar';
 import { StatusFilter } from '../components/controls/StatusFilter';
-import { SearchBar } from '../components/common/SearchBar';
 import { Button } from '../components/ui/Button';
 import { useAsyncOperation } from '../hooks/useErrorHandler';
 
@@ -17,8 +16,6 @@ export const ControlsView: React.FC = () => {
     error,
     loadControls,
     filteredControls,
-    searchTerm,
-    setSearchTerm,
     setFilters,
     statistics
   } = useControlStore();
@@ -158,16 +155,10 @@ export const ControlsView: React.FC = () => {
             />
           </div>
 
-          {/* Filters and Search */}
+          {/* Filters */}
           <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-4 flex-1">
-                <SearchBar
-                  value={searchTerm}
-                  onChange={setSearchTerm}
-                  placeholder="Search controls..."
-                  className="w-full max-w-md"
-                />
+              <div className="flex items-center space-x-4">
                 <StatusFilter
                   selectedStatuses={selectedStatuses}
                   onStatusChange={setSelectedStatuses}
@@ -223,7 +214,7 @@ export const ControlsView: React.FC = () => {
           {/* Controls Table */}
           <ControlsTable
             controls={filteredControls}
-            searchTerm={searchTerm}
+            searchTerm=""
             selectedCategories={selectedCategories}
             selectedStatuses={selectedStatuses.filter(s => s !== undefined) as string[]}
           />

@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Download, RefreshCw, FileSpreadsheet } from 'lucide-react';
+import { Download, RefreshCw, FileSpreadsheet } from 'lucide-react';
 import { useRiskStore } from '../store';
 import { RiskSummaryStats } from '../components/risks/RiskSummaryStats';
 import { RiskFilters } from '../components/risks/RiskFilters';
 import { RiskTable } from '../components/risks/RiskTable';
 import { PageHeader } from '../components/layout/PageHeader';
-import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { exportRisksToExcel, exportRisksToCSV } from '../utils/exportUtils';
 import type { Risk } from '../types';
@@ -21,7 +20,6 @@ export const RisksView: React.FC = () => {
     getStatistics 
   } = useRiskStore();
 
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedLevels, setSelectedLevels] = useState<string[]>([]);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
@@ -47,7 +45,6 @@ export const RisksView: React.FC = () => {
   const handleClearFilters = () => {
     setSelectedCategories([]);
     setSelectedLevels([]);
-    setSearchTerm('');
   };
 
   const stats = getStatistics();
@@ -113,26 +110,13 @@ export const RisksView: React.FC = () => {
       <RiskSummaryStats statistics={stats} />
 
       <div className="bg-white shadow rounded-lg p-6 space-y-6">
-        <div className="space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <Input
-              type="text"
-              placeholder="Search risks by ID, name, description, or mitigation..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-
-          <RiskFilters
-            selectedCategories={selectedCategories}
-            selectedLevels={selectedLevels}
-            onCategoryChange={setSelectedCategories}
-            onLevelChange={setSelectedLevels}
-            onClearAll={handleClearFilters}
-          />
-        </div>
+        <RiskFilters
+          selectedCategories={selectedCategories}
+          selectedLevels={selectedLevels}
+          onCategoryChange={setSelectedCategories}
+          onLevelChange={setSelectedLevels}
+          onClearAll={handleClearFilters}
+        />
 
         <div className="mt-6">
           {isLoading ? (
@@ -142,7 +126,7 @@ export const RisksView: React.FC = () => {
           ) : (
             <RiskTable
               risks={risks}
-              searchTerm={searchTerm}
+              searchTerm=""
               selectedCategories={selectedCategories}
               selectedLevels={selectedLevels}
               onRowClick={handleRowClick}

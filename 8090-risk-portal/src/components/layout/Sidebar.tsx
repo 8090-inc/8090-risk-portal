@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useUIStore } from '../../store';
 import { cn } from '../../utils/cn';
+import { GlobalSearch } from '../common/GlobalSearch';
 
 interface NavItemProps {
   to: string;
@@ -73,6 +74,13 @@ export const Sidebar: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Search - Only show when expanded */}
+      {!sidebarCollapsed && (
+        <div className="px-4 py-3">
+          <GlobalSearch />
+        </div>
+      )}
 
       {/* Navigation */}
       <nav className="p-4 space-y-2">

@@ -343,8 +343,6 @@ Features:
 Features:
 - Omnisearch across risks and controls
 - Autocomplete suggestions
-- Recent searches
-- Keyboard navigation (Cmd+K)
 - Search results preview
 
 #### TASK-015: Implement Advanced Filtering
@@ -480,10 +478,10 @@ Production build and documentation.
 - ✅ TASK-010: Implement Controls View
 - ✅ TASK-011: Implement Risk Register View
 - ✅ TASK-012: Implement Risk Detail View
-- 🟨 TASK-013: Implement Dashboard View
+- ✅ TASK-013: Implement Dashboard View
 
 #### Advanced Feature Tasks
-- ⬜ TASK-014: Implement Global Search
+- 🟨 TASK-014: Implement Global Search
 - ⬜ TASK-015: Implement Advanced Filtering
 - ⬜ TASK-016: Implement Data Management Features
 
