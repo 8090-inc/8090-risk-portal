@@ -114,9 +114,9 @@ export const ControlsView: React.FC = () => {
   }
 
   return (
-    <div className="flex h-full bg-gray-50">
+    <div className="flex h-full bg-gray-50 min-w-0 overflow-x-hidden">
       {/* Sidebar */}
-      <div className="w-64 flex-shrink-0 bg-white border-r border-gray-200 p-6 overflow-y-auto">
+      <div className="w-64 flex-shrink-0 bg-white border-r border-gray-200 p-4 overflow-y-auto overflow-x-hidden">
         <CategorySidebar
           categories={categories}
           selectedCategories={selectedCategories}
@@ -126,7 +126,7 @@ export const ControlsView: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto min-w-0">
         <div className="p-6">
           {/* Header */}
           <div className="mb-6">
@@ -166,7 +166,7 @@ export const ControlsView: React.FC = () => {
                   value={searchTerm}
                   onChange={setSearchTerm}
                   placeholder="Search controls..."
-                  className="w-96"
+                  className="w-full max-w-md"
                 />
                 <StatusFilter
                   selectedStatuses={selectedStatuses}

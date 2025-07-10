@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card } from '../ui/Card';
-import { TrendingDown, AlertTriangle, Shield, Activity } from 'lucide-react';
+import { AlertTriangle, Shield, Activity } from 'lucide-react';
 import type { RiskStatistics } from '../../types';
 
 interface RiskSummaryStatsProps {
@@ -33,19 +33,11 @@ export const RiskSummaryStats: React.FC<RiskSummaryStatsProps> = ({ statistics }
       color: 'text-green-600',
       bgColor: 'bg-green-100',
       percentage: Math.round((statistics.mitigatedRisksCount / statistics.totalRisks) * 100)
-    },
-    {
-      name: 'Avg Risk Reduction',
-      value: `${statistics.averageRiskReduction}`,
-      icon: TrendingDown,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-100',
-      suffix: 'points'
     }
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {stats.map((stat) => (
         <Card key={stat.name} padding="sm">
           <div className="flex items-start justify-between">
@@ -54,11 +46,6 @@ export const RiskSummaryStats: React.FC<RiskSummaryStatsProps> = ({ statistics }
               <div className="mt-2 flex items-baseline">
                 <p className="text-2xl font-semibold text-gray-900">
                   {stat.value}
-                  {stat.suffix && (
-                    <span className="ml-1 text-sm font-normal text-gray-500">
-                      {stat.suffix}
-                    </span>
-                  )}
                 </p>
                 {stat.percentage !== undefined && (
                   <p className="ml-2 text-sm font-medium text-green-600">

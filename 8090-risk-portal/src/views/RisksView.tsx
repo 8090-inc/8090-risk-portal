@@ -53,7 +53,7 @@ export const RisksView: React.FC = () => {
   const stats = getStatistics();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full overflow-x-hidden">
       <PageHeader
         title="Risk Register"
         description="Comprehensive view of all identified AI risks and their mitigation status"

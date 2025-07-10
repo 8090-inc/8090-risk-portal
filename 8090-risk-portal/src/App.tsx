@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AppLayout } from './components/layout/AppLayout';
 import { ControlsView } from './views/ControlsView';
 import { RisksView } from './views/RisksView';
+import { RiskDetailView } from './views/RiskDetailView';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { useUIStore } from './store';
 import { initializeStores } from './store';
@@ -38,7 +39,7 @@ function App() {
             
             {/* Risk routes */}
             <Route path="/risks" element={<RisksView />} />
-            <Route path="/risks/:id" element={<div className="p-6">Risk Detail View (Coming Soon)</div>} />
+            <Route path="/risks/:id" element={<RiskDetailView />} />
             <Route path="/controls/:id" element={<div className="p-6">Control Detail View (Coming Soon)</div>} />
             <Route path="/dashboard" element={<div className="p-6">Dashboard View (Coming Soon)</div>} />
             <Route path="/matrix" element={<div className="p-6">Risk Matrix View (Coming Soon)</div>} />

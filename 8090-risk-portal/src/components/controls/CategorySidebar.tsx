@@ -24,7 +24,7 @@ export const CategorySidebar: React.FC<CategorySidebarProps> = ({
     .reduce((sum, cat) => sum + cat.count, 0);
 
   return (
-    <div className="w-64 bg-white shadow-sm rounded-lg p-6">
+    <div className="w-full bg-white shadow-sm rounded-lg p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-900">Categories</h3>
         {selectedCategories.length > 0 && (
@@ -58,10 +58,10 @@ export const CategorySidebar: React.FC<CategorySidebarProps> = ({
               key={category.name}
               onClick={() => onCategoryToggle(category.name)}
               className={cn(
-                "w-full flex items-center justify-between p-3 rounded-lg transition-all",
+                "w-full flex items-center justify-between p-3 rounded-lg transition-all border",
                 isSelected
-                  ? "bg-8090-primary/10 border border-8090-primary/20"
-                  : "hover:bg-gray-50 border border-transparent"
+                  ? "bg-8090-primary/10 border-8090-primary/20"
+                  : "border-gray-200 hover:bg-gray-50 hover:border-gray-300"
               )}
             >
               <div className="flex items-center space-x-3">

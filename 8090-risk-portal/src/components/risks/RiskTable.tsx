@@ -10,7 +10,7 @@ import {
   type SortingState,
   type FilterFn
 } from '@tanstack/react-table';
-import { ChevronUp, ChevronDown, ExternalLink, TrendingDown, Shield } from 'lucide-react';
+import { ChevronUp, ChevronDown, ExternalLink, Shield } from 'lucide-react';
 import type { Risk } from '../../types';
 import { RiskLevelBadge } from './RiskLevelBadge';
 import { Badge } from '../ui/Badge';
@@ -49,7 +49,7 @@ export const RiskTable: React.FC<RiskTableProps> = ({
   onRowClick
 }) => {
   const [sorting, setSorting] = React.useState<SortingState>([
-    { id: 'residualRiskLevel', desc: true }
+    { id: 'initialRiskLevel', desc: true }
   ]);
 
   const filteredRisks = useMemo(() => {
@@ -70,7 +70,7 @@ export const RiskTable: React.FC<RiskTableProps> = ({
         header: 'Risk ID',
         cell: info => (
           <Link to={`/risks/${info.getValue()}`} className="text-8090-primary hover:underline font-medium">
-            {info.getValue()}
+            {info.getValue().toUpperCase()}
           </Link>
         ),
         size: 100
@@ -120,32 +120,6 @@ export const RiskTable: React.FC<RiskTableProps> = ({
           );
         },
         size: 120
-      }),
-      columnHelper.accessor('riskReduction', {
-        header: 'Risk Reduction',
-        cell: info => {
-          const value = info.getValue();
-          const percentage = info.row.original.riskReductionPercentage;
-          return (
-            <div className="flex items-center space-x-2">
-              <TrendingDown className={cn(
-                "h-4 w-4",
-                value > 10 ? "text-green-600" : 
-                value > 5 ? "text-yellow-600" : 
-                "text-gray-400"
-              )} />
-              <span className={cn(
-                "text-sm font-medium",
-                value > 10 ? "text-green-600" : 
-                value > 5 ? "text-yellow-600" : 
-                "text-gray-600"
-              )}>
-                -{value} ({percentage}%)
-              </span>
-            </div>
-          );
-        },
-        size: 140
       }),
       columnHelper.accessor(row => row.relatedControlIds.length, {
         id: 'controlCount',
@@ -218,7 +192,7 @@ export const RiskTable: React.FC<RiskTableProps> = ({
   });
 
   return (
-    <div className="overflow-hidden bg-white shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+    <div className="overflow-x-auto bg-white shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
       <table className="min-w-full divide-y divide-gray-300">
         <thead className="bg-gray-50">
           {table.getHeaderGroups().map(headerGroup => (
