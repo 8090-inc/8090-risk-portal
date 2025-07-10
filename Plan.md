@@ -481,7 +481,7 @@ Production build and documentation.
 - ✅ TASK-013: Implement Dashboard View
 
 #### Advanced Feature Tasks
-- 🟨 TASK-014: Implement Global Search
+- ✅ TASK-014: Implement Global Search
 - ⬜ TASK-015: Implement Advanced Filtering
 - ⬜ TASK-016: Implement Data Management Features
 

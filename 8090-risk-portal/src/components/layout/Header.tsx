@@ -1,21 +1,10 @@
 import React from 'react';
-import { Bell, User, Menu } from 'lucide-react';
-import { useUIStore } from '../../store';
+import { Bell, User } from 'lucide-react';
 
 export const Header: React.FC = () => {
-  const { toggleSidebar } = useUIStore();
-
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center px-6">
       <div className="flex items-center flex-1">
-        {/* Menu Toggle */}
-        <button
-          onClick={toggleSidebar}
-          className="p-2 rounded-lg hover:bg-gray-100 mr-4"
-        >
-          <Menu className="h-5 w-5 text-gray-600" />
-        </button>
-
         {/* Page title or breadcrumbs can go here */}
       </div>
 
