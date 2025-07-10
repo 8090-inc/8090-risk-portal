@@ -74,15 +74,15 @@ export const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
 
     return (
       <div className="space-y-2">
-        <div className="flex items-center space-x-2 text-sm text-gray-500">
-          <Clock className="h-4 w-4" />
-          <span>Recent filters:</span>
+        <div className="flex items-center space-x-2 text-xs text-gray-500">
+          <Clock className="h-3 w-3" />
+          <span>Recent</span>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1">
           {relevantRecent.map(filter => (
             <button
               key={filter}
-              className="px-2 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg text-sm"
+              className="px-2 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded text-xs"
               onClick={() => {
                 if (type === 'risks') {
                   setRiskFilters({ 
@@ -114,35 +114,32 @@ export const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
 
     return (
       <div className="space-y-2">
-        <div className="flex items-center space-x-2 text-sm text-gray-500">
-          <Bookmark className="h-4 w-4" />
-          <span>Saved filter sets:</span>
+        <div className="flex items-center space-x-2 text-xs text-gray-500">
+          <Bookmark className="h-3 w-3" />
+          <span>Saved filters</span>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1">
           {relevantFilterSets.map(filterSet => (
             <div
               key={filterSet.id}
-              className="flex items-center justify-between p-2 border border-gray-200 rounded-lg hover:bg-gray-50"
+              className="flex items-center justify-between p-2 border border-gray-200 rounded hover:bg-gray-50 text-sm"
             >
               <div 
-                className="flex-1 cursor-pointer"
+                className="flex-1 cursor-pointer truncate"
                 onClick={() => {
                   loadFilterSet(filterSet.id);
                   onFiltersChange?.();
                 }}
+                title={filterSet.description}
               >
-                <div className="font-medium text-sm">{filterSet.name}</div>
-                {filterSet.description && (
-                  <div className="text-xs text-gray-500">{filterSet.description}</div>
-                )}
+                {filterSet.name}
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
+              <button
                 onClick={() => deleteFilterSet(filterSet.id)}
+                className="p-1 hover:text-red-600"
               >
-                <Trash2 className="h-4 w-4 text-gray-400 hover:text-red-600" />
-              </Button>
+                <Trash2 className="h-3 w-3" />
+              </button>
             </div>
           ))}
         </div>
@@ -151,90 +148,94 @@ export const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
   };
 
   return (
-    <Card className="mb-6">
-      <div className="p-4">
+    <>
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <Filter className="h-5 w-5 text-gray-500" />
-            <h3 className="text-lg font-semibold text-gray-900">Advanced Filters</h3>
-            {hasActiveFilters && (
-              <Badge variant="primary" className="ml-2">
-                {Object.keys(currentFilters).length} active
-              </Badge>
-            )}
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            {hasActiveFilters && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowSaveDialog(true)}
-                >
-                  <Save className="h-4 w-4 mr-1" />
-                  Save
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleClearFilters}
-                >
-                  <X className="h-4 w-4 mr-1" />
-                  Clear
-                </Button>
-              </>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsExpanded(!isExpanded)}
-            >
-              {isExpanded ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
+        <div className="flex items-center space-x-2">
+          <Filter className="h-4 w-4 text-gray-500" />
+          <h3 className="text-base font-semibold text-gray-900">Filters</h3>
+          {hasActiveFilters && (
+            <Badge variant="primary" className="text-xs">
+              {Object.keys(currentFilters).length}
+            </Badge>
+          )}
         </div>
-
-        {!isExpanded && hasActiveFilters && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {currentFilters.categories?.map(category => (
-              <Badge key={category} variant="default">
-                {category}
-              </Badge>
-            ))}
-            {type === 'risks' && activeFilters.risks?.levels?.map((level: string) => (
-              <Badge 
-                key={level} 
-                variant={
-                  level === 'Critical' ? 'danger' :
-                  level === 'High' ? 'warning' :
-                  level === 'Medium' ? 'default' : 'success'
-                }
-              >
-                {level}
-              </Badge>
-            ))}
-            {type === 'controls' && activeFilters.controls?.statuses?.map((status: string) => (
-              <Badge 
-                key={status} 
-                variant={
-                  status === 'Implemented' ? 'success' :
-                  status === 'In Progress' ? 'warning' : 'default'
-                }
-              >
-                {status}
-              </Badge>
-            ))}
-          </div>
-        )}
+        
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="p-1"
+        >
+          {isExpanded ? (
+            <ChevronUp className="h-4 w-4" />
+          ) : (
+            <ChevronDown className="h-4 w-4" />
+          )}
+        </Button>
       </div>
 
+      {!isExpanded && hasActiveFilters && (
+        <div className="flex flex-wrap gap-1">
+          {currentFilters.categories?.map(category => (
+            <Badge key={category} variant="default" className="text-xs">
+              {category}
+            </Badge>
+          ))}
+          {type === 'risks' && activeFilters.risks?.levels?.map((level: string) => (
+            <Badge 
+              key={level} 
+              variant={
+                level === 'Critical' ? 'danger' :
+                level === 'High' ? 'warning' :
+                level === 'Medium' ? 'default' : 'success'
+              }
+              className="text-xs"
+            >
+              {level}
+            </Badge>
+          ))}
+          {type === 'controls' && activeFilters.controls?.statuses?.map((status: string) => (
+            <Badge 
+              key={status} 
+              variant={
+                status === 'Implemented' ? 'success' :
+                status === 'In Progress' ? 'warning' : 'default'
+              }
+              className="text-xs"
+            >
+              {status}
+            </Badge>
+          ))}
+        </div>
+      )}
+
       {isExpanded && (
-        <div className="border-t border-gray-200 p-4 space-y-6">
+        <div className="space-y-4 mt-4">
+          {/* Action buttons */}
+          {hasActiveFilters && (
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSaveDialog(true)}
+                className="flex-1"
+              >
+                <Save className="h-3 w-3 mr-1" />
+                Save
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearFilters}
+                className="flex-1"
+              >
+                <X className="h-3 w-3 mr-1" />
+                Clear
+              </Button>
+            </div>
+          )}
+
           {/* Quick filter pills */}
           <QuickFilterPills />
 
@@ -242,7 +243,7 @@ export const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
           <SavedFilterSets />
 
           {/* Filter form */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="space-y-3">
             {type === 'risks' ? (
               <>
                 <Select
@@ -363,6 +364,7 @@ export const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
           </div>
         </div>
       )}
+      </div>
 
       {/* Save filter set dialog */}
       {showSaveDialog && (
@@ -420,6 +422,6 @@ export const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
           </Card>
         </div>
       )}
-    </Card>
+    </>
   );
 };

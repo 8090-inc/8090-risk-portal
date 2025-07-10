@@ -5,7 +5,7 @@ import { useFilterStore } from '../store/filterStore';
 import { ControlSummaryCard } from '../components/controls/ControlSummaryCard';
 import { ControlsTable } from '../components/controls/ControlsTable';
 import { CategorySidebar } from '../components/controls/CategorySidebar';
-import { AdvancedFilterPanel } from '../components/common/AdvancedFilterPanel';
+import { FilterSidebarLayout } from '../components/layout/FilterSidebarLayout';
 import { Button } from '../components/ui/Button';
 import { useAsyncOperation } from '../hooks/useErrorHandler';
 
@@ -148,66 +148,64 @@ export const ControlsView: React.FC = () => {
   }
 
   return (
-    <div className="flex h-full bg-gray-50 min-w-0 overflow-x-hidden">
-      {/* Sidebar */}
-      <div className="w-64 flex-shrink-0 bg-white border-r border-gray-200 p-4 overflow-y-auto overflow-x-hidden">
-        <CategorySidebar
-          categories={categories}
-          selectedCategories={controlFilters?.categories || []}
-          onCategoryToggle={handleCategoryToggle}
-          onClearAll={handleClearCategories}
-        />
-      </div>
+    <FilterSidebarLayout 
+      filterType="controls"
+      sidebarContent={
+        <div className="mt-6">
+          <CategorySidebar
+            categories={categories}
+            selectedCategories={controlFilters?.categories || []}
+            onCategoryToggle={handleCategoryToggle}
+            onClearAll={handleClearCategories}
+          />
+        </div>
+      }
+    >
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Controls</h1>
+          <p className="mt-1 text-sm text-gray-600">
+            Manage and monitor your AI risk control implementations
+          </p>
+        </div>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-y-auto min-w-0">
-        <div className="p-6">
-          {/* Header */}
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Controls</h1>
-            <p className="mt-1 text-sm text-gray-600">
-              Manage and monitor your AI risk control implementations
-            </p>
-          </div>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <ControlSummaryCard
+            title="Implemented"
+            count={summaryStats.ok}
+            variant="ok"
+            description="Controls fully implemented and compliant"
+          />
+          <ControlSummaryCard
+            title="Not Implemented"
+            count={summaryStats.attention}
+            variant="attention"
+            description="Controls requiring immediate attention"
+          />
+          <ControlSummaryCard
+            title="In Progress"
+            count={summaryStats.pending}
+            variant="pending"
+            description="Controls currently being implemented"
+          />
+        </div>
 
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <ControlSummaryCard
-              title="Implemented"
-              count={summaryStats.ok}
-              variant="ok"
-              description="Controls fully implemented and compliant"
-            />
-            <ControlSummaryCard
-              title="Not Implemented"
-              count={summaryStats.attention}
-              variant="attention"
-              description="Controls requiring immediate attention"
-            />
-            <ControlSummaryCard
-              title="In Progress"
-              count={summaryStats.pending}
-              variant="pending"
-              description="Controls currently being implemented"
-            />
-          </div>
+        {/* Export Button */}
+        <div className="flex justify-end">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleExport}
+            icon={<Download className="h-4 w-4" />}
+          >
+            Export
+          </Button>
+        </div>
 
-          {/* Advanced Filters */}
-          <AdvancedFilterPanel type="controls" />
-
-          {/* Export Button */}
-          <div className="mb-6 flex justify-end">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={handleExport}
-              icon={<Download className="h-4 w-4" />}
-            >
-              Export
-            </Button>
-          </div>
-
-          {/* Controls Table */}
+        {/* Controls Table */}
+        <div className="bg-white shadow rounded-lg p-6">
           <ControlsTable
             controls={filteredControls}
             searchTerm={controlFilters?.searchTerm || ""}
@@ -216,6 +214,6 @@ export const ControlsView: React.FC = () => {
           />
         </div>
       </div>
-    </div>
+    </FilterSidebarLayout>
   );
 };
