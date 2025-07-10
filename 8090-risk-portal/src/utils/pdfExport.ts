@@ -1,6 +1,8 @@
 import type { Risk, Control } from '../types';
 
 export const exportRisksToPDF = async (risks: Risk[], controls: Control[]) => {
+  console.log('Exporting to PDF:', { risksCount: risks.length, controlsCount: controls.length });
+  
   // Create a simple HTML report
   const html = `
     <!DOCTYPE html>

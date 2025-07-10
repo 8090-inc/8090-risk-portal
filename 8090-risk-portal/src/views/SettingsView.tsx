@@ -26,6 +26,8 @@ export const SettingsView: React.FC = () => {
 
   const handleDataImport = async (data: { risks: any[], controls: any[] }) => {
     try {
+      console.log('Importing data:', { risksCount: data.risks.length, controlsCount: data.controls.length });
+      
       // Save to localStorage or API
       localStorage.setItem('importedRisks', JSON.stringify(data.risks));
       localStorage.setItem('importedControls', JSON.stringify(data.controls));
@@ -36,8 +38,10 @@ export const SettingsView: React.FC = () => {
       await loadControls();
       
       setShowUpload(false);
+      console.log('Data import successful');
     } catch (error) {
       console.error('Failed to import data:', error);
+      alert('Failed to import data. Please check the console for details.');
     }
   };
 
