@@ -125,10 +125,6 @@ export interface ExportOptions {
   format: 'json' | 'csv' | 'excel' | 'pdf';
   includeRelationships: boolean;
   includeMetadata: boolean;
-  dateRange?: {
-    start: Date;
-    end: Date;
-  };
   filters?: Record<string, any>;
 }
 

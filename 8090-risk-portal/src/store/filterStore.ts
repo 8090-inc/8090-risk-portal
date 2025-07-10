@@ -1,10 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export interface DateRange {
-  start: Date | null;
-  end: Date | null;
-}
 
 export interface FilterSet {
   id: string;
@@ -20,7 +16,6 @@ export interface SavedFilters {
     categories?: string[];
     levels?: string[];
     owners?: string[];
-    dateRange?: DateRange;
     hasControls?: boolean;
     searchTerm?: string;
   };
@@ -29,7 +24,6 @@ export interface SavedFilters {
     statuses?: string[];
     effectiveness?: string[];
     complianceRange?: [number, number];
-    dateRange?: DateRange;
     searchTerm?: string;
   };
 }

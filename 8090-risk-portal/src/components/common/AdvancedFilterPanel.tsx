@@ -13,7 +13,6 @@ import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { Card } from '../ui/Card';
-import { DateRangePicker } from '../ui/DateRangePicker';
 import { useFilterStore } from '../../store/filterStore';
 
 interface AdvancedFilterPanelProps {
@@ -304,15 +303,6 @@ export const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
                   />
                 </div>
 
-                <DateRangePicker
-                  label="Date Range"
-                  value={currentFilters?.dateRange || { start: null, end: null }}
-                  onChange={(range) => {
-                    setRiskFilters({ dateRange: range });
-                    onFiltersChange?.();
-                  }}
-                  placeholder="Filter by date"
-                />
               </>
             ) : (
               <>
@@ -368,15 +358,6 @@ export const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
                   ]}
                 />
 
-                <DateRangePicker
-                  label="Implementation Date"
-                  value={currentFilters?.dateRange || { start: null, end: null }}
-                  onChange={(range) => {
-                    setControlFilters({ dateRange: range });
-                    onFiltersChange?.();
-                  }}
-                  placeholder="Filter by date"
-                />
               </>
             )}
           </div>
