@@ -1,11 +1,12 @@
 import React, { useMemo, useEffect } from 'react';
 import { Download } from 'lucide-react';
 import { useControlStore } from '../store';
-import { useFilterStore } from '../store/filterStore';
 import { ControlSummaryCard } from '../components/controls/ControlSummaryCard';
 import { ControlsTable } from '../components/controls/ControlsTable';
+import { FilterPanel } from '../components/common/FilterPanel';
 import { Button } from '../components/ui/Button';
 import { useAsyncOperation } from '../hooks/useErrorHandler';
+import { useFilters } from '../hooks/useFilters';
 
 export const ControlsView: React.FC = () => {
   const { 
@@ -16,8 +17,18 @@ export const ControlsView: React.FC = () => {
     statistics
   } = useControlStore();
 
-  const { activeFilters } = useFilterStore();
-  const controlFilters = activeFilters.controls;
+  const {
+    activeFilters,
+    savedFilterSets,
+    updateFilter,
+    clearAllFilters,
+    saveFilterSet,
+    loadFilterSet,
+    hasActiveFilters
+  } = useFilters({ 
+    storageKey: 'controls',
+    defaultFilters: {}
+  });
 
   const { execute: loadControlsAsync } = useAsyncOperation(loadControls, {
     onError: (error) => {
@@ -31,51 +42,90 @@ export const ControlsView: React.FC = () => {
     }
   }, []);
 
+  // Build filter groups with counts
+  const filterGroups = useMemo(() => {
+    const categoryOptions = Array.from(
+      new Set(controls.map(c => c.category))
+    ).map(category => ({
+      value: category,
+      label: category,
+      count: controls.filter(c => c.category === category).length
+    }));
+
+    const statusOptions = [
+      { value: 'Implemented', label: 'Implemented', count: 0 },
+      { value: 'In Progress', label: 'In Progress', count: 0 },
+      { value: 'Planned', label: 'Planned', count: 0 },
+      { value: 'Not Implemented', label: 'Not Implemented', count: 0 }
+    ];
+
+    const effectivenessOptions = [
+      { value: 'High', label: 'High', count: 0 },
+      { value: 'Medium', label: 'Medium', count: 0 },
+      { value: 'Low', label: 'Low', count: 0 },
+      { value: 'Not Assessed', label: 'Not Assessed', count: 0 }
+    ];
+
+    // Count statuses and effectiveness
+    controls.forEach(control => {
+      const status = control.implementationStatus || 'Not Implemented';
+      const statusOption = statusOptions.find(o => o.value === status);
+      if (statusOption) statusOption.count++;
+
+      const effectiveness = control.effectiveness || 'Not Assessed';
+      const effectivenessOption = effectivenessOptions.find(o => o.value === effectiveness);
+      if (effectivenessOption) effectivenessOption.count++;
+    });
+
+    return [
+      {
+        id: 'category',
+        label: 'Category',
+        options: categoryOptions.sort((a, b) => a.label.localeCompare(b.label)),
+        multiple: true
+      },
+      {
+        id: 'status',
+        label: 'Implementation Status',
+        options: statusOptions.filter(o => o.count > 0),
+        multiple: true
+      },
+      {
+        id: 'effectiveness',
+        label: 'Effectiveness',
+        options: effectivenessOptions.filter(o => o.count > 0),
+        multiple: true
+      }
+    ];
+  }, [controls]);
+
+  // Apply filters
   const filteredControls = useMemo(() => {
     let filtered = [...controls];
 
     // Apply category filter
-    if (controlFilters?.categories && controlFilters.categories.length > 0) {
+    if (activeFilters.category?.length > 0) {
       filtered = filtered.filter(control => 
-        controlFilters.categories!.includes(control.category)
+        activeFilters.category!.includes(control.category)
       );
     }
 
     // Apply status filter
-    if (controlFilters?.statuses && controlFilters.statuses.length > 0) {
+    if (activeFilters.status?.length > 0) {
       filtered = filtered.filter(control => 
-        controlFilters.statuses!.includes(control.implementationStatus || 'Not Implemented')
+        activeFilters.status!.includes(control.implementationStatus || 'Not Implemented')
       );
     }
 
     // Apply effectiveness filter
-    if (controlFilters?.effectiveness && controlFilters.effectiveness.length > 0) {
+    if (activeFilters.effectiveness?.length > 0) {
       filtered = filtered.filter(control => 
-        controlFilters.effectiveness!.includes(control.effectiveness || 'Not Assessed')
-      );
-    }
-
-    // Apply compliance score range
-    if (controlFilters?.complianceRange) {
-      const [min, max] = controlFilters.complianceRange;
-      filtered = filtered.filter(control => {
-        const score = control.complianceScore || 0;
-        return score >= min && score <= max;
-      });
-    }
-
-    // Apply search term
-    if (controlFilters?.searchTerm) {
-      const searchLower = controlFilters.searchTerm.toLowerCase();
-      filtered = filtered.filter(control =>
-        control.mitigationDescription.toLowerCase().includes(searchLower) ||
-        control.mitigationID.toLowerCase().includes(searchLower) ||
-        control.category.toLowerCase().includes(searchLower)
+        activeFilters.effectiveness!.includes(control.effectiveness || 'Not Assessed')
       );
     }
 
     return filtered;
-  }, [controls, controlFilters]);
+  }, [controls, activeFilters]);
 
   const summaryStats = useMemo(() => {
     if (!statistics) return { ok: 0, attention: 0, pending: 0 };
@@ -91,6 +141,42 @@ export const ControlsView: React.FC = () => {
     // TODO: Implement export functionality
     console.log('Export controls');
   };
+
+  // Default filter sets
+  const defaultFilterSets = [
+    {
+      id: 'critical',
+      name: 'Critical Controls',
+      filters: { 
+        category: ['Technical Controls', 'Security and Privacy'],
+        effectiveness: ['High'],
+        status: []
+      },
+      isDefault: true
+    },
+    {
+      id: 'needs-attention',
+      name: 'Needs Attention',
+      filters: { 
+        status: ['Not Implemented', 'Planned'],
+        effectiveness: ['Low', 'Not Assessed'],
+        category: []
+      },
+      isDefault: true
+    },
+    {
+      id: 'compliance-ready',
+      name: 'Compliance Ready',
+      filters: { 
+        status: ['Implemented'],
+        effectiveness: ['High', 'Medium'],
+        category: []
+      },
+      isDefault: true
+    }
+  ];
+
+  const allFilterSets = [...defaultFilterSets, ...savedFilterSets];
 
   if (isLoading && controls.length === 0) {
     return (
@@ -122,14 +208,37 @@ export const ControlsView: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Controls</h1>
-        <p className="mt-1 text-sm text-gray-600">
-          Manage and monitor your AI risk control implementations
-        </p>
+    <div className="flex gap-6">
+      {/* Filter Panel - Left Side */}
+      <div className="w-80 flex-shrink-0">
+        <FilterPanel
+          filterGroups={filterGroups}
+          activeFilters={activeFilters}
+          onFilterChange={updateFilter}
+          onClearAll={clearAllFilters}
+          savedFilterSets={allFilterSets}
+          onSaveFilterSet={saveFilterSet}
+          onLoadFilterSet={loadFilterSet}
+          className="sticky top-6"
+        />
       </div>
+
+      {/* Main Content - Right Side */}
+      <div className="flex-1 space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Controls
+            {hasActiveFilters && (
+              <span className="ml-2 text-lg font-normal text-gray-600">
+                ({filteredControls.length} of {controls.length})
+              </span>
+            )}
+          </h1>
+          <p className="mt-1 text-sm text-gray-600">
+            Manage and monitor your AI risk control implementations
+          </p>
+        </div>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -169,10 +278,11 @@ export const ControlsView: React.FC = () => {
         <div className="bg-white shadow rounded-lg p-6">
           <ControlsTable
             controls={filteredControls}
-            searchTerm={controlFilters?.searchTerm || ""}
-            selectedCategories={controlFilters?.categories || []}
-            selectedStatuses={controlFilters?.statuses || []}
+            searchTerm=""
+            selectedCategories={[]}
+            selectedStatuses={[]}
           />
+        </div>
       </div>
     </div>
   );

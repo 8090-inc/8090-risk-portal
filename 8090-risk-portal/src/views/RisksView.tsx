@@ -2,12 +2,13 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Download, RefreshCw, FileSpreadsheet } from 'lucide-react';
 import { useRiskStore } from '../store';
-import { useFilterStore } from '../store/filterStore';
 import { RiskSummaryStats } from '../components/risks/RiskSummaryStats';
 import { RiskTable } from '../components/risks/RiskTable';
 import { PageHeader } from '../components/layout/PageHeader';
+import { FilterPanel } from '../components/common/FilterPanel';
 import { Button } from '../components/ui/Button';
 import { exportRisksToExcel, exportRisksToCSV } from '../utils/exportUtils';
+import { useFilters } from '../hooks/useFilters';
 import type { Risk } from '../types';
 
 export const RisksView: React.FC = () => {
@@ -21,49 +22,130 @@ export const RisksView: React.FC = () => {
   } = useRiskStore();
 
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
-  const { activeFilters } = useFilterStore();
-  const riskFilters = activeFilters.risks;
+
+  const {
+    activeFilters,
+    savedFilterSets,
+    updateFilter,
+    clearAllFilters,
+    saveFilterSet,
+    loadFilterSet,
+    hasActiveFilters
+  } = useFilters({ 
+    storageKey: 'risks',
+    defaultFilters: {}
+  });
 
   useEffect(() => {
     loadRisks();
   }, [loadRisks]);
 
+  // Build filter groups with counts
+  const filterGroups = useMemo(() => {
+    const categoryOptions = Array.from(
+      new Set(risks.map(r => r.riskCategory))
+    ).map(category => ({
+      value: category,
+      label: category,
+      count: risks.filter(r => r.riskCategory === category).length
+    }));
+
+    const levelOptions = [
+      { value: 'Critical', label: 'Critical', count: 0 },
+      { value: 'High', label: 'High', count: 0 },
+      { value: 'Medium', label: 'Medium', count: 0 },
+      { value: 'Low', label: 'Low', count: 0 }
+    ];
+
+    const ownerOptions = Array.from(
+      new Set(risks.map(r => r.proposedOversightOwnership).filter(Boolean))
+    ).map(owner => ({
+      value: owner,
+      label: owner,
+      count: risks.filter(r => r.proposedOversightOwnership === owner).length
+    }));
+
+    const controlOptions = [
+      { value: 'with-controls', label: 'With Controls', count: 0 },
+      { value: 'without-controls', label: 'Without Controls', count: 0 }
+    ];
+
+    // Count risk levels and control status
+    risks.forEach(risk => {
+      const level = risk.residualScoring.riskLevelCategory;
+      const levelOption = levelOptions.find(o => o.value === level);
+      if (levelOption) levelOption.count++;
+
+      if (risk.relatedControlIds.length > 0) {
+        controlOptions[0].count++;
+      } else {
+        controlOptions[1].count++;
+      }
+    });
+
+    return [
+      {
+        id: 'category',
+        label: 'Risk Category',
+        options: categoryOptions.sort((a, b) => a.label.localeCompare(b.label)),
+        multiple: true
+      },
+      {
+        id: 'level',
+        label: 'Risk Level',
+        options: levelOptions.filter(o => o.count > 0),
+        multiple: true
+      },
+      {
+        id: 'owner',
+        label: 'Risk Owner',
+        options: ownerOptions.sort((a, b) => a.label.localeCompare(b.label)),
+        multiple: true
+      },
+      {
+        id: 'controls',
+        label: 'Control Status',
+        options: controlOptions,
+        multiple: false
+      }
+    ];
+  }, [risks]);
+
+  // Apply filters
   const filteredRisks = useMemo(() => {
     let filtered = [...risks];
 
     // Apply category filter
-    if (riskFilters?.categories && riskFilters.categories.length > 0) {
+    if (activeFilters.category?.length > 0) {
       filtered = filtered.filter(risk => 
-        riskFilters.categories!.includes(risk.riskCategory)
+        activeFilters.category!.includes(risk.riskCategory)
       );
     }
 
     // Apply level filter
-    if (riskFilters?.levels && riskFilters.levels.length > 0) {
+    if (activeFilters.level?.length > 0) {
       filtered = filtered.filter(risk => 
-        riskFilters.levels!.includes(risk.residualScoring.riskLevelCategory)
+        activeFilters.level!.includes(risk.residualScoring.riskLevelCategory)
       );
     }
 
-    // Apply has controls filter
-    if (riskFilters?.hasControls !== undefined) {
+    // Apply owner filter
+    if (activeFilters.owner?.length > 0) {
       filtered = filtered.filter(risk => 
-        riskFilters.hasControls ? risk.relatedControlIds.length > 0 : risk.relatedControlIds.length === 0
+        activeFilters.owner!.includes(risk.proposedOversightOwnership)
       );
     }
 
-    // Apply search term
-    if (riskFilters?.searchTerm) {
-      const searchLower = riskFilters.searchTerm.toLowerCase();
-      filtered = filtered.filter(risk =>
-        risk.risk.toLowerCase().includes(searchLower) ||
-        risk.riskDescription.toLowerCase().includes(searchLower) ||
-        risk.id.toLowerCase().includes(searchLower)
-      );
+    // Apply controls filter
+    if (activeFilters.controls?.length > 0) {
+      filtered = filtered.filter(risk => {
+        const hasControls = risk.relatedControlIds.length > 0;
+        return activeFilters.controls!.includes('with-controls') ? hasControls : !hasControls;
+      });
     }
 
     return filtered;
-  }, [risks, riskFilters]);
+  }, [risks, activeFilters]);
 
   const handleRowClick = (risk: Risk) => {
     navigate(`/risks/${risk.id}`);
@@ -79,12 +161,86 @@ export const RisksView: React.FC = () => {
     setExportMenuOpen(false);
   };
 
+  // Default filter sets
+  const defaultFilterSets = [
+    {
+      id: 'critical-high',
+      name: 'Critical & High Risks',
+      filters: { 
+        level: ['Critical', 'High'],
+        category: [],
+        owner: [],
+        controls: []
+      },
+      isDefault: true
+    },
+    {
+      id: 'uncontrolled',
+      name: 'Uncontrolled Risks',
+      filters: { 
+        controls: ['without-controls'],
+        level: [],
+        category: [],
+        owner: []
+      },
+      isDefault: true
+    },
+    {
+      id: 'ai-ml-risks',
+      name: 'AI/ML Specific',
+      filters: { 
+        category: ['AI/ML Model Risks', 'Algorithmic Risks'],
+        level: [],
+        owner: [],
+        controls: []
+      },
+      isDefault: true
+    },
+    {
+      id: 'compliance-risks',
+      name: 'Compliance Related',
+      filters: { 
+        category: ['Regulatory Compliance', 'Ethical and Societal'],
+        level: [],
+        owner: [],
+        controls: []
+      },
+      isDefault: true
+    }
+  ];
+
+  const allFilterSets = [...defaultFilterSets, ...savedFilterSets];
   const stats = getStatistics();
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-          title="Risk Register"
+    <div className="flex gap-6">
+      {/* Filter Panel - Left Side */}
+      <div className="w-80 flex-shrink-0">
+        <FilterPanel
+          filterGroups={filterGroups}
+          activeFilters={activeFilters}
+          onFilterChange={updateFilter}
+          onClearAll={clearAllFilters}
+          savedFilterSets={allFilterSets}
+          onSaveFilterSet={saveFilterSet}
+          onLoadFilterSet={loadFilterSet}
+          className="sticky top-6"
+        />
+      </div>
+
+      {/* Main Content - Right Side */}
+      <div className="flex-1 space-y-6">
+        <PageHeader
+          title={
+            <span>
+              Risk Register
+              {hasActiveFilters && (
+                <span className="ml-2 text-lg font-normal text-gray-600">
+                  ({filteredRisks.length} of {risks.length})
+                </span>
+              )}
+            </span>
+          }
           description="Comprehensive view of all identified AI risks and their mitigation status"
           actions={
             <div className="flex items-center space-x-3">
@@ -149,12 +305,13 @@ export const RisksView: React.FC = () => {
           ) : (
             <RiskTable
               risks={filteredRisks}
-              searchTerm={riskFilters?.searchTerm || ""}
-              selectedCategories={riskFilters?.categories || []}
-              selectedLevels={riskFilters?.levels || []}
+              searchTerm=""
+              selectedCategories={[]}
+              selectedLevels={[]}
               onRowClick={handleRowClick}
             />
           )}
+        </div>
       </div>
     </div>
   );
