@@ -4,6 +4,7 @@ import { AppLayout } from './components/layout/AppLayout';
 import { ControlsView } from './views/ControlsView';
 import { RisksView } from './views/RisksView';
 import { RiskDetailView } from './views/RiskDetailView';
+import { DashboardView } from './views/DashboardView';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { useUIStore } from './store';
 import { initializeStores } from './store';
@@ -41,7 +42,7 @@ function App() {
             <Route path="/risks" element={<RisksView />} />
             <Route path="/risks/:id" element={<RiskDetailView />} />
             <Route path="/controls/:id" element={<div className="p-6">Control Detail View (Coming Soon)</div>} />
-            <Route path="/dashboard" element={<div className="p-6">Dashboard View (Coming Soon)</div>} />
+            <Route path="/dashboard" element={<DashboardView />} />
             <Route path="/matrix" element={<div className="p-6">Risk Matrix View (Coming Soon)</div>} />
             <Route path="/reports" element={<div className="p-6">Reports View (Coming Soon)</div>} />
             <Route path="/settings" element={<div className="p-6">Settings View (Coming Soon)</div>} />
