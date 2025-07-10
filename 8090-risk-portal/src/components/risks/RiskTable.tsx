@@ -1,0 +1,286 @@
+import React, { useMemo } from 'react';
+import { 
+  createColumnHelper,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+  getSortedRowModel,
+  getFilteredRowModel,
+  type ColumnDef,
+  type SortingState,
+  type FilterFn
+} from '@tanstack/react-table';
+import { ChevronUp, ChevronDown, ExternalLink, TrendingDown, Shield } from 'lucide-react';
+import type { Risk } from '../../types';
+import { RiskLevelBadge } from './RiskLevelBadge';
+import { Badge } from '../ui/Badge';
+import { cn } from '../../utils/cn';
+import { Link } from 'react-router-dom';
+
+interface RiskTableProps {
+  risks: Risk[];
+  searchTerm: string;
+  selectedCategories: string[];
+  selectedLevels: string[];
+  onRowClick?: (risk: Risk) => void;
+}
+
+const columnHelper = createColumnHelper<Risk>();
+
+const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
+  const itemRank = rankItem(row.getValue(columnId), value);
+  addMeta({ itemRank });
+  return itemRank.passed;
+};
+
+const rankItem = (rowValue: any, searchValue: string) => {
+  const value = String(rowValue).toLowerCase();
+  const search = searchValue.toLowerCase();
+  const passed = value.includes(search);
+
+  return { passed, score: passed ? 0 : -1 };
+};
+
+export const RiskTable: React.FC<RiskTableProps> = ({
+  risks,
+  searchTerm,
+  selectedCategories,
+  selectedLevels,
+  onRowClick
+}) => {
+  const [sorting, setSorting] = React.useState<SortingState>([
+    { id: 'residualRiskLevel', desc: true }
+  ]);
+
+  const filteredRisks = useMemo(() => {
+    return risks.filter(risk => {
+      if (selectedCategories.length > 0 && !selectedCategories.includes(risk.riskCategory)) {
+        return false;
+      }
+      if (selectedLevels.length > 0 && !selectedLevels.includes(risk.residualScoring.riskLevelCategory)) {
+        return false;
+      }
+      return true;
+    });
+  }, [risks, selectedCategories, selectedLevels]);
+
+  const columns = useMemo<ColumnDef<Risk, any>[]>(
+    () => [
+      columnHelper.accessor('id', {
+        header: 'Risk ID',
+        cell: info => (
+          <Link to={`/risks/${info.getValue()}`} className="text-8090-primary hover:underline font-medium">
+            {info.getValue()}
+          </Link>
+        ),
+        size: 100
+      }),
+      columnHelper.accessor('riskCategory', {
+        header: 'Category',
+        cell: info => (
+          <Badge variant="default" className="text-xs">
+            {info.getValue()}
+          </Badge>
+        ),
+        size: 150
+      }),
+      columnHelper.accessor('risk', {
+        header: 'Risk Name',
+        cell: info => (
+          <div className="max-w-md">
+            <p className="text-sm font-medium text-gray-900 line-clamp-2">{info.getValue()}</p>
+          </div>
+        ),
+        size: 300
+      }),
+      columnHelper.accessor(row => row.initialScoring.riskLevel, {
+        id: 'initialRiskLevel',
+        header: 'Initial Risk',
+        cell: info => {
+          const risk = info.row.original;
+          return (
+            <RiskLevelBadge 
+              level={risk.initialScoring.riskLevelCategory} 
+              score={risk.initialScoring.riskLevel}
+            />
+          );
+        },
+        size: 120
+      }),
+      columnHelper.accessor(row => row.residualScoring.riskLevel, {
+        id: 'residualRiskLevel',
+        header: 'Residual Risk',
+        cell: info => {
+          const risk = info.row.original;
+          return (
+            <RiskLevelBadge 
+              level={risk.residualScoring.riskLevelCategory} 
+              score={risk.residualScoring.riskLevel}
+            />
+          );
+        },
+        size: 120
+      }),
+      columnHelper.accessor('riskReduction', {
+        header: 'Risk Reduction',
+        cell: info => {
+          const value = info.getValue();
+          const percentage = info.row.original.riskReductionPercentage;
+          return (
+            <div className="flex items-center space-x-2">
+              <TrendingDown className={cn(
+                "h-4 w-4",
+                value > 10 ? "text-green-600" : 
+                value > 5 ? "text-yellow-600" : 
+                "text-gray-400"
+              )} />
+              <span className={cn(
+                "text-sm font-medium",
+                value > 10 ? "text-green-600" : 
+                value > 5 ? "text-yellow-600" : 
+                "text-gray-600"
+              )}>
+                -{value} ({percentage}%)
+              </span>
+            </div>
+          );
+        },
+        size: 140
+      }),
+      columnHelper.accessor(row => row.relatedControlIds.length, {
+        id: 'controlCount',
+        header: 'Controls',
+        cell: info => {
+          const count = info.getValue();
+          return (
+            <div className="flex items-center space-x-2">
+              <Shield className={cn(
+                "h-4 w-4",
+                count > 0 ? "text-8090-primary" : "text-gray-400"
+              )} />
+              <span className={cn(
+                "text-sm font-medium",
+                count > 0 ? "text-gray-900" : "text-gray-400"
+              )}>
+                {count}
+              </span>
+            </div>
+          );
+        },
+        size: 100
+      }),
+      columnHelper.accessor('mitigationEffectiveness', {
+        header: 'Mitigation',
+        cell: info => {
+          const effectiveness = info.getValue();
+          const variant = effectiveness === 'High' ? 'success' : 
+                          effectiveness === 'Medium' ? 'warning' : 
+                          effectiveness === 'Low' ? 'danger' : 'default';
+          return (
+            <Badge variant={variant}>
+              {effectiveness}
+            </Badge>
+          );
+        },
+        size: 120
+      }),
+      columnHelper.display({
+        id: 'actions',
+        header: 'Actions',
+        cell: info => (
+          <div className="flex items-center space-x-2">
+            <Link 
+              to={`/risks/${info.row.original.id}`}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <ExternalLink className="h-4 w-4" />
+            </Link>
+          </div>
+        ),
+        size: 80
+      })
+    ],
+    []
+  );
+
+  const table = useReactTable({
+    data: filteredRisks,
+    columns,
+    state: {
+      sorting,
+      globalFilter: searchTerm
+    },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    globalFilterFn: fuzzyFilter
+  });
+
+  return (
+    <div className="overflow-hidden bg-white shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+      <table className="min-w-full divide-y divide-gray-300">
+        <thead className="bg-gray-50">
+          {table.getHeaderGroups().map(headerGroup => (
+            <tr key={headerGroup.id}>
+              {headerGroup.headers.map(header => (
+                <th
+                  key={header.id}
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  style={{ width: header.getSize() }}
+                >
+                  {header.isPlaceholder ? null : (
+                    <div
+                      className={cn(
+                        "flex items-center space-x-1",
+                        header.column.getCanSort() && "cursor-pointer select-none"
+                      )}
+                      onClick={header.column.getToggleSortingHandler()}
+                    >
+                      <span>
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                      </span>
+                      {header.column.getCanSort() && (
+                        <span className="ml-2 flex-none">
+                          {{
+                            asc: <ChevronUp className="h-3 w-3" />,
+                            desc: <ChevronDown className="h-3 w-3" />
+                          }[header.column.getIsSorted() as string] ?? (
+                            <div className="h-3 w-3" />
+                          )}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </th>
+              ))}
+            </tr>
+          ))}
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {table.getRowModel().rows.map(row => (
+            <tr 
+              key={row.id} 
+              className="hover:bg-gray-50 cursor-pointer"
+              onClick={() => onRowClick?.(row.original)}
+            >
+              {row.getVisibleCells().map(cell => (
+                <td key={cell.id} className="px-6 py-4 whitespace-nowrap text-sm">
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {table.getRowModel().rows.length === 0 && (
+        <div className="text-center py-8">
+          <p className="text-gray-500">No risks found matching your criteria.</p>
+        </div>
+      )}
+    </div>
+  );
+};

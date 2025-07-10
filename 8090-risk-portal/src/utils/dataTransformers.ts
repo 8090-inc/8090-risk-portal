@@ -63,6 +63,9 @@ export const transformRiskMapRow = (row: RiskMapRow, relatedControlIds: string[]
   };
   
   const riskReduction = initialScoring.riskLevel - residualScoring.riskLevel;
+  const riskReductionPercentage = initialScoring.riskLevel > 0 
+    ? Math.round((riskReduction / initialScoring.riskLevel) * 100)
+    : 0;
   
   return {
     id,
@@ -77,6 +80,7 @@ export const transformRiskMapRow = (row: RiskMapRow, relatedControlIds: string[]
     notes: row.notes,
     residualScoring,
     riskReduction,
+    riskReductionPercentage,
     mitigationEffectiveness: calculateMitigationEffectiveness(
       initialScoring.riskLevel,
       residualScoring.riskLevel

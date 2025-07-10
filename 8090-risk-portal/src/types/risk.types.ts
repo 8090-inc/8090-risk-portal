@@ -47,6 +47,7 @@ export interface Risk {
   
   // Calculated fields
   riskReduction: number; // initialRiskLevel - residualRiskLevel
+  riskReductionPercentage: number; // percentage reduction from initial to residual
   mitigationEffectiveness: 'High' | 'Medium' | 'Low'; // Based on risk reduction
   
   // Relationships
@@ -90,6 +91,7 @@ export interface RiskStatistics {
   byResidualLevel: Record<RiskLevelCategory, number>;
   averageRiskReduction: number;
   criticalRisksCount: number;
+  highRisksCount: number;
   mitigatedRisksCount: number;
 }
 

@@ -39,6 +39,7 @@ interface RiskState {
   deleteRisk: (riskId: string) => Promise<void>;
   refreshStatistics: () => void;
   clearError: () => void;
+  getStatistics: () => RiskStatistics | null;
 }
 
 // Helper function to apply filters
@@ -145,6 +146,7 @@ const calculateStatistics = (risks: Risk[]): RiskStatistics => {
     byResidualLevel: {} as Record<string, number>,
     averageRiskReduction: 0,
     criticalRisksCount: 0,
+    highRisksCount: 0,
     mitigatedRisksCount: 0
   };
   
@@ -168,6 +170,11 @@ const calculateStatistics = (risks: Risk[]): RiskStatistics => {
     // Critical risks (residual)
     if (risk.residualScoring.riskLevelCategory === 'Critical') {
       stats.criticalRisksCount++;
+    }
+    
+    // High risks (residual)
+    if (risk.residualScoring.riskLevelCategory === 'High') {
+      stats.highRisksCount++;
     }
     
     // Mitigated risks
@@ -261,10 +268,16 @@ export const useRiskStore = create<RiskState>()(
             }
             
             // Create risk object
+            const riskReduction = riskInput.initialScoring.riskLevel - riskInput.residualScoring.riskLevel;
+            const riskReductionPercentage = riskInput.initialScoring.riskLevel > 0 
+              ? Math.round((riskReduction / riskInput.initialScoring.riskLevel) * 100)
+              : 0;
+            
             const newRisk: Risk = {
               ...riskInput,
               id: `risk_${Date.now()}`,
-              riskReduction: riskInput.initialScoring.riskLevel - riskInput.residualScoring.riskLevel,
+              riskReduction,
+              riskReductionPercentage,
               mitigationEffectiveness: 'Medium', // Calculate based on reduction
               relatedControlIds: [],
               createdAt: new Date(),
@@ -296,17 +309,25 @@ export const useRiskStore = create<RiskState>()(
           set({ isLoading: true, error: null });
           
           try {
-            const risks = get().risks.map(risk => 
-              risk.id === riskUpdate.id 
-                ? { 
-                    ...risk, 
-                    ...riskUpdate,
-                    lastUpdated: new Date(),
-                    riskReduction: (riskUpdate.initialScoring?.riskLevel || risk.initialScoring.riskLevel) - 
-                                   (riskUpdate.residualScoring?.riskLevel || risk.residualScoring.riskLevel)
-                  }
-                : risk
-            );
+            const risks = get().risks.map(risk => {
+              if (risk.id === riskUpdate.id) {
+                const initialLevel = riskUpdate.initialScoring?.riskLevel || risk.initialScoring.riskLevel;
+                const residualLevel = riskUpdate.residualScoring?.riskLevel || risk.residualScoring.riskLevel;
+                const riskReduction = initialLevel - residualLevel;
+                const riskReductionPercentage = initialLevel > 0 
+                  ? Math.round((riskReduction / initialLevel) * 100)
+                  : 0;
+                  
+                return { 
+                  ...risk, 
+                  ...riskUpdate,
+                  lastUpdated: new Date(),
+                  riskReduction,
+                  riskReductionPercentage
+                };
+              }
+              return risk;
+            });
             
             const filtered = applyFilters(risks, get().filters, get().searchTerm);
             const sorted = applySort(filtered, get().sort);
@@ -370,6 +391,11 @@ export const useRiskStore = create<RiskState>()(
         // Clear error
         clearError: () => {
           set({ error: null });
+        },
+        
+        // Get statistics
+        getStatistics: () => {
+          return get().statistics;
         }
       }),
       {
