@@ -1,5 +1,5 @@
-import type { Risk, Control } from '../types';
 import * as XLSX from 'xlsx';
+import { Risk, Control } from '../types';
 
 export const exportRisksToExcel = (risks: Risk[], filename: string = 'risk-register.xlsx') => {
   // Prepare data for export
@@ -21,7 +21,7 @@ export const exportRisksToExcel = (risks: Risk[], filename: string = 'risk-regis
     'Residual Risk Level': risk.residualScoring.riskLevel,
     'Residual Risk Category': risk.residualScoring.riskLevelCategory,
     'Risk Reduction': risk.riskReduction,
-    'Risk Reduction %': risk.riskReductionPercentage,
+    'Risk Reduction %': `${risk.riskReductionPercentage}%`,
     'Mitigation Effectiveness': risk.mitigationEffectiveness,
     'Control Count': risk.relatedControlIds.length,
     'Control IDs': risk.relatedControlIds.join(', ')
@@ -72,7 +72,7 @@ export const exportRisksToCSV = (risks: Risk[], filename: string = 'risk-registe
     risk.residualScoring.riskLevel,
     risk.residualScoring.riskLevelCategory,
     risk.riskReduction,
-    risk.riskReductionPercentage,
+    `${risk.riskReductionPercentage}%`,
     risk.mitigationEffectiveness,
     risk.relatedControlIds.length,
     risk.relatedControlIds.join(', ')
@@ -136,4 +136,54 @@ export const exportControlsToExcel = (controls: Control[], filename: string = 'c
 
   // Save file
   XLSX.writeFile(wb, filename);
+};
+
+export const exportControlsToCSV = (controls: Control[], filename: string = 'controls-register.csv') => {
+  // Prepare data
+  const headers = [
+    'Control ID', 'Description', 'Category', 'Implementation Status', 'Effectiveness',
+    'CFR Part 11/Annex 11', 'HIPAA Safeguard', 'GDPR Article', 'EU AI Act Article',
+    'NIST 800-53', 'SOC 2 TSC', 'Related Risk Count', 'Related Risk IDs', 'Compliance Score'
+  ];
+
+  const rows = controls.map(control => [
+    control.mitigationID,
+    control.mitigationDescription,
+    control.category,
+    control.implementationStatus || 'Not Started',
+    control.effectiveness || 'Not Assessed',
+    control.compliance.cfrPart11Annex11,
+    control.compliance.hipaaSafeguard,
+    control.compliance.gdprArticle,
+    control.compliance.euAiActArticle,
+    control.compliance.nist80053,
+    control.compliance.soc2TSC,
+    control.relatedRiskIds.length,
+    control.relatedRiskIds.join(', '),
+    control.complianceScore ? `${Math.round(control.complianceScore * 100)}%` : 'N/A'
+  ]);
+
+  // Create CSV content
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(row => row.map(cell => {
+      // Escape quotes and wrap in quotes if contains comma or newline
+      const cellStr = String(cell || '');
+      if (cellStr.includes(',') || cellStr.includes('\n') || cellStr.includes('"')) {
+        return `"${cellStr.replace(/"/g, '""')}"`;
+      }
+      return cellStr;
+    }).join(','))
+  ].join('\n');
+
+  // Create blob and download
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 };

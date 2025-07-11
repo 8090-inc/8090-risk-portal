@@ -149,7 +149,7 @@ export const GlobalSearch: React.FC = () => {
   return (
     <div ref={searchRef} className="relative w-full">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" data-testid="search-icon" />
         <input
           ref={inputRef}
           type="text"
@@ -160,7 +160,7 @@ export const GlobalSearch: React.FC = () => {
             setSelectedIndex(0);
           }}
           onFocus={() => searchTerm && setIsOpen(true)}
-          placeholder="Search everything..."
+          placeholder="Search risks and controls..."
           className="w-full pl-9 pr-9 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-8090-primary focus:border-transparent outline-none bg-gray-50 focus:bg-white"
         />
         {searchTerm && (
