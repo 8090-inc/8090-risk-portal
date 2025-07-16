@@ -367,7 +367,7 @@ class AuthService {
   }
 
   // Refresh token
-  async refreshToken(refreshToken: string): Promise<LoginResponse> {
+  async refreshToken(_refreshToken: string): Promise<LoginResponse> {
     try {
       // In production, validate refresh token against database
       // For now, create a new token

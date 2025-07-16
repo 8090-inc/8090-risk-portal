@@ -21,7 +21,6 @@ export const MitigationDisplay: React.FC<MitigationDisplayProps> = ({ content, c
       /\b(AES-\d+)/g
     ];
     
-    let processedText = text;
     const replacements: Array<{ start: number; end: number; text: string }> = [];
     
     // Find all matches

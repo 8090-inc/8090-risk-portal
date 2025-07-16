@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, Building2, Shield, AlertCircle, Check, X } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Building2, Shield, AlertCircle, X } from 'lucide-react';
 import { AuthLayout } from '../../components/layout/AuthLayout';
 import { Button } from '../../components/ui/Button';
 import { useAuthStore } from '../../store/authStore';

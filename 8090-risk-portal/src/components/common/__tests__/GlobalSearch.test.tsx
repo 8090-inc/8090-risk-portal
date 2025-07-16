@@ -1,4 +1,3 @@
-import React from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
@@ -26,7 +25,7 @@ const mockRisks = [
     id: 'AIR-01',
     risk: 'Model Bias Risk',
     riskDescription: 'AI model exhibits discriminatory behavior',
-    riskCategory: 'AI/ML Model Risks',
+    riskCategory: 'AI Human Impact Risks' as const,
     residualScoring: { 
       riskLevelCategory: 'High',
       likelihood: 3,
@@ -40,8 +39,8 @@ const mockRisks = [
       riskLevelCategory: 'Critical'
     },
     agreedMitigation: 'Implement bias detection and monitoring',
-    proposedOversightOwnership: 'AI Ethics Team',
-    proposedSupport: 'Data Science Team',
+    proposedOversightOwnership: ['AI Ethics Team'],
+    proposedSupport: ['Data Science Team'],
     notes: 'Regular audits required',
     exampleMitigations: '',
     relatedControlIds: ['CTRL-01'],
@@ -53,7 +52,7 @@ const mockRisks = [
     id: 'AIR-02',
     risk: 'Data Privacy Risk',
     riskDescription: 'Unauthorized access to sensitive data',
-    riskCategory: 'Security and Data Risks',
+    riskCategory: 'Security and Data Risks' as const,
     residualScoring: { 
       riskLevelCategory: 'Critical',
       likelihood: 4,
@@ -67,8 +66,8 @@ const mockRisks = [
       riskLevelCategory: 'Critical'
     },
     agreedMitigation: 'Encrypt all sensitive data',
-    proposedOversightOwnership: 'Security Team',
-    proposedSupport: 'IT Department',
+    proposedOversightOwnership: ['Security Team'],
+    proposedSupport: ['IT Department'],
     notes: 'GDPR compliance required',
     exampleMitigations: '',
     relatedControlIds: ['CTRL-02'],
@@ -82,7 +81,7 @@ const mockControls = [
   {
     mitigationID: 'CTRL-01',
     mitigationDescription: 'Implement bias detection framework',
-    category: 'Technical Controls',
+    category: 'Security & Data Privacy' as const,
     implementationStatus: 'Implemented',
     effectiveness: 'High',
     relatedRiskIds: ['AIR-01'],
@@ -101,7 +100,7 @@ const mockControls = [
   {
     mitigationID: 'CTRL-02',
     mitigationDescription: 'Data encryption at rest',
-    category: 'Technical Controls',
+    category: 'Security & Data Privacy' as const,
     implementationStatus: 'In Progress',
     effectiveness: 'Medium',
     relatedRiskIds: ['AIR-02'],
@@ -161,12 +160,12 @@ describe('GlobalSearch Component', () => {
     
     await waitFor(() => {
       // Use custom text matchers since the text might be broken up by highlight elements
-      const riskElements = screen.getAllByText((content, element) => {
+      const riskElements = screen.getAllByText((_content, element) => {
         return element?.textContent === 'Model Bias Risk';
       });
       expect(riskElements.length).toBeGreaterThan(0);
       
-      const controlElements = screen.getAllByText((content, element) => {
+      const controlElements = screen.getAllByText((_content, element) => {
         return element?.textContent === 'Implement bias detection framework';
       });
       expect(controlElements.length).toBeGreaterThan(0);
@@ -180,12 +179,12 @@ describe('GlobalSearch Component', () => {
     fireEvent.change(searchInput, { target: { value: 'data' } });
     
     await waitFor(() => {
-      const riskElements = screen.getAllByText((content, element) => {
+      const riskElements = screen.getAllByText((_content, element) => {
         return element?.textContent === 'Data Privacy Risk';
       });
       expect(riskElements.length).toBeGreaterThan(0);
       
-      const controlElements = screen.getAllByText((content, element) => {
+      const controlElements = screen.getAllByText((_content, element) => {
         return element?.textContent === 'Data encryption at rest';
       });
       expect(controlElements.length).toBeGreaterThan(0);
@@ -199,7 +198,7 @@ describe('GlobalSearch Component', () => {
     fireEvent.change(searchInput, { target: { value: 'model' } });
     
     await waitFor(() => {
-      const riskResults = screen.getAllByText((content, element) => {
+      const riskResults = screen.getAllByText((_content, element) => {
         return element?.textContent === 'Model Bias Risk';
       });
       // Click the first matching element's button
@@ -216,7 +215,7 @@ describe('GlobalSearch Component', () => {
     fireEvent.change(searchInput, { target: { value: 'encryption' } });
     
     await waitFor(() => {
-      const controlResults = screen.getAllByText((content, element) => {
+      const controlResults = screen.getAllByText((_content, element) => {
         return element?.textContent === 'Data encryption at rest';
       });
       // Click the first matching element's button
@@ -244,7 +243,7 @@ describe('GlobalSearch Component', () => {
     fireEvent.change(searchInput, { target: { value: 'a' } });
     
     // Should not show results for single character
-    expect(screen.queryByText((content, element) => {
+    expect(screen.queryByText((_content, element) => {
       return element?.textContent === 'Model Bias Risk';
     })).not.toBeInTheDocument();
   });
@@ -256,7 +255,7 @@ describe('GlobalSearch Component', () => {
     fireEvent.change(searchInput, { target: { value: 'risk' } });
     
     await waitFor(() => {
-      const elements = screen.getAllByText((content, element) => {
+      const elements = screen.getAllByText((_content, element) => {
         return element?.textContent === 'Model Bias Risk';
       });
       expect(elements.length).toBeGreaterThan(0);
@@ -266,7 +265,7 @@ describe('GlobalSearch Component', () => {
     fireEvent.mouseDown(document.body);
     
     await waitFor(() => {
-      const elements = screen.queryAllByText((content, element) => {
+      const elements = screen.queryAllByText((_content, element) => {
         return element?.textContent === 'Model Bias Risk';
       });
       expect(elements.length).toBe(0);

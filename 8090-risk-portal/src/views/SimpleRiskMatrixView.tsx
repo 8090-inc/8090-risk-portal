@@ -104,6 +104,13 @@ export const SimpleRiskMatrixView: React.FC = () => {
   // Handle new risk creation
   const handleAddRisk = async () => {
     try {
+      const initialRiskLevel = newRisk.initialLikelihood * newRisk.initialImpact;
+      const residualRiskLevel = newRisk.residualLikelihood * newRisk.residualImpact;
+      const riskReduction = initialRiskLevel - residualRiskLevel;
+      const riskReductionPercentage = initialRiskLevel > 0 
+        ? Math.round((riskReduction / initialRiskLevel) * 100)
+        : 0;
+      
       const riskInput: CreateRiskInput = {
         riskCategory: newRisk.category,
         risk: newRisk.name,
@@ -111,20 +118,21 @@ export const SimpleRiskMatrixView: React.FC = () => {
         initialScoring: {
           likelihood: newRisk.initialLikelihood,
           impact: newRisk.initialImpact,
-          riskLevel: newRisk.initialLikelihood * newRisk.initialImpact,
-          riskLevelCategory: getRiskLevelCategory(newRisk.initialLikelihood * newRisk.initialImpact)
+          riskLevel: initialRiskLevel,
+          riskLevelCategory: getRiskLevelCategory(initialRiskLevel)
         },
         residualScoring: {
           likelihood: newRisk.residualLikelihood,
           impact: newRisk.residualImpact,
-          riskLevel: newRisk.residualLikelihood * newRisk.residualImpact,
-          riskLevelCategory: getRiskLevelCategory(newRisk.residualLikelihood * newRisk.residualImpact)
+          riskLevel: residualRiskLevel,
+          riskLevelCategory: getRiskLevelCategory(residualRiskLevel)
         },
         exampleMitigations: '',
         agreedMitigation: newRisk.agreedMitigation,
         proposedOversightOwnership: newRisk.proposedOversightOwnership,
         proposedSupport: newRisk.proposedSupport,
-        notes: newRisk.notes
+        notes: newRisk.notes,
+        riskReductionPercentage
       };
       
       await createRisk(riskInput);

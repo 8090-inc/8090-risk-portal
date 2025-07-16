@@ -133,7 +133,7 @@ export const RiskTable: React.FC<RiskTableProps> = ({
           if (owners.length <= 2) {
             return (
               <div className="flex flex-wrap gap-1">
-                {owners.map((owner, idx) => (
+                {owners.map((owner: string, idx: number) => (
                   <Badge key={idx} variant="secondary" className="text-xs">
                     {owner}
                   </Badge>

@@ -41,22 +41,22 @@ const mockRisks = [
   {
     id: 'AIR-01',
     risk: 'Test Risk 1',
-    riskCategory: 'AI/ML Model Risks',
+    riskCategory: 'AI Human Impact Risks' as const,
     riskDescription: 'Test description',
     initialScoring: {
-      likelihood: 4,
-      impact: 5,
+      likelihood: 4 as const,
+      impact: 5 as const,
       riskLevel: 20,
-      riskLevelCategory: 'Critical'
+      riskLevelCategory: 'Critical' as const
     },
     residualScoring: {
-      likelihood: 2,
-      impact: 3,
+      likelihood: 2 as const,
+      impact: 3 as const,
       riskLevel: 6,
-      riskLevelCategory: 'Medium'
+      riskLevelCategory: 'Medium' as const
     },
-    proposedOversightOwnership: 'Test Owner',
-    proposedSupport: 'Test Support',
+    proposedOversightOwnership: ['Test Owner'],
+    proposedSupport: ['Test Support'],
     agreedMitigation: 'Test mitigation',
     notes: 'Test notes',
     relatedControlIds: ['CTRL-01'],
@@ -71,9 +71,9 @@ const mockControls = [
   {
     mitigationID: 'CTRL-01',
     mitigationDescription: 'Test Control',
-    category: 'Technical Controls',
-    implementationStatus: 'Implemented',
-    effectiveness: 'High',
+    category: 'Security & Data Privacy' as const,
+    implementationStatus: 'Implemented' as const,
+    effectiveness: 'High' as const,
     complianceScore: 0.85,
     relatedRiskIds: ['AIR-01'],
     compliance: {
@@ -101,7 +101,7 @@ describe('Export Utils', () => {
           expect.objectContaining({
             'Risk ID': 'AIR-01',
             'Risk': 'Test Risk 1',
-            'Category': 'AI/ML Model Risks'
+            'Category': 'AI Human Impact Risks'
           })
         ])
       );
@@ -148,7 +148,7 @@ describe('Export Utils', () => {
     });
 
     it('should format CSV correctly', () => {
-      let capturedBlob: Blob | null = null;
+      let capturedBlob: any = null;
       const originalCreateObjectURL = global.URL.createObjectURL;
       global.URL.createObjectURL = vi.fn((blob: Blob) => {
         capturedBlob = blob;
@@ -158,7 +158,7 @@ describe('Export Utils', () => {
       exportRisksToCSV(mockRisks, 'test-risks.csv');
 
       expect(capturedBlob).toBeTruthy();
-      expect(capturedBlob?.type).toBe('text/csv;charset=utf-8;');
+      expect(capturedBlob.type).toBe('text/csv;charset=utf-8;');
       
       // Restore original
       global.URL.createObjectURL = originalCreateObjectURL;
@@ -174,7 +174,7 @@ describe('Export Utils', () => {
           expect.objectContaining({
             'Control ID': 'CTRL-01',
             'Description': 'Test Control',
-            'Category': 'Technical Controls'
+            'Category': 'Security & Data Privacy'
           })
         ])
       );

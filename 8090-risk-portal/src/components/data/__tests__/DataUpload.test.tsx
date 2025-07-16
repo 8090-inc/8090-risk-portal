@@ -1,6 +1,5 @@
-import React from 'react';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { vi } from 'vitest';
 import { DataUpload } from '../DataUpload';
 
 describe('DataUpload Component', () => {

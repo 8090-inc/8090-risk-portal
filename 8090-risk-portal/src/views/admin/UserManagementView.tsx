@@ -1,7 +1,7 @@
 // User management view for administrators
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Shield, Check, X, Search } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search } from 'lucide-react';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';

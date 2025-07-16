@@ -17,7 +17,7 @@ vi.mock('../../utils/dataTransformers', () => ({
     {
       mitigationID: 'CTRL-01',
       mitigationDescription: 'Test Control 1',
-      category: 'Technical Controls',
+      category: 'Security & Data Privacy' as const,
       implementationStatus: 'Implemented',
       effectiveness: 'High',
       relatedRiskIds: ['AIR-01', 'AIR-02'],
@@ -36,7 +36,7 @@ vi.mock('../../utils/dataTransformers', () => ({
     {
       mitigationID: 'CTRL-02',
       mitigationDescription: 'Test Control 2',
-      category: 'Administrative Controls',
+      category: 'Governance & Compliance' as const,
       implementationStatus: 'In Progress',
       effectiveness: 'Medium',
       relatedRiskIds: ['AIR-03'],
@@ -64,7 +64,6 @@ describe('Control Store', () => {
       controls: [],
       isLoading: false,
       error: null,
-      lastFetch: null,
       statistics: null
     });
   });
@@ -90,8 +89,8 @@ describe('Control Store', () => {
       const state = useControlStore.getState();
       expect(state.statistics).toBeDefined();
       expect(state.statistics?.totalControls).toBe(2);
-      expect(state.statistics?.byCategory['Technical Controls']).toBe(1);
-      expect(state.statistics?.byCategory['Administrative Controls']).toBe(1);
+      expect(state.statistics?.byCategory['Security & Data Privacy']).toBe(1);
+      expect(state.statistics?.byCategory['Governance & Compliance']).toBe(1);
       expect(state.statistics?.byImplementationStatus['Implemented']).toBe(1);
       expect(state.statistics?.byImplementationStatus['In Progress']).toBe(1);
     });
@@ -134,7 +133,7 @@ describe('Control Store', () => {
     it('should filter controls by category', () => {
       const { setFilters } = useControlStore.getState();
       
-      setFilters({ categories: ['Technical Controls'] });
+      setFilters({ categories: ['Security & Data Privacy'] });
       
       const state = useControlStore.getState();
       expect(state.filteredControls).toHaveLength(1);
@@ -144,7 +143,7 @@ describe('Control Store', () => {
     it('should return empty array for non-existent category', () => {
       const { setFilters } = useControlStore.getState();
       
-      setFilters({ categories: ['Non-existent Category'] });
+      setFilters({ categories: ['Security & Data Privacy'] });
       
       const state = useControlStore.getState();
       expect(state.filteredControls).toHaveLength(0);
@@ -223,12 +222,12 @@ describe('Control Store', () => {
       
       await updateControl({
         mitigationID: 'CTRL-01',
-        implementationStatus: 'Not Implemented'
+        implementationStatus: 'Not Started'
       });
       
       const state = useControlStore.getState();
       expect(state.statistics?.byImplementationStatus['Implemented']).toBe(undefined);
-      expect(state.statistics?.byImplementationStatus['Not Implemented']).toBe(1);
+      expect(state.statistics?.byImplementationStatus['Not Started']).toBe(1);
     });
   });
 

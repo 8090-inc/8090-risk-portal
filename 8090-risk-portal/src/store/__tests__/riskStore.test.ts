@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useRiskStore } from '../riskStore';
-import { risks as mockRisks } from '../../data/risks';
 
 // Mock the extracted Excel data
 vi.mock('../../data/extracted-excel-data.json', () => ({
@@ -17,7 +16,7 @@ vi.mock('../../utils/dataTransformers', () => ({
     {
       id: 'AIR-01',
       risk: 'Test Risk 1',
-      riskCategory: 'AI/ML Model Risks',
+      riskCategory: 'AI Human Impact Risks' as const,
       riskDescription: 'Test description',
       initialScoring: {
         likelihood: 4,
@@ -35,8 +34,8 @@ vi.mock('../../utils/dataTransformers', () => ({
       riskReduction: 14,
       riskReductionPercentage: 70,
       mitigationEffectiveness: 'High',
-      proposedOversightOwnership: 'Test Owner',
-      proposedSupport: 'Test Support',
+      proposedOversightOwnership: ['Test Owner'],
+      proposedSupport: ['Test Support'],
       agreedMitigation: 'Test mitigation',
       notes: 'Test notes',
       exampleMitigations: '',
@@ -46,7 +45,7 @@ vi.mock('../../utils/dataTransformers', () => ({
     {
       id: 'AIR-02',
       risk: 'Test Risk 2',
-      riskCategory: 'Security and Data Risks',
+      riskCategory: 'Security and Data Risks' as const,
       riskDescription: 'Test description 2',
       initialScoring: {
         likelihood: 3,
@@ -64,8 +63,8 @@ vi.mock('../../utils/dataTransformers', () => ({
       riskReduction: 5,
       riskReductionPercentage: 55,
       mitigationEffectiveness: 'Medium',
-      proposedOversightOwnership: 'Test Owner 2',
-      proposedSupport: 'Test Support 2',
+      proposedOversightOwnership: ['Test Owner 2'],
+      proposedSupport: ['Test Support 2'],
       agreedMitigation: 'Test mitigation 2',
       notes: 'Test notes 2',
       exampleMitigations: '',
@@ -84,8 +83,7 @@ describe('Risk Store', () => {
     useRiskStore.setState({
       risks: [],
       isLoading: false,
-      error: null,
-      lastFetch: null
+      error: null
     });
   });
 
@@ -158,7 +156,7 @@ describe('Risk Store', () => {
       
       expect(stats).toBeDefined();
       expect(stats?.totalRisks).toBe(2);
-      expect(stats?.byCategory['AI/ML Model Risks']).toBe(1);
+      expect(stats?.byCategory['AI Human Impact Risks']).toBe(1);
       expect(stats?.byCategory['Security and Data Risks']).toBe(1);
       expect(stats?.byResidualLevel['Medium']).toBe(1);
       expect(stats?.byResidualLevel['Low']).toBe(1);
@@ -174,7 +172,7 @@ describe('Risk Store', () => {
       
       const newRisk = {
         risk: 'New Test Risk',
-        riskCategory: 'AI/ML Model Risks' as const,
+        riskCategory: 'AI Human Impact Risks' as const,
         riskDescription: 'New test description',
         initialScoring: {
           likelihood: 5 as const,
@@ -188,11 +186,13 @@ describe('Risk Store', () => {
           riskLevel: 9,
           riskLevelCategory: 'Medium' as const
         },
-        proposedOversightOwnership: 'New Owner',
-        proposedSupport: 'New Support',
+        proposedOversightOwnership: ['New Owner'],
+        proposedSupport: ['New Support'],
         agreedMitigation: 'New mitigation',
         notes: 'New notes',
-        exampleMitigations: ''
+        exampleMitigations: '',
+        riskReduction: 16,
+        riskReductionPercentage: 64
       };
       
       await createRisk(newRisk);

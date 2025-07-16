@@ -3,25 +3,19 @@ import { Link, useNavigate } from 'react-router-dom';
 import { 
   AlertTriangle, 
   Shield, 
-  TrendingUp, 
-  Clock,
-  CheckCircle,
   XCircle,
   AlertCircle,
   ArrowUpRight,
   FileWarning,
   Filter,
-  Calendar,
   Download,
   BarChart3,
   Users,
-  Target,
   Activity
 } from 'lucide-react';
 import { useRiskStore, useControlStore } from '../store';
 import { Card } from '../components/ui/Card';
-import { Badge } from '../components/ui/Badge';
-import type { Risk, Control } from '../types';
+import type { Risk } from '../types';
 import { cn } from '../utils/cn';
 
 // Interactive Risk Matrix Component

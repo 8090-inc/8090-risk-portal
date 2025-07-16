@@ -2,13 +2,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useFilters } from '../useFilters';
 
-interface SavedFilterSet {
-  id: string;
-  name: string;
-  filters: Record<string, string[]>;
-  isDefault?: boolean;
-}
-
 // Mock localStorage
 const localStorageMock = {
   getItem: vi.fn(),

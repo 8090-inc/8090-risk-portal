@@ -4,7 +4,7 @@
 import { User, Session } from '../types/auth.types';
 
 // Storage mode based on environment
-const STORAGE_MODE = import.meta.env.VITE_AUTH_MODE || 'mock';
+// const STORAGE_MODE = import.meta.env.VITE_AUTH_MODE || 'mock';
 
 // Mock password hashing (for development)
 const mockHashPassword = async (password: string): Promise<string> => {
@@ -206,12 +206,12 @@ class MockVaultDatabase {
 }
 
 // Google Cloud Secret Manager interface (for future implementation)
-interface CloudSecretManager {
-  storeSecret(name: string, value: string): Promise<void>;
-  getSecret(name: string): Promise<string | null>;
-  deleteSecret(name: string): Promise<void>;
-  listSecrets(): Promise<string[]>;
-}
+// interface CloudSecretManager {
+//   storeSecret(name: string, value: string): Promise<void>;
+//   getSecret(name: string): Promise<string | null>;
+//   deleteSecret(name: string): Promise<void>;
+//   listSecrets(): Promise<string[]>;
+// }
 
 // Main secure storage service
 class SecureStorageService {

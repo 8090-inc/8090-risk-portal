@@ -75,7 +75,7 @@ export const Header: React.FC = () => {
                 <p className="text-xs text-slate-500">{user?.email}</p>
                 <div className="flex items-center space-x-2 mt-2">
                   <Badge variant={getRoleBadgeVariant(user?.role)} size="sm">
-                    {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1)}
+                    {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : ''}
                   </Badge>
                   <span className="text-xs text-slate-500">{user?.department}</span>
                 </div>
