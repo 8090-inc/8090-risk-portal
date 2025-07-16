@@ -31,16 +31,30 @@
    - ✅ Granted necessary permissions for Firestore access
    - ✅ Note: Public access blocked by organization policy (requires authentication)
 
-### 🔄 In Progress
+### ✅ Recently Completed
+
+1. **Unified Deployment**
+   - ✅ Single container serving both frontend and backend
+   - ✅ Fixed routing issues by downgrading to Express 4
+   - ✅ Successfully deployed to Cloud Run
+   - ✅ Service URL: https://risk-portal-290017403746.us-central1.run.app
+
+### ✅ Recently Completed
 
 1. **Frontend Deployment**
-   - Need to rebuild frontend for correct architecture
-   - Update frontend to use authenticated backend URL
+   - ✅ Frontend deployed to Cloud Run
+   - ✅ Configured with backend URL
+
+2. **Load Balancer with IAP**
+   - ✅ Created Global Load Balancer
+   - ✅ Enabled Identity-Aware Proxy
+   - ✅ Configured authorized users
+   - ✅ SSL certificate created (provisioning)
 
 ### ❌ Pending Tasks
 
-1. **Custom Domain Configuration**
-2. **API Gateway Setup** (for public access if needed)
+1. **OAuth Configuration** (manual step in Console)
+2. **Custom Domain DNS Setup**
 3. **Secrets Management** (move JWT secret to Secret Manager)
 4. **CI/CD Pipeline** 
 5. **Monitoring & Logging Setup**
@@ -51,19 +65,20 @@
 
 - **Project ID**: dompe-dev-439304
 - **Region**: us-central1
-- **Services**:
-  - Backend: https://risk-portal-backend-290017403746.us-central1.run.app
-  - Frontend: (pending deployment)
+- **Service URL**: https://risk-portal-290017403746.us-central1.run.app
+- **Architecture**: Single container with Express 4 serving both API and React frontend
 - **Database**: Firestore (Native mode)
-- **Users**:
+- **Authentication**: JWT with Cloud Run IAM
+- **Authorized Users**:
   - rohit@8090.inc (admin) - password: admin123
   - alex@8090.inc (editor) - password: test123
   - jonathan@8090.inc (viewer) - password: test123
 
-## Known Issues
+## Resolved Issues
 
-1. **Organization Policy**: Cannot set allUsers access on Cloud Run services
-2. **Routing Error**: Full backend has path-to-regexp issues, using simplified version
+1. ✅ **Organization Policy**: Using user-specific IAM bindings instead of allUsers
+2. ✅ **Routing Error**: Fixed by downgrading from Express 5 to Express 4
+3. ✅ **Deployment**: Simplified to single container architecture
 
 ## Next Steps
 
