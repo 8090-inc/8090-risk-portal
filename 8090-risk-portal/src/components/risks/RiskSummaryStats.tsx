@@ -15,8 +15,8 @@ export const RiskSummaryStats: React.FC<RiskSummaryStatsProps> = ({ statistics }
       name: 'Total Risks',
       value: statistics.totalRisks,
       icon: Activity,
-      color: 'text-8090-primary',
-      bgColor: 'bg-8090-primary/10'
+      color: 'text-[#0055D4]',
+      bgColor: 'bg-[#0055D4]/10'
     },
     {
       name: 'Critical & High Risks',
@@ -42,9 +42,9 @@ export const RiskSummaryStats: React.FC<RiskSummaryStatsProps> = ({ statistics }
         <Card key={stat.name} padding="sm">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-sm font-medium text-gray-600">{stat.name}</p>
+              <p className="text-sm font-medium text-slate-600">{stat.name}</p>
               <div className="mt-2 flex items-baseline">
-                <p className="text-2xl font-semibold text-gray-900">
+                <p className="text-2xl font-semibold text-slate-900">
                   {stat.value}
                 </p>
                 {stat.percentage !== undefined && (
@@ -54,7 +54,7 @@ export const RiskSummaryStats: React.FC<RiskSummaryStatsProps> = ({ statistics }
                 )}
               </div>
               {stat.subtext && (
-                <p className="mt-1 text-xs text-gray-500">{stat.subtext}</p>
+                <p className="mt-1 text-xs text-slate-500">{stat.subtext}</p>
               )}
             </div>
             <div className={`p-3 rounded-lg ${stat.bgColor}`}>

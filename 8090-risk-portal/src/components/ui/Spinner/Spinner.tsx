@@ -19,10 +19,10 @@ export const Spinner: React.FC<SpinnerProps> = ({
   };
   
   const colorClasses = {
-    primary: 'text-8090-primary',
-    secondary: 'text-8090-secondary',
+    primary: 'text-[#0055D4]',
+    secondary: 'text-slate-600',
     white: 'text-white',
-    gray: 'text-gray-500'
+    gray: 'text-slate-500'
   };
   
   return (

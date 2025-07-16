@@ -38,8 +38,8 @@ export interface Risk {
   agreedMitigation: string;
   
   // Governance
-  proposedOversightOwnership: string;
-  proposedSupport: string;
+  proposedOversightOwnership: string[];
+  proposedSupport: string[];
   notes: string;
   
   // Residual risk after mitigation

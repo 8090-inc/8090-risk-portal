@@ -79,8 +79,10 @@ const applyFilters = (risks: Risk[], filters: RiskFilters, searchTerm: string): 
     
     // Oversight ownership filter
     if (filters.oversightOwnership?.length) {
-      const ownershipMatch = filters.oversightOwnership.some(owner => 
-        risk.proposedOversightOwnership.toLowerCase().includes(owner.toLowerCase())
+      const ownershipMatch = filters.oversightOwnership.some(filterOwner => 
+        risk.proposedOversightOwnership.some(riskOwner => 
+          riskOwner.toLowerCase() === filterOwner.toLowerCase()
+        )
       );
       if (!ownershipMatch) return false;
     }
@@ -94,8 +96,8 @@ const applyFilters = (risks: Risk[], filters: RiskFilters, searchTerm: string): 
         risk.riskCategory,
         risk.agreedMitigation,
         risk.exampleMitigations,
-        risk.proposedOversightOwnership,
-        risk.proposedSupport,
+        ...risk.proposedOversightOwnership,
+        ...risk.proposedSupport,
         risk.notes
       ].join(' ').toLowerCase();
       

@@ -69,7 +69,7 @@ export const Modal: React.FC<ModalProps> = ({
       aria-modal="true"
     >
       <div className="flex min-h-screen items-end justify-center p-4 text-center sm:items-center sm:p-0">
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+        <div className="fixed inset-0 bg-slate-900 bg-opacity-50 transition-opacity" />
         
         <div
           className={classNames(
@@ -78,16 +78,16 @@ export const Modal: React.FC<ModalProps> = ({
           )}
         >
           {(title || showCloseButton) && (
-            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
               {title && (
-                <h3 className="text-lg font-semibold text-gray-900" id="modal-title">
+                <h3 className="text-lg font-semibold text-slate-900" id="modal-title">
                   {title}
                 </h3>
               )}
               {showCloseButton && (
                 <button
                   type="button"
-                  className="rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-8090-primary focus:ring-offset-2"
+                  className="rounded-lg p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#0055D4] focus:ring-offset-2"
                   onClick={onClose}
                 >
                   <span className="sr-only">Close</span>
@@ -97,7 +97,7 @@ export const Modal: React.FC<ModalProps> = ({
             </div>
           )}
           
-          <div className="px-6 py-4">
+          <div className="px-6 py-4 text-slate-700">
             {children}
           </div>
         </div>

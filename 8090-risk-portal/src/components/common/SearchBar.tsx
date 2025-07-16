@@ -31,7 +31,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
         <Search className={cn(
           "h-5 w-5 transition-colors",
-          isFocused ? "text-8090-primary" : "text-gray-400"
+          isFocused ? "text-accent" : "text-slate-400"
         )} />
       </div>
       <input
@@ -43,11 +43,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         placeholder={placeholder}
         autoFocus={autoFocus}
         className={cn(
-          "block w-full pl-10 pr-10 py-2.5 text-sm border rounded-lg transition-all",
-          "placeholder:text-gray-400",
+          "block w-full pl-10 pr-10 py-2.5 text-sm border rounded-md transition-all",
+          "placeholder:text-slate-400",
           isFocused 
-            ? "border-8090-primary ring-2 ring-8090-primary/20 bg-white" 
-            : "border-gray-300 hover:border-gray-400 bg-white",
+            ? "border-accent ring-2 ring-accent/20 bg-white" 
+            : "border-slate-300 hover:border-slate-400 bg-white",
           "focus:outline-none"
         )}
       />
@@ -56,7 +56,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           onClick={handleClear}
           className="absolute inset-y-0 right-0 pr-3 flex items-center"
         >
-          <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+          <X className="h-4 w-4 text-slate-400 hover:text-slate-600 transition-colors" />
         </button>
       )}
     </div>

@@ -4,6 +4,7 @@ export { useControlStore } from './controlStore';
 export { useRelationshipStore } from './relationshipStore';
 export { useUIStore } from './uiStore';
 export { useFilterStore } from './filterStore';
+export { useAuthStore, useCurrentUser, useIsAuthenticated, useAuthLoading, useAuthError } from './authStore';
 
 // Import stores for initialization
 import { useRiskStore } from './riskStore';

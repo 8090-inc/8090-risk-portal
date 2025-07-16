@@ -93,7 +93,7 @@ export const exportRisksToPDF = async (risks: Risk[], controls: Control[]) => {
               <td>${risk.riskCategory}</td>
               <td class="${risk.initialScoring.riskLevelCategory.toLowerCase()}">${risk.initialScoring.riskLevelCategory}</td>
               <td class="${risk.residualScoring.riskLevelCategory.toLowerCase()}">${risk.residualScoring.riskLevelCategory}</td>
-              <td>${risk.proposedOversightOwnership}</td>
+              <td>${risk.proposedOversightOwnership.join(', ')}</td>
               <td>${risk.relatedControlIds.length}</td>
             </tr>
           `).join('')}

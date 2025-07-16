@@ -3,6 +3,7 @@ export { Button } from './Button';
 export { Card } from './Card';
 export { Input } from './Input';
 export { Modal } from './Modal';
+export { MultiSelect, type MultiSelectOption } from './MultiSelect';
 export { Select } from './Select';
 export { Spinner } from './Spinner';
 export { Tooltip } from './Tooltip';

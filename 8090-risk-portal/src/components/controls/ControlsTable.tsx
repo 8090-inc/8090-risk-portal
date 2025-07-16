@@ -64,7 +64,7 @@ export const ControlsTable: React.FC<ControlsTableProps> = ({
       columnHelper.accessor('mitigationID', {
         header: 'Control ID',
         cell: info => (
-          <Link to={`/controls/${info.getValue()}`} className="text-8090-primary hover:underline font-medium">
+          <Link to={`/controls/${info.getValue()}`} className="text-accent hover:underline font-medium">
             {info.getValue().toUpperCase()}
           </Link>
         )
@@ -73,7 +73,7 @@ export const ControlsTable: React.FC<ControlsTableProps> = ({
         header: 'Description',
         cell: info => (
           <div className="max-w-xl">
-            <p className="text-sm text-gray-900 line-clamp-2">{info.getValue()}</p>
+            <p className="text-sm text-slate-900 line-clamp-2">{info.getValue()}</p>
           </div>
         )
       }),
@@ -106,7 +106,7 @@ export const ControlsTable: React.FC<ControlsTableProps> = ({
           const percentage = Math.round(score * 100);
           return (
             <div className="flex items-center space-x-2">
-              <div className="w-24 bg-gray-200 rounded-full h-2">
+              <div className="w-24 bg-slate-200 rounded-full h-2">
                 <div 
                   className={cn(
                     "h-2 rounded-full transition-all",
@@ -117,7 +117,7 @@ export const ControlsTable: React.FC<ControlsTableProps> = ({
                   style={{ width: `${percentage}%` }}
                 />
               </div>
-              <span className="text-sm font-medium text-gray-700">{percentage}%</span>
+              <span className="text-sm font-medium text-slate-700">{percentage}%</span>
             </div>
           );
         }
@@ -129,7 +129,7 @@ export const ControlsTable: React.FC<ControlsTableProps> = ({
           <div className="flex items-center space-x-2">
             <Link 
               to={`/controls/${info.row.original.mitigationID}`}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-slate-500 hover:text-slate-700 transition-colors"
             >
               <ExternalLink className="h-4 w-4" />
             </Link>
@@ -155,15 +155,15 @@ export const ControlsTable: React.FC<ControlsTableProps> = ({
   });
 
   return (
-    <div className="overflow-hidden bg-white shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-      <table className="min-w-full divide-y divide-gray-300">
-        <thead className="bg-gray-50">
+    <div className="overflow-hidden bg-white shadow ring-1 ring-black ring-opacity-5 rounded-md">
+      <table className="min-w-full divide-y divide-slate-300">
+        <thead className="bg-slate-50">
           {table.getHeaderGroups().map(headerGroup => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map(header => (
                 <th
                   key={header.id}
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"
                 >
                   {header.isPlaceholder ? null : (
                     <div
@@ -196,9 +196,9 @@ export const ControlsTable: React.FC<ControlsTableProps> = ({
             </tr>
           ))}
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-white divide-y divide-slate-200">
           {table.getRowModel().rows.map(row => (
-            <tr key={row.id} className="hover:bg-gray-50">
+            <tr key={row.id} className="hover:bg-slate-50 transition-colors">
               {row.getVisibleCells().map(cell => (
                 <td key={cell.id} className="px-6 py-4 whitespace-nowrap text-sm">
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -210,7 +210,7 @@ export const ControlsTable: React.FC<ControlsTableProps> = ({
       </table>
       {table.getRowModel().rows.length === 0 && (
         <div className="text-center py-8">
-          <p className="text-gray-500">No controls found matching your criteria.</p>
+          <p className="text-slate-500">No controls found matching your criteria.</p>
         </div>
       )}
     </div>

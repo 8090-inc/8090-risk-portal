@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Shield, 
@@ -9,12 +9,11 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Search
+  User
 } from 'lucide-react';
-import { useUIStore } from '../../store';
+import { useUIStore, useCurrentUser } from '../../store';
 import { cn } from '../../utils/cn';
-import { GlobalSearch } from '../common/GlobalSearch';
-import { AdvancedFilterPanel } from '../common/AdvancedFilterPanel';
+import { getUserPermissions } from '../../types/auth.types';
 
 interface NavItemProps {
   to: string;
@@ -31,8 +30,8 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, collapsed }) => {
         cn(
           "flex items-center rounded-lg transition-all",
           isActive
-            ? "bg-8090-primary text-white"
-            : "text-gray-700 hover:bg-gray-100",
+            ? "bg-[#0055D4] text-white"
+            : "text-slate-700 hover:bg-slate-100",
           collapsed ? "justify-center px-4 py-3" : "px-3 py-2 space-x-3"
         )
       }
@@ -45,18 +44,10 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, collapsed }) => {
 
 export const Sidebar: React.FC = () => {
   const { sidebarCollapsed, toggleSidebar } = useUIStore();
-  const location = useLocation();
+  const user = useCurrentUser();
+  const permissions = user ? getUserPermissions(user.role) : null;
 
   const iconSize = sidebarCollapsed ? "h-6 w-6" : "h-5 w-5";
-  
-  // Determine which filter type to show based on current route
-  const getFilterType = (): 'risks' | 'controls' | null => {
-    if (location.pathname.startsWith('/risks')) return 'risks';
-    if (location.pathname.startsWith('/controls')) return 'controls';
-    return null;
-  };
-  
-  const filterType = getFilterType();
   
   const navItems = [
     { to: '/dashboard', icon: <LayoutDashboard className={iconSize} />, label: 'Dashboard' },
@@ -68,22 +59,30 @@ export const Sidebar: React.FC = () => {
 
   return (
     <aside className={cn(
-      "fixed left-0 top-0 h-full bg-white border-r border-gray-200 transition-all duration-300 z-10 flex flex-col",
+      "fixed left-0 top-0 h-full bg-white border-r border-slate-200 transition-all duration-300 z-10 flex flex-col",
       sidebarCollapsed ? "w-20" : "w-64"
     )}>
       {/* Logo */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 flex-shrink-0">
+      <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200 flex-shrink-0">
         {!sidebarCollapsed ? (
           <div className="flex items-center space-x-3">
-            <div className="h-8 w-8 bg-8090-primary rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold">8</span>
+            <img 
+              src="/8090-logo.png" 
+              alt="8090" 
+              className="h-8 w-auto object-contain"
+            />
+            <span className="text-slate-400 text-lg">×</span>
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold text-slate-900">Dompé</span>
+              <span className="text-xs text-slate-500">Risk Portal</span>
             </div>
-            <h1 className="text-xl font-bold text-8090-primary">Risk Portal</h1>
           </div>
         ) : (
-          <div className="h-8 w-8 bg-8090-primary rounded-lg flex items-center justify-center mx-auto">
-            <span className="text-white font-bold">8</span>
-          </div>
+          <img 
+            src="/8090-logo.png" 
+            alt="8090" 
+            className="h-8 w-8 object-contain mx-auto"
+          />
         )}
       </div>
 
@@ -100,44 +99,31 @@ export const Sidebar: React.FC = () => {
           ))}
         </nav>
 
-        {/* Search & Filters Section - Only show when expanded */}
-        {!sidebarCollapsed && (
-          <div className="px-4 py-4 border-t border-gray-200 space-y-4">
-            {/* Section Header */}
-            <div className="flex items-center space-x-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              <Search className="h-3 w-3" />
-              <span>Search & Filters</span>
-            </div>
-            
-            {/* Global Search */}
-            <div>
-              <GlobalSearch />
-            </div>
-
-            {/* Advanced Filters - Only show on relevant pages */}
-            {filterType && (
-              <div className="pt-2">
-                <AdvancedFilterPanel type={filterType} />
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Settings - Bottom */}
-      <div className="flex-shrink-0 px-4 py-4 border-t border-gray-200 space-y-2">
+      <div className="flex-shrink-0 px-4 py-4 border-t border-slate-200 space-y-2">
         <NavItem
-          to="/settings"
-          icon={<Settings className={iconSize} />}
-          label="Settings"
+          to="/account"
+          icon={<User className={iconSize} />}
+          label="Account"
           collapsed={sidebarCollapsed}
         />
+        
+        {permissions?.canAccessSettings && (
+          <NavItem
+            to="/settings"
+            icon={<Settings className={iconSize} />}
+            label="Settings"
+            collapsed={sidebarCollapsed}
+          />
+        )}
         
         {/* Collapse Toggle */}
         <button
           onClick={toggleSidebar}
           className={cn(
-            "w-full flex items-center px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-all",
+            "w-full flex items-center px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-100 transition-all",
             sidebarCollapsed ? "justify-center" : "justify-between"
           )}
         >

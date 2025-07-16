@@ -39,6 +39,9 @@ export * from './relationship.types';
 // Error types (including the class versions of validation errors)
 export * from './error.types';
 
+// Auth types
+export * from './auth.types';
+
 // Common types used across the application
 export interface User {
   id: string;

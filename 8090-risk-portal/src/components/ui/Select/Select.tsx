@@ -44,15 +44,16 @@ export const Select: React.FC<SelectProps> = ({
   return (
     <div className={classNames('', fullWidth && 'w-full')}>
       {label && (
-        <label htmlFor={selectId} className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor={selectId} className="block text-sm font-medium text-slate-700 mb-1">
           {label}
         </label>
       )}
       <select
         id={selectId}
         className={classNames(
-          'block rounded-md border-gray-300 shadow-sm',
-          'focus:border-8090-primary focus:ring-8090-primary sm:text-sm',
+          'block rounded-lg border-slate-300 shadow-sm',
+          'focus:border-[#0055D4] focus:ring-[#0055D4] sm:text-sm',
+          'hover:border-slate-400 transition-colors duration-200',
           error && 'border-red-300 text-red-900 focus:border-red-500 focus:ring-red-500',
           fullWidth && 'w-full',
           className
@@ -90,7 +91,7 @@ export const Select: React.FC<SelectProps> = ({
         </p>
       )}
       {helpText && !error && (
-        <p className="mt-2 text-sm text-gray-500" id={`${selectId}-help`}>
+        <p className="mt-2 text-sm text-slate-500" id={`${selectId}-help`}>
           {helpText}
         </p>
       )}

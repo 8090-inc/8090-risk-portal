@@ -23,16 +23,16 @@ export const Button: React.FC<ButtonProps> = ({
   const baseClasses = 'inline-flex items-center justify-center font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
   
   const variantClasses = {
-    primary: 'bg-8090-primary text-white hover:bg-blue-700 focus:ring-8090-primary',
-    secondary: 'bg-8090-secondary text-white hover:bg-orange-600 focus:ring-8090-secondary',
-    danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
-    ghost: 'bg-transparent text-8090-primary hover:bg-8090-gray-100 focus:ring-8090-primary'
+    primary: 'bg-accent text-white hover:bg-accent-600 focus:ring-accent',
+    secondary: 'bg-slate-100 text-slate-700 hover:bg-slate-200 focus:ring-accent',
+    danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-600',
+    ghost: 'text-slate-700 hover:bg-slate-100 focus:ring-accent'
   };
   
   const sizeClasses = {
-    sm: 'px-3 py-1.5 text-sm rounded',
+    sm: 'px-3 py-1.5 text-sm rounded-md',
     md: 'px-4 py-2 text-base rounded-md',
-    lg: 'px-6 py-3 text-lg rounded-lg'
+    lg: 'px-6 py-3 text-lg rounded-md'
   };
   
   return (

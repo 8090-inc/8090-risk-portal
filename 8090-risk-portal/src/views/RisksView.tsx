@@ -5,10 +5,11 @@ import { useRiskStore } from '../store';
 import { RiskSummaryStats } from '../components/risks/RiskSummaryStats';
 import { RiskTable } from '../components/risks/RiskTable';
 import { PageHeader } from '../components/layout/PageHeader';
-import { FilterPanel } from '../components/common/FilterPanel';
+import { CollapsibleFilterPanel } from '../components/common/CollapsibleFilterPanel';
 import { Button } from '../components/ui/Button';
 import { exportRisksToExcel, exportRisksToCSV } from '../utils/exportUtils';
 import { useFilters } from '../hooks/useFilters';
+import { RISK_OWNERS } from '../constants/riskOwners';
 import type { Risk } from '../types';
 
 export const RisksView: React.FC = () => {
@@ -57,13 +58,13 @@ export const RisksView: React.FC = () => {
       { value: 'Low', label: 'Low', count: 0 }
     ];
 
-    const ownerOptions = Array.from(
-      new Set(risks.map(r => r.proposedOversightOwnership).filter(Boolean))
-    ).map(owner => ({
+    // Use standardized owner list and count occurrences
+    const ownerOptions = RISK_OWNERS.map(owner => ({
       value: owner,
       label: owner,
-      count: risks.filter(r => r.proposedOversightOwnership === owner).length
-    }));
+      count: risks.filter(r => r.proposedOversightOwnership.includes(owner)).length
+    })).filter(option => option.count > 0) // Only show owners that have risks
+      .sort((a, b) => b.count - a.count); // Sort by count descending
 
     const controlOptions = [
       { value: 'with-controls', label: 'With Controls', count: 0 },
@@ -132,7 +133,9 @@ export const RisksView: React.FC = () => {
     // Apply owner filter
     if (activeFilters.owner?.length > 0) {
       filtered = filtered.filter(risk => 
-        activeFilters.owner!.includes(risk.proposedOversightOwnership)
+        activeFilters.owner!.some(filterOwner => 
+          risk.proposedOversightOwnership.includes(filterOwner)
+        )
       );
     }
 
@@ -213,23 +216,21 @@ export const RisksView: React.FC = () => {
   const stats = getStatistics();
 
   return (
-    <div className="flex gap-6">
-      {/* Filter Panel - Left Side */}
-      <div className="w-80 flex-shrink-0">
-        <FilterPanel
-          filterGroups={filterGroups}
-          activeFilters={activeFilters}
-          onFilterChange={updateFilter}
-          onClearAll={clearAllFilters}
-          savedFilterSets={allFilterSets}
-          onSaveFilterSet={saveFilterSet}
-          onLoadFilterSet={loadFilterSet}
-          className="sticky top-6"
-        />
-      </div>
+    <div className="flex h-full">
+      {/* Collapsible Filter Panel - Left Side */}
+      <CollapsibleFilterPanel
+        filterGroups={filterGroups}
+        activeFilters={activeFilters}
+        savedFilterSets={allFilterSets}
+        onFilterChange={updateFilter}
+        onClearFilters={clearAllFilters}
+        onSaveFilterSet={saveFilterSet}
+        onLoadFilterSet={loadFilterSet}
+        hasActiveFilters={hasActiveFilters}
+      />
 
       {/* Main Content - Right Side */}
-      <div className="flex-1 space-y-6">
+      <div className="flex-1 space-y-6 p-6 overflow-y-auto">
         <PageHeader
           title={
             <span>

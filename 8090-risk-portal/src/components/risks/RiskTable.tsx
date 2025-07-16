@@ -69,7 +69,7 @@ export const RiskTable: React.FC<RiskTableProps> = ({
       columnHelper.accessor('id', {
         header: 'Risk ID',
         cell: info => (
-          <Link to={`/risks/${info.getValue()}`} className="text-8090-primary hover:underline font-medium">
+          <Link to={`/risks/${info.getValue()}`} className="text-accent hover:underline font-medium">
             {info.getValue().toUpperCase()}
           </Link>
         ),
@@ -88,7 +88,7 @@ export const RiskTable: React.FC<RiskTableProps> = ({
         header: 'Risk Name',
         cell: info => (
           <div className="max-w-md">
-            <p className="text-sm font-medium text-gray-900 line-clamp-2">{info.getValue()}</p>
+            <p className="text-sm font-medium text-slate-900 line-clamp-2">{info.getValue()}</p>
           </div>
         ),
         size: 300
@@ -121,6 +121,40 @@ export const RiskTable: React.FC<RiskTableProps> = ({
         },
         size: 120
       }),
+      columnHelper.accessor(row => row.proposedOversightOwnership, {
+        id: 'owners',
+        header: 'Owners',
+        cell: info => {
+          const owners = info.getValue();
+          if (owners.length === 0) {
+            return <span className="text-sm text-slate-400">-</span>;
+          }
+          
+          if (owners.length <= 2) {
+            return (
+              <div className="flex flex-wrap gap-1">
+                {owners.map((owner, idx) => (
+                  <Badge key={idx} variant="secondary" className="text-xs">
+                    {owner}
+                  </Badge>
+                ))}
+              </div>
+            );
+          }
+          
+          return (
+            <div className="flex items-center gap-1">
+              <Badge variant="secondary" className="text-xs">
+                {owners[0]}
+              </Badge>
+              <span className="text-xs text-slate-500">
+                +{owners.length - 1} more
+              </span>
+            </div>
+          );
+        },
+        size: 150
+      }),
       columnHelper.accessor(row => row.relatedControlIds.length, {
         id: 'controlCount',
         header: 'Controls',
@@ -130,11 +164,11 @@ export const RiskTable: React.FC<RiskTableProps> = ({
             <div className="flex items-center space-x-2">
               <Shield className={cn(
                 "h-4 w-4",
-                count > 0 ? "text-8090-primary" : "text-gray-400"
+                count > 0 ? "text-accent" : "text-slate-400"
               )} />
               <span className={cn(
                 "text-sm font-medium",
-                count > 0 ? "text-gray-900" : "text-gray-400"
+                count > 0 ? "text-slate-900" : "text-slate-400"
               )}>
                 {count}
               </span>
@@ -165,7 +199,7 @@ export const RiskTable: React.FC<RiskTableProps> = ({
           <div className="flex items-center space-x-2">
             <Link 
               to={`/risks/${info.row.original.id}`}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-slate-500 hover:text-slate-700 transition-colors"
             >
               <ExternalLink className="h-4 w-4" />
             </Link>
@@ -192,15 +226,15 @@ export const RiskTable: React.FC<RiskTableProps> = ({
   });
 
   return (
-    <div className="overflow-x-auto bg-white shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-      <table className="min-w-full divide-y divide-gray-300">
-        <thead className="bg-gray-50">
+    <div className="overflow-x-auto bg-white shadow ring-1 ring-black ring-opacity-5 rounded-md">
+      <table className="min-w-full divide-y divide-slate-300">
+        <thead className="bg-slate-50">
           {table.getHeaderGroups().map(headerGroup => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map(header => (
                 <th
                   key={header.id}
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"
                   style={{ width: header.getSize() }}
                 >
                   {header.isPlaceholder ? null : (
@@ -234,11 +268,11 @@ export const RiskTable: React.FC<RiskTableProps> = ({
             </tr>
           ))}
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-white divide-y divide-slate-200">
           {table.getRowModel().rows.map(row => (
             <tr 
               key={row.id} 
-              className="hover:bg-gray-50 cursor-pointer"
+              className="hover:bg-slate-50 cursor-pointer transition-colors"
               onClick={() => onRowClick?.(row.original)}
             >
               {row.getVisibleCells().map(cell => (
@@ -252,7 +286,7 @@ export const RiskTable: React.FC<RiskTableProps> = ({
       </table>
       {table.getRowModel().rows.length === 0 && (
         <div className="text-center py-8">
-          <p className="text-gray-500">No risks found matching your criteria.</p>
+          <p className="text-slate-500">No risks found matching your criteria.</p>
         </div>
       )}
     </div>

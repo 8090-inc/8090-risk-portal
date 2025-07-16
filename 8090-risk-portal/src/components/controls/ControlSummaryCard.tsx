@@ -44,15 +44,15 @@ export const ControlSummaryCard: React.FC<ControlSummaryCardProps> = ({
         <div className="flex-1">
           <div className="flex items-center space-x-2 mb-2">
             {getIcon()}
-            <h3 className="text-sm font-medium text-gray-900">{title}</h3>
+            <h3 className="text-sm font-medium text-slate-900">{title}</h3>
           </div>
           <div className="flex items-baseline space-x-2">
-            <span className="text-2xl font-semibold text-gray-900">{count}</span>
+            <span className="text-2xl font-semibold text-slate-900">{count}</span>
             <Badge variant={getBadgeVariant()}>
               {variant === 'ok' ? 'Compliant' : variant === 'attention' ? 'Non-Compliant' : 'In Progress'}
             </Badge>
           </div>
-          <p className="mt-2 text-sm text-gray-600">{description}</p>
+          <p className="mt-2 text-sm text-slate-600">{description}</p>
         </div>
       </div>
     </Card>

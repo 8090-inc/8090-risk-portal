@@ -3,7 +3,7 @@ import { Download } from 'lucide-react';
 import { useControlStore } from '../store';
 import { ControlSummaryCard } from '../components/controls/ControlSummaryCard';
 import { ControlsTable } from '../components/controls/ControlsTable';
-import { FilterPanel } from '../components/common/FilterPanel';
+import { CollapsibleFilterPanel } from '../components/common/CollapsibleFilterPanel';
 import { Button } from '../components/ui/Button';
 import { useAsyncOperation } from '../hooks/useErrorHandler';
 import { useFilters } from '../hooks/useFilters';
@@ -208,23 +208,21 @@ export const ControlsView: React.FC = () => {
   }
 
   return (
-    <div className="flex gap-6">
-      {/* Filter Panel - Left Side */}
-      <div className="w-80 flex-shrink-0">
-        <FilterPanel
-          filterGroups={filterGroups}
-          activeFilters={activeFilters}
-          onFilterChange={updateFilter}
-          onClearAll={clearAllFilters}
-          savedFilterSets={allFilterSets}
-          onSaveFilterSet={saveFilterSet}
-          onLoadFilterSet={loadFilterSet}
-          className="sticky top-6"
-        />
-      </div>
+    <div className="flex h-full">
+      {/* Collapsible Filter Panel - Left Side */}
+      <CollapsibleFilterPanel
+        filterGroups={filterGroups}
+        activeFilters={activeFilters}
+        savedFilterSets={allFilterSets}
+        onFilterChange={updateFilter}
+        onClearFilters={clearAllFilters}
+        onSaveFilterSet={saveFilterSet}
+        onLoadFilterSet={loadFilterSet}
+        hasActiveFilters={hasActiveFilters}
+      />
 
       {/* Main Content - Right Side */}
-      <div className="flex-1 space-y-6">
+      <div className="flex-1 space-y-6 p-6 overflow-y-auto">
         {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-gray-900">

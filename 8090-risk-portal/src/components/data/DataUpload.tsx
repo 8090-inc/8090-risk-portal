@@ -242,13 +242,13 @@ export const DataUpload: React.FC<DataUploadProps> = ({ onDataImport, onClose })
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Import Excel Data</h2>
+        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-slate-900">Import Excel Data</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-slate-400 hover:text-slate-600"
           >
             <X className="h-5 w-5" />
           </button>
@@ -262,14 +262,14 @@ export const DataUpload: React.FC<DataUploadProps> = ({ onDataImport, onClose })
             className={cn(
               "border-2 border-dashed rounded-lg p-8 text-center transition-colors",
               isDragging
-                ? "border-8090-primary bg-8090-primary/5"
-                : "border-gray-300 hover:border-gray-400"
+                ? "border-[#0055D4] bg-[#0055D4]/5"
+                : "border-slate-300 hover:border-slate-400"
             )}
           >
-            <FileSpreadsheet className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-sm text-gray-600 mb-2">
+            <FileSpreadsheet className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+            <p className="text-sm text-slate-600 mb-2">
               Drag and drop your Excel file here, or{' '}
-              <label className="text-8090-primary hover:text-8090-primary/80 cursor-pointer">
+              <label className="text-[#0055D4] hover:text-[#0055D4]/80 cursor-pointer font-medium">
                 browse
                 <input
                   type="file"
@@ -279,17 +279,17 @@ export const DataUpload: React.FC<DataUploadProps> = ({ onDataImport, onClose })
                 />
               </label>
             </p>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-slate-500">
               Accepted format: General AI Risk Map.xlsx
             </p>
           </div>
 
           {file && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+            <div className="mt-4 p-4 bg-slate-50 rounded-lg">
               <div className="flex items-center space-x-2">
-                <FileSpreadsheet className="h-5 w-5 text-gray-400" />
-                <span className="text-sm text-gray-700">{file.name}</span>
-                <span className="text-xs text-gray-500">
+                <FileSpreadsheet className="h-5 w-5 text-slate-400" />
+                <span className="text-sm text-slate-700">{file.name}</span>
+                <span className="text-xs text-slate-500">
                   ({(file.size / 1024).toFixed(1)} KB)
                 </span>
               </div>
@@ -298,8 +298,8 @@ export const DataUpload: React.FC<DataUploadProps> = ({ onDataImport, onClose })
 
           {isProcessing && (
             <div className="mt-4 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-8090-primary mx-auto"></div>
-              <p className="mt-2 text-sm text-gray-600">Validating data...</p>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0055D4] mx-auto"></div>
+              <p className="mt-2 text-sm text-slate-600">Validating data...</p>
             </div>
           )}
 
@@ -362,7 +362,7 @@ export const DataUpload: React.FC<DataUploadProps> = ({ onDataImport, onClose })
           )}
         </div>
 
-        <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+        <div className="px-6 py-4 border-t border-slate-200 flex justify-end space-x-3">
           <Button
             variant="secondary"
             onClick={onClose}

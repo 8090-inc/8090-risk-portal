@@ -13,6 +13,7 @@ import type {
   ControlsMappingRow, 
   ExcelDataV2 as ExcelData 
 } from '../services/excel/excelParserV2';
+import { parseOwners } from '../constants/riskOwners';
 
 // Generate a URL-safe ID from a string
 export const generateId = (text: string): string => {
@@ -75,8 +76,8 @@ export const transformRiskMapRow = (row: RiskMapRow, relatedControlIds: string[]
     initialScoring,
     exampleMitigations: row.exampleMitigations,
     agreedMitigation: row.agreedMitigation,
-    proposedOversightOwnership: row.proposedOversightOwnership,
-    proposedSupport: row.proposedSupport,
+    proposedOversightOwnership: parseOwners(row.proposedOversightOwnership),
+    proposedSupport: parseOwners(row.proposedSupport),
     notes: row.notes,
     residualScoring,
     riskReduction,

@@ -137,7 +137,7 @@ export const GlobalSearch: React.FC = () => {
     
     return parts.map((part, index) => 
       regex.test(part) ? (
-        <mark key={index} className="bg-yellow-200 font-medium">
+        <mark key={index} className="bg-accent-100 font-medium text-accent-700">
           {part}
         </mark>
       ) : (
@@ -149,7 +149,7 @@ export const GlobalSearch: React.FC = () => {
   return (
     <div ref={searchRef} className="relative w-full">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" data-testid="search-icon" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" data-testid="search-icon" />
         <input
           ref={inputRef}
           type="text"
@@ -161,7 +161,7 @@ export const GlobalSearch: React.FC = () => {
           }}
           onFocus={() => searchTerm && setIsOpen(true)}
           placeholder="Search risks and controls..."
-          className="w-full pl-9 pr-9 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-8090-primary focus:border-transparent outline-none bg-gray-50 focus:bg-white"
+          className="w-full pl-9 pr-9 py-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-accent focus:border-transparent outline-none bg-slate-50 focus:bg-white transition-colors"
         />
         {searchTerm && (
           <button
@@ -170,7 +170,7 @@ export const GlobalSearch: React.FC = () => {
               setIsOpen(false);
               inputRef.current?.focus();
             }}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
@@ -179,13 +179,13 @@ export const GlobalSearch: React.FC = () => {
 
       {/* Search Results Dropdown */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-2 bg-white rounded-lg shadow-lg border border-gray-200 max-h-96 overflow-y-auto">
+        <div className="absolute z-50 w-full mt-2 bg-white rounded-md shadow-lg border border-slate-200 max-h-96 overflow-y-auto">
           {searchResults.length === 0 && searchTerm.length >= 2 ? (
-            <div className="p-4 text-center text-gray-500">
+            <div className="p-4 text-center text-slate-500">
               No results found for "{searchTerm}"
             </div>
           ) : searchTerm.length < 2 ? (
-            <div className="p-4 text-center text-gray-500">
+            <div className="p-4 text-center text-slate-500">
               Type at least 2 characters to search
             </div>
           ) : (
@@ -201,13 +201,13 @@ export const GlobalSearch: React.FC = () => {
                     <button
                       onClick={() => handleResultClick(result)}
                       className={cn(
-                        "w-full px-4 py-3 flex items-start hover:bg-gray-50 transition-colors text-left",
-                        selectedIndex === index && "bg-gray-50"
+                        "w-full px-4 py-3 flex items-start hover:bg-slate-50 transition-colors text-left",
+                        selectedIndex === index && "bg-slate-50"
                       )}
                     >
                       <div className="flex-shrink-0 mt-0.5">
                         {isRisk ? (
-                          <FileWarning className="h-5 w-5 text-8090-primary" />
+                          <FileWarning className="h-5 w-5 text-accent" />
                         ) : (
                           <Shield className="h-5 w-5 text-green-600" />
                         )}
@@ -215,20 +215,20 @@ export const GlobalSearch: React.FC = () => {
                       
                       <div className="ml-3 flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-gray-900">
+                          <p className="text-sm font-medium text-slate-900">
                             {highlightText(name, searchTerm)}
                           </p>
-                          <ArrowRight className="h-4 w-4 text-gray-400 flex-shrink-0 ml-2" />
+                          <ArrowRight className="h-4 w-4 text-slate-400 flex-shrink-0 ml-2" />
                         </div>
                         
                         <div className="mt-1 space-y-1">
-                          <p className="text-xs text-gray-600">
+                          <p className="text-xs text-slate-600">
                             {isRisk ? 'Risk' : 'Control'} • {highlightText(id.toUpperCase(), searchTerm)}
                           </p>
                           
                           {/* Show first matching field */}
                           {result.matches.length > 0 && (
-                            <p className="text-xs text-gray-500 truncate">
+                            <p className="text-xs text-slate-500 truncate">
                               {highlightText(result.matches[0], searchTerm)}
                             </p>
                           )}

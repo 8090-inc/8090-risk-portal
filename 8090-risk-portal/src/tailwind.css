@@ -4,38 +4,42 @@
 @plugin "@tailwindcss/typography";
 
 @theme {
-  /* 8090 Brand Colors */
-  --color-8090-primary: #0066CC;
-  --color-8090-secondary: #FF6B35;
-  --color-8090-dark: #1A1A2E;
+  /* Brand Accent Color */
+  --color-accent-50: #E6F0FF;
+  --color-accent-100: #CCE0FF;
+  --color-accent-200: #99C2FF;
+  --color-accent-300: #66A3FF;
+  --color-accent-400: #3385FF;
+  --color-accent-500: #0055D4;
+  --color-accent-600: #0044AA;
+  --color-accent-700: #003380;
+  --color-accent-800: #002255;
+  --color-accent-900: #00112B;
+  --color-accent: #0055D4;
   
-  /* 8090 Gray Scale */
-  --color-8090-gray-50: #F8F9FA;
-  --color-8090-gray-100: #E9ECEF;
-  --color-8090-gray-200: #DEE2E6;
-  --color-8090-gray-300: #CED4DA;
-  --color-8090-gray-400: #ADB5BD;
-  --color-8090-gray-500: #6C757D;
-  --color-8090-gray-600: #495057;
-  --color-8090-gray-700: #343A40;
-  --color-8090-gray-800: #212529;
-  --color-8090-gray-900: #0F0F0F;
+  /* Risk Level Colors - WCAG AA Compliant */
+  --color-risk-critical: #DC2626;
+  --color-risk-high: #EA580C;
+  --color-risk-medium: #D97706;
+  --color-risk-low: #16A34A;
   
-  /* Risk Level Colors */
-  --color-risk-critical: #DC3545;
-  --color-risk-high: #FD7E14;
-  --color-risk-medium: #FFC107;
-  --color-risk-low: #28A745;
+  /* Status Colors - WCAG AA Compliant */
+  --color-status-implemented: #16A34A;
+  --color-status-in-progress: #0891B2;
+  --color-status-not-implemented: #64748B;
+  --color-status-overdue: #DC2626;
+  --color-status-due-soon: #D97706;
   
-  /* Status Colors */
-  --color-status-implemented: #28A745;
-  --color-status-in-progress: #17A2B8;
-  --color-status-not-implemented: #6C757D;
-  --color-status-overdue: #DC3545;
-  --color-status-due-soon: #FFC107;
+  /* Typography - Figtree Font */
+  --font-family-sans: Figtree, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   
-  /* Typography */
-  --font-family-sans: Inter, system-ui, sans-serif;
+  /* Border Radius - 8px default */
+  --radius-sm: 4px;
+  --radius-DEFAULT: 8px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
 }
 
 @source "./index.html";

@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Shield, Users, AlertTriangle, FileText, Brain, ExternalLink } from 'lucide-react';
 import { useRiskStore, useControlStore } from '../store';
 import { RiskLevelBadge } from '../components/risks/RiskLevelBadge';
+import { MitigationDisplay } from '../components/risks/MitigationDisplay';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
@@ -131,23 +132,21 @@ const DetailsTab: React.FC<TabContentProps> = ({ risk }) => {
         </div>
       </Card>
 
-      {/* Mitigation */}
+      {/* Agreed Mitigation */}
       <Card>
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-gray-900">Agreed Mitigation</h3>
-          <p className="text-sm text-gray-700 leading-relaxed">{risk.agreedMitigation}</p>
+          <MitigationDisplay content={risk.agreedMitigation} />
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <div>
-              <label className="text-sm font-medium text-gray-500">Mitigation Effectiveness</label>
-              <div className="mt-1">
-                <Badge variant={
-                  risk.mitigationEffectiveness === 'High' ? 'success' : 
-                  risk.mitigationEffectiveness === 'Medium' ? 'warning' : 'danger'
-                }>
-                  {risk.mitigationEffectiveness}
-                </Badge>
-              </div>
+          <div className="border-t pt-4 mt-6">
+            <label className="text-sm font-medium text-gray-500">Mitigation Effectiveness</label>
+            <div className="mt-1">
+              <Badge variant={
+                risk.mitigationEffectiveness === 'High' ? 'success' : 
+                risk.mitigationEffectiveness === 'Medium' ? 'warning' : 'danger'
+              }>
+                {risk.mitigationEffectiveness}
+              </Badge>
             </div>
           </div>
         </div>
@@ -164,12 +163,32 @@ const DetailsTab: React.FC<TabContentProps> = ({ risk }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="text-sm font-medium text-gray-500">Proposed Oversight Ownership</label>
-              <p className="mt-1 text-sm text-gray-900">{risk.proposedOversightOwnership}</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {risk.proposedOversightOwnership.length > 0 ? (
+                  risk.proposedOversightOwnership.map((owner, index) => (
+                    <Badge key={index} variant="default" className="text-xs">
+                      {owner}
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-sm text-gray-400">No owners assigned</span>
+                )}
+              </div>
             </div>
             
             <div>
               <label className="text-sm font-medium text-gray-500">Proposed Support</label>
-              <p className="mt-1 text-sm text-gray-900">{risk.proposedSupport}</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {risk.proposedSupport.length > 0 ? (
+                  risk.proposedSupport.map((support, index) => (
+                    <Badge key={index} variant="secondary" className="text-xs">
+                      {support}
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-sm text-gray-400">No support assigned</span>
+                )}
+              </div>
             </div>
           </div>
         </div>

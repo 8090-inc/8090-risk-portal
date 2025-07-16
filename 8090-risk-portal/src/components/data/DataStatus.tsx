@@ -69,12 +69,12 @@ export const DataStatus: React.FC<DataStatusProps> = ({
 
   return (
     <div className={cn(
-      "bg-white border border-gray-200 rounded-lg p-4",
+      "bg-white border border-slate-200 rounded-lg p-4",
       className
     )}>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium text-gray-900 flex items-center">
-          <Database className="h-4 w-4 mr-2 text-gray-400" />
+        <h3 className="text-sm font-medium text-slate-900 flex items-center">
+          <Database className="h-4 w-4 mr-2 text-slate-400" />
           Data Status
         </h3>
         {onRefresh && (
@@ -93,18 +93,18 @@ export const DataStatus: React.FC<DataStatusProps> = ({
       <div className="space-y-3">
         {/* Last Updated */}
         <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-500 flex items-center">
+          <span className="text-xs text-slate-500 flex items-center">
             <Calendar className="h-3 w-3 mr-1" />
             Last Updated
           </span>
-          <span className="text-xs font-medium text-gray-700">
+          <span className="text-xs font-medium text-slate-700">
             {formatLastUpdated(lastUpdated)}
           </span>
         </div>
 
         {/* Data Source */}
         <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-500">Source</span>
+          <span className="text-xs text-slate-500">Source</span>
           <Badge variant="secondary" className="text-xs">
             {dataSource}
           </Badge>
@@ -113,8 +113,8 @@ export const DataStatus: React.FC<DataStatusProps> = ({
         {/* Record Count */}
         {recordCount && (
           <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-500">Records</span>
-            <div className="text-xs text-gray-700">
+            <span className="text-xs text-slate-500">Records</span>
+            <div className="text-xs text-slate-700">
               <span className="font-medium">{recordCount.risks}</span> risks, {' '}
               <span className="font-medium">{recordCount.controls}</span> controls
             </div>
