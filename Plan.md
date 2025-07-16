@@ -546,7 +546,26 @@ Production build and documentation.
   - ✅ Data import/export functionality
   - ✅ All unit tests passing
 
-## Next Action
-UI refinement and visual polish phase.
+### Version 2.0.0 - Authentication & Security Complete (2025-01-16)
+- **Commit**: c751701
+- **Status**: Complete authentication system with role-based access control
+- **Features**:
+  - ✅ Email/password authentication with JWT-like tokens
+  - ✅ Role-based access control (Admin, Manager, Viewer)
+  - ✅ Protected routes with permission-based navigation
+  - ✅ User registration with department selection from risk owners
+  - ✅ Password reset flow with secure token verification
+  - ✅ Account settings for password changes
+  - ✅ Admin user management interface
+  - ✅ Secure password storage with bcrypt-like hashing
+  - ✅ Mock vault database (Google Cloud Secret Manager ready)
+  - ✅ Branded login/register pages with 8090 and Dompe logos
+  - ✅ Session management with auto-refresh and 30-min timeout
+  - ✅ Persistent authentication state with Zustand
+  - ✅ Activity tracking and audit trail
+  - ✅ Default admin credentials (admin@8090.com / Admin@123)
 
-**Status**: Core functionality complete. Ready for UI improvements.
+## Next Action
+System is production-ready with complete authentication and security features.
+
+**Status**: Authentication system complete. Ready for deployment and further feature development.
