@@ -37,12 +37,22 @@ const RiskLevelRenderer = (params: any) => {
 // Risk Score Renderer with color coding
 const RiskScoreRenderer = (params: any) => {
   const score = params.value;
+  
+  // Handle null/undefined values
+  if (score === null || score === undefined || score === '') {
+    return (
+      <div className="flex items-center h-full text-slate-400">
+        -
+      </div>
+    );
+  }
+  
   let colorClass = 'text-slate-700';
   
   if (score >= 16) colorClass = 'text-red-700 font-semibold';
   else if (score >= 12) colorClass = 'text-orange-700 font-semibold';
   else if (score >= 6) colorClass = 'text-yellow-700 font-semibold';
-  else colorClass = 'text-green-700 font-semibold';
+  else if (score > 0) colorClass = 'text-green-700 font-semibold';
   
   return (
     <div className={`flex items-center h-full ${colorClass}`}>
@@ -53,7 +63,16 @@ const RiskScoreRenderer = (params: any) => {
 
 // Truncated text renderer with tooltip
 const TextRenderer = (params: any) => {
-  const text = params.value || '';
+  let text = params.value || '';
+  
+  // Handle arrays (like proposedOversightOwnership)
+  if (Array.isArray(text)) {
+    text = text.join(', ');
+  }
+  
+  // Convert to string if it's not already
+  text = String(text);
+  
   const truncated = text.length > 100 ? text.substring(0, 100) + '...' : text;
   
   return (
@@ -66,40 +85,47 @@ const TextRenderer = (params: any) => {
 export const RiskMatrixView: React.FC = () => {
   const gridRef = useRef<AgGridReact>(null);
   
-  console.log('RiskMatrixView - Data loaded:', riskMapData?.riskMap?.length, 'risks');
-  
   const columnDefs: ColDef[] = useMemo(() => [
     {
       headerName: 'Category',
       field: 'riskCategory',
       width: 150,
-      pinned: 'left'
+      pinned: 'left',
+      cellRenderer: TextRenderer
     },
     {
       headerName: 'Risk',
       field: 'risk',
       width: 200,
-      pinned: 'left'
+      pinned: 'left',
+      cellRenderer: TextRenderer
     },
     {
       headerName: 'Description',
       field: 'riskDescription',
-      width: 350
+      width: 350,
+      cellRenderer: TextRenderer
     },
     {
       headerName: 'Initial Likelihood',
       field: 'initialLikelihood',
-      width: 130
+      width: 130,
+      type: 'numericColumn',
+      cellRenderer: RiskScoreRenderer
     },
     {
       headerName: 'Initial Impact',
       field: 'initialImpact',
-      width: 120
+      width: 120,
+      type: 'numericColumn',
+      cellRenderer: RiskScoreRenderer
     },
     {
       headerName: 'Initial Risk Level',
       field: 'initialRiskLevel',
-      width: 140
+      width: 140,
+      type: 'numericColumn',
+      cellRenderer: RiskScoreRenderer
     },
     {
       headerName: 'Risk Level Category',
@@ -110,17 +136,41 @@ export const RiskMatrixView: React.FC = () => {
     {
       headerName: 'Residual Likelihood',
       field: 'residualLikelihood',
-      width: 150
+      width: 150,
+      type: 'numericColumn',
+      cellRenderer: RiskScoreRenderer
     },
     {
       headerName: 'Residual Impact',
       field: 'residualImpact',
-      width: 130
+      width: 130,
+      type: 'numericColumn',
+      cellRenderer: RiskScoreRenderer
     },
     {
       headerName: 'Residual Risk Level',
       field: 'residualRiskLevel',
-      width: 150
+      width: 150,
+      type: 'numericColumn',
+      cellRenderer: RiskScoreRenderer
+    },
+    {
+      headerName: 'Agreed Mitigation',
+      field: 'agreedMitigation',
+      width: 300,
+      cellRenderer: TextRenderer
+    },
+    {
+      headerName: 'Proposed Ownership',
+      field: 'proposedOversightOwnership',
+      width: 200,
+      cellRenderer: TextRenderer
+    },
+    {
+      headerName: 'Notes',
+      field: 'notes',
+      width: 200,
+      cellRenderer: TextRenderer
     }
   ], []);
 
@@ -217,12 +267,6 @@ export const RiskMatrixView: React.FC = () => {
         </div>
       </div>
 
-      {/* Debug Info */}
-      <div className="flex-shrink-0 px-6 py-2 bg-yellow-50 border-b border-yellow-200">
-        <p className="text-sm text-yellow-800">
-          Debug: Found {riskMapData?.riskMap?.length || 0} risks in data
-        </p>
-      </div>
 
       {/* AG-Grid Container */}
       <div className="flex-1 p-6 bg-slate-50">

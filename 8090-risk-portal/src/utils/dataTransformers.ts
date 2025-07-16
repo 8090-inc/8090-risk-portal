@@ -50,17 +50,17 @@ export const transformRiskMapRow = (row: RiskMapRow, relatedControlIds: string[]
   const id = generateId(row.risk);
   
   const initialScoring: RiskScoring = {
-    likelihood: row.initialLikelihood as RiskLikelihood,
-    impact: row.initialImpact as RiskImpact,
-    riskLevel: row.initialRiskLevel,
-    riskLevelCategory: getRiskLevelCategory(row.initialRiskLevel)
+    likelihood: (row.initialLikelihood || 3) as RiskLikelihood,
+    impact: (row.initialImpact || 3) as RiskImpact,
+    riskLevel: row.initialRiskLevel || 9,
+    riskLevelCategory: getRiskLevelCategory(row.initialRiskLevel || 9)
   };
   
   const residualScoring: RiskScoring = {
-    likelihood: row.residualLikelihood as RiskLikelihood,
-    impact: row.residualImpact as RiskImpact,
-    riskLevel: row.residualRiskLevel,
-    riskLevelCategory: getRiskLevelCategory(row.residualRiskLevel)
+    likelihood: (row.residualLikelihood || 2) as RiskLikelihood,
+    impact: (row.residualImpact || 2) as RiskImpact,
+    riskLevel: row.residualRiskLevel || 4,
+    riskLevelCategory: getRiskLevelCategory(row.residualRiskLevel || 4)
   };
   
   const riskReduction = initialScoring.riskLevel - residualScoring.riskLevel;

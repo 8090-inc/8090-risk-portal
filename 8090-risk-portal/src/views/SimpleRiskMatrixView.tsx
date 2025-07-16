@@ -32,6 +32,8 @@ export const SimpleRiskMatrixView: React.FC = () => {
   useEffect(() => {
     loadRisks();
   }, [loadRisks]);
+  
+
 
   // Handle cell edit
   const handleCellEdit = (riskId: string, field: string, value: string) => {
@@ -215,16 +217,16 @@ export const SimpleRiskMatrixView: React.FC = () => {
           </div>
           <div className="flex items-center space-x-2">
             <Badge variant="default" className="bg-red-100 text-red-800">
-              Critical: {risks.filter(r => r.riskLevelCategory === 'Critical').length}
+              Critical: {risks.filter(r => r.residualScoring.riskLevelCategory === 'Critical').length}
             </Badge>
             <Badge variant="default" className="bg-orange-100 text-orange-800">
-              High: {risks.filter(r => r.riskLevelCategory === 'High').length}
+              High: {risks.filter(r => r.residualScoring.riskLevelCategory === 'High').length}
             </Badge>
             <Badge variant="default" className="bg-yellow-100 text-yellow-800">
-              Medium: {risks.filter(r => r.riskLevelCategory === 'Medium').length}
+              Medium: {risks.filter(r => r.residualScoring.riskLevelCategory === 'Medium').length}
             </Badge>
             <Badge variant="default" className="bg-green-100 text-green-800">
-              Low: {risks.filter(r => r.riskLevelCategory === 'Low').length}
+              Low: {risks.filter(r => r.residualScoring.riskLevelCategory === 'Low').length}
             </Badge>
           </div>
         </div>
@@ -252,17 +254,19 @@ export const SimpleRiskMatrixView: React.FC = () => {
               <tbody className="divide-y divide-slate-200">
                 {risks.map((risk) => {
                   const isEdited = editedRisks[risk.id];
+                  
                   const currentData = {
                     riskCategory: editedRisks[risk.id]?.riskCategory ?? risk.riskCategory,
                     risk: editedRisks[risk.id]?.risk ?? risk.risk,
                     riskDescription: editedRisks[risk.id]?.riskDescription ?? risk.riskDescription,
-                    initialLikelihood: editedRisks[risk.id]?.initialLikelihood ?? risk.initialScoring.likelihood,
-                    initialImpact: editedRisks[risk.id]?.initialImpact ?? risk.initialScoring.impact,
-                    residualLikelihood: editedRisks[risk.id]?.residualLikelihood ?? risk.residualScoring.likelihood,
-                    residualImpact: editedRisks[risk.id]?.residualImpact ?? risk.residualScoring.impact,
+                    initialLikelihood: editedRisks[risk.id]?.initialLikelihood ?? risk.initialScoring?.likelihood ?? 3,
+                    initialImpact: editedRisks[risk.id]?.initialImpact ?? risk.initialScoring?.impact ?? 3,
+                    residualLikelihood: editedRisks[risk.id]?.residualLikelihood ?? risk.residualScoring?.likelihood ?? 2,
+                    residualImpact: editedRisks[risk.id]?.residualImpact ?? risk.residualScoring?.impact ?? 2,
                     agreedMitigation: editedRisks[risk.id]?.agreedMitigation ?? risk.agreedMitigation,
                     notes: editedRisks[risk.id]?.notes ?? risk.notes
                   };
+                  
                   
                   return (
                     <tr key={risk.id} className={`hover:bg-slate-50 ${isEdited ? 'bg-blue-50' : ''}`}>
@@ -300,9 +304,10 @@ export const SimpleRiskMatrixView: React.FC = () => {
                           type="number"
                           min="1"
                           max="5"
-                          value={currentData.initialLikelihood}
+                          value={currentData.initialLikelihood || ''}
                           onChange={(e) => handleCellEdit(risk.id, 'initialLikelihood', e.target.value)}
-                          className="w-full text-xs text-center text-slate-900 bg-transparent border-0 focus:outline-none focus:ring-2 focus:ring-accent/20 rounded"
+                          className="w-full text-xs text-center text-slate-900 bg-white border border-slate-300 rounded px-1 py-1 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent"
+                          style={{ minWidth: '40px' }}
                         />
                       </td>
                       <td className="px-1 py-3">
@@ -310,19 +315,20 @@ export const SimpleRiskMatrixView: React.FC = () => {
                           type="number"
                           min="1"
                           max="5"
-                          value={currentData.initialImpact}
+                          value={currentData.initialImpact || ''}
                           onChange={(e) => handleCellEdit(risk.id, 'initialImpact', e.target.value)}
-                          className="w-full text-xs text-center text-slate-900 bg-transparent border-0 focus:outline-none focus:ring-2 focus:ring-accent/20 rounded"
+                          className="w-full text-xs text-center text-slate-900 bg-white border border-slate-300 rounded px-1 py-1 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent"
+                          style={{ minWidth: '40px' }}
                         />
                       </td>
                       <td className="px-2 py-3 text-xs text-center">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          getRiskLevelCategory(currentData.initialLikelihood * currentData.initialImpact) === 'Critical' ? 'bg-red-100 text-red-800' :
-                          getRiskLevelCategory(currentData.initialLikelihood * currentData.initialImpact) === 'High' ? 'bg-orange-100 text-orange-800' :
-                          getRiskLevelCategory(currentData.initialLikelihood * currentData.initialImpact) === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                          getRiskLevelCategory((currentData.initialLikelihood || 3) * (currentData.initialImpact || 3)) === 'Critical' ? 'bg-red-100 text-red-800' :
+                          getRiskLevelCategory((currentData.initialLikelihood || 3) * (currentData.initialImpact || 3)) === 'High' ? 'bg-orange-100 text-orange-800' :
+                          getRiskLevelCategory((currentData.initialLikelihood || 3) * (currentData.initialImpact || 3)) === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
                           'bg-green-100 text-green-800'
                         }`}>
-                          {getRiskLevelCategory(currentData.initialLikelihood * currentData.initialImpact)}
+                          {getRiskLevelCategory((currentData.initialLikelihood || 3) * (currentData.initialImpact || 3))}
                         </span>
                       </td>
                       <td className="px-1 py-3">
@@ -330,9 +336,10 @@ export const SimpleRiskMatrixView: React.FC = () => {
                           type="number"
                           min="1"
                           max="5"
-                          value={currentData.residualLikelihood}
+                          value={currentData.residualLikelihood || ''}
                           onChange={(e) => handleCellEdit(risk.id, 'residualLikelihood', e.target.value)}
-                          className="w-full text-xs text-center text-slate-900 bg-transparent border-0 focus:outline-none focus:ring-2 focus:ring-accent/20 rounded"
+                          className="w-full text-xs text-center text-slate-900 bg-white border border-slate-300 rounded px-1 py-1 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent"
+                          style={{ minWidth: '40px' }}
                         />
                       </td>
                       <td className="px-1 py-3">
@@ -340,9 +347,10 @@ export const SimpleRiskMatrixView: React.FC = () => {
                           type="number"
                           min="1"
                           max="5"
-                          value={currentData.residualImpact}
+                          value={currentData.residualImpact || ''}
                           onChange={(e) => handleCellEdit(risk.id, 'residualImpact', e.target.value)}
-                          className="w-full text-xs text-center text-slate-900 bg-transparent border-0 focus:outline-none focus:ring-2 focus:ring-accent/20 rounded"
+                          className="w-full text-xs text-center text-slate-900 bg-white border border-slate-300 rounded px-1 py-1 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent"
+                          style={{ minWidth: '40px' }}
                         />
                       </td>
                       <td className="px-2 py-3">

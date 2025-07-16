@@ -565,7 +565,25 @@ Production build and documentation.
   - ✅ Activity tracking and audit trail
   - ✅ Default admin credentials (admin@8090.com / Admin@123)
 
-## Next Action
-System is production-ready with complete authentication and security features.
+### Version 2.1.0 - Risk Matrix View Bug Fix (2025-01-16)
+- **Commit**: [To be generated]
+- **Status**: Critical bug fix for Risk Matrix View scoring display
+- **Issue**: Risk scoring columns (Initial/Residual Likelihood, Impact, Risk Level) were not displaying data
+- **Root Cause**: Data structure mismatch and invisible input field styling
+- **Bug Fixes**:
+  - ✅ Fixed statistics badges to use correct nested risk level path (`r.residualScoring.riskLevelCategory`)
+  - ✅ Enhanced input field styling with visible borders and white background
+  - ✅ Added fallback values for undefined/null scoring data
+  - ✅ Improved data transformation with null handling in `dataTransformers.ts`
+  - ✅ Added proper minimum width and padding for input fields
+  - ✅ Fixed risk level calculation with fallback values
+- **Testing**: 
+  - ✅ Self-test passed: All 33 risks display complete scoring data
+  - ✅ Data integrity verified: Initial/Residual likelihood, impact, and risk levels
+  - ✅ UI functionality confirmed: Visible, editable input fields
+  - ✅ Server running successfully at http://localhost:3000/
 
-**Status**: Authentication system complete. Ready for deployment and further feature development.
+## Next Action
+System is production-ready with complete authentication and security features. Risk Matrix View bug resolved.
+
+**Status**: Ready for deployment and further feature development.
