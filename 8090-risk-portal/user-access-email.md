@@ -47,3 +47,6 @@ Welcome to the Dompe AI Risk Portal!
 Best regards,
 IT Administration Team
 Dompe Farmaceutici S.p.A.
+
+
+Please be advised that the portal contains no Personally Identifiable Information (PII) or Protected Health Information (PHI), and all data references are linked to Dompe systems safeguarded by Azure Active Directory (Azure AD).

@@ -27,3 +27,35 @@ dist-ssr
 .env
 .env.local
 .env.production
+.env.*
+
+# Firebase
+.firebase/
+firebase-debug.log
+.firebaserc
+
+# User data and sensitive files
+users*.json
+*-users.json
+user-access-email.md
+import-dompe-users*.sh
+test-firebase-auth.sh
+import-users*.py
+delete-user.py
+fix-sina-email.py
+
+# Authentication and keys
+*.pem
+*.key
+*.cert
+gcip_settings.json
+iap_settings.json
+iap_settings.yaml
+iap_gcip_settings.yaml
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.py[cod]
+.pytest_cache/
