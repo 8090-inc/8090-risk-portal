@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { FileText } from 'lucide-react';
-import { Button } from '../components/ui/Button';
+import { Button, Spinner } from '../components/ui';
 import { TemplateSelector } from '../components/reports/TemplateSelector';
 import { PromptEditor } from '../components/reports/PromptEditor';
 import { ReportDisplay } from '../components/reports/ReportDisplay';
@@ -42,6 +42,9 @@ export const ReportsView: React.FC = () => {
 
   // Generate report
   const handleGenerateReport = async () => {
+    console.log('Generate Report clicked');
+    console.log('Gemini service configured:', geminiService.isConfigured());
+    
     if (!geminiService.isConfigured()) {
       setError('Gemini API key not configured. Please add your API key in Settings or add VITE_GEMINI_API_KEY to your .env file.');
       return;
@@ -156,13 +159,20 @@ export const ReportsView: React.FC = () => {
         </Button>
       </div>
 
-      {/* Progress Message */}
-      {isGenerating && generationProgress && (
-        <div className="text-center">
-          <p className="text-sm text-slate-600 animate-pulse">{generationProgress}</p>
-          <div className="mt-2 w-64 mx-auto bg-slate-200 rounded-full h-2">
-            <div className="bg-accent h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+      {/* Progress Message with Spinner */}
+      {isGenerating && (
+        <div className="text-center space-y-3">
+          <div className="flex items-center justify-center">
+            <Spinner size="lg" />
           </div>
+          {generationProgress && (
+            <>
+              <p className="text-sm text-slate-600 animate-pulse">{generationProgress}</p>
+              <div className="mt-2 w-64 mx-auto bg-slate-200 rounded-full h-2">
+                <div className="bg-accent h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+              </div>
+            </>
+          )}
         </div>
       )}
 

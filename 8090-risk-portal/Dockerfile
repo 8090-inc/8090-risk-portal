@@ -12,6 +12,9 @@ RUN npm ci --legacy-peer-deps
 # Copy source code
 COPY . .
 
+# Set build-time environment variables
+ENV VITE_GEMINI_API_KEY=AIzaSyCoSD-8L8fZp3YiauuKTjPuuHYY4QHmqeo
+
 # Build the React application
 RUN npm run build
 

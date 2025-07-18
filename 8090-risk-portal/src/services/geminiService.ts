@@ -23,6 +23,13 @@ class GeminiService {
   constructor() {
     // First try environment variable, then localStorage
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('gemini_api_key');
+    
+    // Debug logging
+    console.log('Gemini Service initialization:');
+    console.log('- Environment API key:', import.meta.env.VITE_GEMINI_API_KEY ? 'Present' : 'Not found');
+    console.log('- LocalStorage API key:', localStorage.getItem('gemini_api_key') ? 'Present' : 'Not found');
+    console.log('- Final API key:', apiKey ? 'Set' : 'Not set');
+    
     if (apiKey) {
       this.genAI = new GoogleGenerativeAI(apiKey);
     }
