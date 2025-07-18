@@ -1,0 +1,16 @@
+{
+  "access_settings": {
+    "allowed_domains_settings": {
+      "enable": true,
+      "domains": [
+        "dompe.airiskportal.com",
+        "dompe-dev-439304.web.app",
+        "dompe-dev-439304.firebaseapp.com"
+      ]
+    },
+    "gcip_settings": {
+      "tenant_ids": ["dompe8090-bf0qr"],
+      "login_page_uri": "https://dompe-dev-439304.web.app/auth.html"
+    }
+  }
+}

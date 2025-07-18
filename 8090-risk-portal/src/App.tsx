@@ -16,21 +16,15 @@ import { useUIStore, useAuthStore } from './store';
 import { initializeStores } from './store';
 import { Spinner } from './components/ui';
 
-// Auth components
-import { LoginView } from './views/auth/LoginView';
-import { RegisterView } from './views/auth/RegisterView';
-import { ForgotPasswordView } from './views/auth/ForgotPasswordView';
-import { ProtectedRoute } from './components/auth/ProtectedRoute';
-
 // Admin components
 import { UserManagementView } from './views/admin/UserManagementView';
 
 function App() {
   const { globalLoading, loadingMessage } = useUIStore();
-  const { checkAuth, isAuthenticated } = useAuthStore();
+  const { checkAuth, isAuthenticated, loading } = useAuthStore();
 
   useEffect(() => {
-    // Check authentication status
+    // Check IAP authentication status
     checkAuth();
   }, []);
 
@@ -43,11 +37,11 @@ function App() {
     }
   }, [isAuthenticated]);
 
-  if (globalLoading) {
+  if (globalLoading || loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
         <Spinner size="lg" />
-        <p className="mt-4 text-gray-600">{loadingMessage}</p>
+        <p className="mt-4 text-gray-600">{loadingMessage || 'Loading...'}</p>
       </div>
     );
   }
@@ -56,50 +50,43 @@ function App() {
     <ErrorBoundary>
       <Router>
         <Routes>
-          {/* Public Auth Routes */}
-          <Route path="/login" element={<LoginView />} />
-          <Route path="/register" element={<RegisterView />} />
-          <Route path="/forgot-password" element={<ForgotPasswordView />} />
-          
-          {/* Protected Routes */}
-          <Route path="/" element={
-            <ProtectedRoute>
-              <AppLayout />
-            </ProtectedRoute>
-          }>
-            {/* Default route - Dashboard */}
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<DashboardView />} />
-            
-            {/* Risk routes */}
-            <Route path="risks" element={<RisksView />} />
-            <Route path="risks/:id" element={<RiskDetailView />} />
-            
-            {/* Control routes */}
-            <Route path="controls" element={<ControlsView />} />
-            <Route path="controls/:id" element={<ControlDetailView />} />
-            
-            {/* Other views */}
-            <Route path="matrix" element={<SimpleRiskMatrixView />} />
-            <Route path="reports" element={<ReportsView />} />
-            
-            {/* Settings - Admin only */}
-            <Route path="settings" element={
-              <ProtectedRoute requiredRole={['admin']}>
-                <SettingsView />
-              </ProtectedRoute>
+          {/* All routes require IAP authentication */}
+          {isAuthenticated ? (
+            <Route path="/" element={<AppLayout />}>
+              {/* Default route - Dashboard */}
+              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route path="dashboard" element={<DashboardView />} />
+              
+              {/* Risk routes */}
+              <Route path="risks" element={<RisksView />} />
+              <Route path="risks/:id" element={<RiskDetailView />} />
+              
+              {/* Control routes */}
+              <Route path="controls" element={<ControlsView />} />
+              <Route path="controls/:id" element={<ControlDetailView />} />
+              
+              {/* Other views */}
+              <Route path="matrix" element={<SimpleRiskMatrixView />} />
+              <Route path="reports" element={<ReportsView />} />
+              
+              {/* Settings */}
+              <Route path="settings" element={<SettingsView />} />
+              
+              {/* Account Settings */}
+              <Route path="account" element={<AccountSettingsView />} />
+              
+              {/* Admin routes */}
+              <Route path="admin/users" element={<UserManagementView />} />
+            </Route>
+          ) : (
+            // Show loading spinner while checking IAP authentication
+            <Route path="*" element={
+              <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+                <Spinner size="lg" />
+                <p className="mt-4 text-gray-600">Checking authentication...</p>
+              </div>
             } />
-            
-            {/* Account Settings - All authenticated users */}
-            <Route path="account" element={<AccountSettingsView />} />
-            
-            {/* Admin routes */}
-            <Route path="admin/users" element={
-              <ProtectedRoute requiredRole={['admin']}>
-                <UserManagementView />
-              </ProtectedRoute>
-            } />
-          </Route>
+          )}
           
           {/* 404 */}
           <Route path="*" element={<div className="p-6">404 - Page Not Found</div>} />

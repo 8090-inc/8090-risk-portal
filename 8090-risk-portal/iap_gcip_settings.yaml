@@ -1,0 +1,8 @@
+accessSettings:
+  gcipSettings:
+    tenantIds:
+    - dompe8090-bf0qr
+    loginPageUri: https://dompe-dev-439304.web.app/auth.html
+  corsSettings:
+    allowHttpOptions: true
+EOF < /dev/null

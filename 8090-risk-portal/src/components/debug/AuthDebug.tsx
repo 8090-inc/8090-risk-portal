@@ -4,7 +4,7 @@ import React from 'react';
 import { useAuthStore } from '../../store/authStore';
 
 export const AuthDebug: React.FC = () => {
-  const { isAuthenticated, user, loading, error, token, refreshToken } = useAuthStore();
+  const { isAuthenticated, user, loading, error } = useAuthStore();
 
   return (
     <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -14,9 +14,7 @@ export const AuthDebug: React.FC = () => {
         <p>Is Authenticated: {isAuthenticated ? 'true' : 'false'}</p>
         <p>User: {user ? `${user.name} (${user.email})` : 'null'}</p>
         <p>Error: {error || 'none'}</p>
-        <p>Token: {token ? `exists (${token.split('.')[1] ? 'valid format' : 'invalid format'})` : 'null'}</p>
-        <p>Refresh Token: {refreshToken ? 'exists' : 'null'}</p>
-        <p>Current User in localStorage: {localStorage.getItem('currentUser') ? 'exists' : 'null'}</p>
+        <p>IAP Headers: {user ? 'Detected' : 'Not detected'}</p>
       </div>
     </div>
   );

@@ -1,0 +1,111 @@
+// Official IAP + Identity Platform integration using gcip-iap module
+import * as ciap from 'gcip-iap';
+import firebase from 'firebase/compat/app';
+import 'firebase/compat/auth';
+import * as firebaseui from 'firebaseui';
+
+// Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyC4EUspTmYLmd468f9819cCHjo85pcu4_I",
+  authDomain: "dompe-dev-439304.firebaseapp.com",
+  projectId: "dompe-dev-439304",
+  storageBucket: "dompe-dev-439304.appspot.com",
+  messagingSenderId: "290017403746",
+  appId: "1:290017403746:web:8090riskportal"
+};
+
+// Initialize Firebase app
+firebase.initializeApp(firebaseConfig);
+
+// Define the authentication handler for gcip-iap
+class AuthenticationHandler {
+  constructor() {
+    this.tenantId = 'dompe8090-bf0qr';
+    this.projectId = 'dompe-dev-439304';
+  }
+
+  // Return the tenant configuration
+  async selectTenant() {
+    console.log('Selecting tenant:', this.tenantId);
+    return {
+      projectId: this.projectId,
+      tenantId: this.tenantId
+    };
+  }
+
+  // Get the Firebase Auth instance for the selected tenant
+  getAuth(projectId, tenantId) {
+    console.log('Getting auth for tenant:', tenantId);
+    const auth = firebase.auth();
+    auth.tenantId = tenantId;
+    return auth;
+  }
+
+  // Start the sign-in process
+  async startSignIn(auth) {
+    console.log('Starting sign-in process');
+    
+    // Return a promise that resolves when sign-in is complete
+    return new Promise((resolve, reject) => {
+      // Configure FirebaseUI
+      const uiConfig = {
+        callbacks: {
+          signInSuccessWithAuthResult: (authResult) => {
+            console.log('Sign-in successful:', authResult.user.email);
+            // Resolve with the authenticated user
+            resolve(authResult.user);
+            return false; // Prevent redirect
+          },
+          signInFailure: (error) => {
+            console.error('Sign-in failed:', error);
+            reject(error);
+          }
+        },
+        signInOptions: [
+          {
+            provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
+            requireDisplayName: false,
+            signInMethod: 'password'
+          }
+        ],
+        // Do not redirect - let gcip-iap handle it
+        signInSuccessUrl: '#',
+        credentialHelper: firebaseui.auth.CredentialHelper.NONE
+      };
+
+      // Create or get existing FirebaseUI instance
+      let ui = firebaseui.auth.AuthUI.getInstance();
+      if (!ui) {
+        ui = new firebaseui.auth.AuthUI(auth);
+      }
+
+      // Start the UI flow
+      ui.start('#firebaseui-auth-container', uiConfig);
+    });
+  }
+
+  // Optional: Process user before proceeding
+  processUser(user) {
+    console.log('Processing user:', user.email);
+    return Promise.resolve(user);
+  }
+
+  // Optional: Handle errors
+  handleError(error) {
+    console.error('Authentication error:', error);
+    document.getElementById('error-message').textContent = 
+      'Authentication failed. Please try again.';
+  }
+}
+
+// Initialize and start the authentication flow
+console.log('Initializing IAP authentication...');
+const authHandler = new AuthenticationHandler();
+const ciapInstance = new ciap.Authentication(authHandler);
+
+// Start the authentication process
+ciapInstance.start().then(() => {
+  console.log('Authentication flow started');
+}).catch((error) => {
+  console.error('Failed to start authentication:', error);
+});

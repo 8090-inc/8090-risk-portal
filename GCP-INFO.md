@@ -1,7 +1,6 @@
 - GCP Project ID: dompe-dev-439304
-- Project Number: dompe-dev-439304
+- Project number: 290017403746
 - Billing Account: yes
 - Region Preference: us-central1
 - GCP Access: yes
-- gcloud CLI: Google Cloud CLI is not installed and authenticated on my machine
-- Service Account: Create a new service account 
+- gcloud CLI: Google Cloud CLI is installed 

@@ -1,0 +1,13 @@
+{
+  "accessSettings": {
+    "allowedDomainsSettings": {
+      "enable": true,
+      "domains": [
+        "dompe-dev-439304.web.app",
+        "dompe-dev-439304.firebaseapp.com",
+        "34.102.196.90"
+      ]
+    }
+  }
+}
+EOF < /dev/null
