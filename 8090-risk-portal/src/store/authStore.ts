@@ -52,7 +52,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
   },
 
-  // Logout - redirect to IAP logout
+  // Logout - redirect to GCIP signout
   logout: () => {
     // Clear local state
     set({ 
@@ -61,8 +61,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       loading: false 
     });
     
-    // Redirect to IAP logout URL
-    window.location.href = '/_gcp_iap/clear_login_cookie';
+    // Redirect to GCIP signout - this properly signs out from both GCIP and IAP
+    window.location.href = '/?gcp-iap-mode=GCIP_SIGNOUT';
   },
 
   // Clear error

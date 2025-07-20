@@ -23,9 +23,9 @@ export const Header: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
+  const handleLogout = () => {
+    logout(); // No await needed, it's synchronous
+    // GCIP will handle the redirect to authentication page
   };
 
   const getRoleBadgeVariant = (role?: string) => {
