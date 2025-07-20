@@ -2,6 +2,13 @@
 
 This file contains important context and learnings that Claude should be aware of when working on this project.
 
+## CRITICAL INSTRUCTIONS
+
+**IMPORTANT - Always follow these rules:**
+1. **DO NOT PUSH to remote without asking** - Always check with the user before pushing to GitHub
+2. **Check in after every task and decision point** - Get user confirmation before proceeding
+3. **Do not pick simpler alternatives** - Work through the proper solution even if the main path becomes difficult
+
 ## Project Overview
 
 The 8090 Risk Portal is a comprehensive risk management platform deployed on Google Cloud Platform using:
