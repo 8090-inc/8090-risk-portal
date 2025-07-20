@@ -303,6 +303,21 @@ Set up tenant in `gcip_settings.json`:
 }
 ```
 
+## 📚 Documentation
+
+### Project Documentation Structure
+
+- **[docs/](docs/)** - High-level project documentation
+  - [Planning](docs/planning/) - Strategic plans and roadmaps
+  - [Analysis](docs/analysis/) - Competitive analysis and comparisons
+  - [Infrastructure](docs/infrastructure/) - GCP and infrastructure details
+
+- **[8090-risk-portal/docs/](8090-risk-portal/docs/)** - Application-specific documentation
+  - [Architecture](8090-risk-portal/docs/architecture/) - System design and testing
+  - [Deployment](8090-risk-portal/docs/deployment/) - IAP and deployment guides
+  - [Development](8090-risk-portal/docs/dev/) - Developer guides and learnings
+  - [Guides](8090-risk-portal/docs/guides/) - User guides and templates
+
 ## 📚 API Documentation
 
 ### Authentication
