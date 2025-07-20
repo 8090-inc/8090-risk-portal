@@ -69,52 +69,60 @@ const InteractiveRiskMatrix: React.FC<{
   };
 
   return (
-    <div className="h-full w-full flex flex-col">
-      <div className="flex-1 grid grid-cols-[auto_1fr] gap-1">
+    <div className="h-full w-full flex flex-col" role="grid" aria-label="Risk assessment matrix">
+      <div className="flex-1 grid grid-cols-[auto_1fr]">
         <div className="flex items-center justify-center px-2">
           <span className="text-slate-700 font-semibold -rotate-90 whitespace-nowrap text-sm">Impact</span>
         </div>
-        <div className="grid grid-rows-[auto_1fr] gap-1">
-          <div className="grid grid-cols-5">
+        <div className="flex flex-col">
+          <div className="grid grid-cols-5 mb-1">
             {[1, 2, 3, 4, 5].map(l => (
-              <div key={l} className="flex items-center justify-center py-1 text-slate-700 text-sm font-semibold">{l}</div>
+              <div key={l} className="flex items-center justify-center text-slate-700 text-sm font-semibold">{l}</div>
             ))}
           </div>
-          <div className="grid grid-rows-5 gap-0.5">
-            {[5, 4, 3, 2, 1].map(impact => (
-              <div key={impact} className="grid grid-cols-5 gap-0.5">
-                {[1, 2, 3, 4, 5].map(likelihood => {
-                  const cellKey = `${likelihood}-${impact}`;
-                  const cellRisks = matrix[cellKey] || [];
-                  const cellColor = getCellColor(likelihood, impact);
-                  const isSelected = selectedCell === cellKey;
-                  const isHovered = hoveredCell === cellKey;
-                  
-                  return (
+          <div className="grid grid-rows-5 grid-cols-5 gap-0.5 flex-1">
+            {[5, 4, 3, 2, 1].map(impact => 
+              [1, 2, 3, 4, 5].map(likelihood => {
+                const cellKey = `${likelihood}-${impact}`;
+                const cellRisks = matrix[cellKey] || [];
+                const cellColor = getCellColor(likelihood, impact);
+                const isSelected = selectedCell === cellKey;
+                const isHovered = hoveredCell === cellKey;
+                
+                return (
+                  <div key={cellKey} className="relative aspect-square">
                     <div
-                      key={cellKey}
+                      role="gridcell"
+                      aria-label={`Likelihood ${likelihood}, Impact ${impact}: ${cellRisks.length} risks`}
+                      tabIndex={0}
                       onClick={() => handleCellClick(cellKey)}
                       onMouseEnter={() => onCellHover(cellKey)}
                       onMouseLeave={() => onCellHover(null)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleCellClick(cellKey);
+                        }
+                      }}
                       className={cn(
-                        "flex items-center justify-center rounded text-lg font-bold cursor-pointer transition-all aspect-square",
+                        "absolute inset-0 flex items-center justify-center rounded font-bold cursor-pointer transition-all",
                         cellColor,
                         cellRisks.length > 0 ? 'text-white' : 'text-white/40',
                         isSelected && 'ring-2 ring-slate-900 ring-offset-2',
                         isHovered && !isSelected && 'ring-1 ring-slate-400 ring-offset-1',
-                        'hover:scale-[1.02]'
+                        'hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2'
                       )}
                     >
-                      {cellRisks.length || '·'}
+                      <span className="matrix-cell-text text-lg">{cellRisks.length || '·'}</span>
                     </div>
-                  );
-                })}
-              </div>
-            ))}
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>
-      <div className="text-center pt-1">
+      <div className="text-center pt-2">
         <span className="text-slate-700 text-sm font-semibold">Likelihood</span>
       </div>
     </div>
@@ -158,16 +166,24 @@ const EnhancedRiskDetailsTable: React.FC<{
   };
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="h-full overflow-y-auto px-3">
       <table className="w-full text-sm">
-        <thead className="sticky top-0 bg-white border-b border-slate-200">
+        <colgroup>
+          <col className="w-16" />
+          <col className="min-w-[180px]" />
+          <col className="w-20" />
+          <col className="w-24" />
+          <col className="w-20" />
+          <col className="w-24" />
+        </colgroup>
+        <thead className="sticky top-0 bg-white border-b border-slate-200 z-10">
           <tr>
-            <th className="text-left py-2 px-2 font-medium text-slate-600 text-xs">ID</th>
-            <th className="text-left py-2 px-2 font-medium text-slate-600 text-xs">Risk</th>
-            <th className="text-center py-2 px-2 font-medium text-slate-600 text-xs">Level</th>
-            <th className="text-center py-2 px-2 font-medium text-slate-600 text-xs">Status</th>
-            <th className="text-center py-2 px-2 font-medium text-slate-600 text-xs">Effect.</th>
-            <th className="text-left py-2 px-2 font-medium text-slate-600 text-xs">Owner</th>
+            <th className="text-left py-2 px-1 font-medium text-slate-600 text-xs">ID</th>
+            <th className="text-left py-2 px-1 font-medium text-slate-600 text-xs">Risk</th>
+            <th className="text-center py-2 px-1 font-medium text-slate-600 text-xs">Level</th>
+            <th className="text-center py-2 px-1 font-medium text-slate-600 text-xs">Status</th>
+            <th className="text-center py-2 px-1 font-medium text-slate-600 text-xs">Effect.</th>
+            <th className="text-left py-2 px-1 font-medium text-slate-600 text-xs">Owner</th>
           </tr>
         </thead>
         <tbody>
@@ -185,29 +201,29 @@ const EnhancedRiskDetailsTable: React.FC<{
                   isHighlighted && 'bg-blue-50 hover:bg-blue-100'
                 )}
               >
-                <td className="py-1.5 px-2 font-mono text-slate-600 text-xs">{risk.id.slice(0, 8)}</td>
-                <td className="py-1.5 px-2">
-                  <div className="truncate max-w-[200px] text-xs" title={risk.risk}>
+                <td className="py-1.5 px-1 font-mono text-slate-600 text-xs">{risk.id.slice(0, 6)}</td>
+                <td className="py-1.5 px-1">
+                  <div className="truncate text-xs" title={risk.risk}>
                     {risk.risk}
                   </div>
                 </td>
-                <td className="py-1.5 px-2 text-center">
-                  <span className={cn("px-1.5 py-0.5 rounded text-xs font-medium border", getRiskLevelColor(risk.residualScoring.riskLevelCategory))}>
+                <td className="py-1.5 px-1 text-center">
+                  <span className={cn("px-1 py-0.5 rounded text-xs font-medium border", getRiskLevelColor(risk.residualScoring.riskLevelCategory))}>
                     {risk.residualScoring.riskLevelCategory}
                   </span>
                 </td>
-                <td className="py-1.5 px-2 text-center">
-                  <span className={cn("px-1.5 py-0.5 rounded text-xs font-medium", mitigationStatus.color)}>
+                <td className="py-1.5 px-1 text-center">
+                  <span className={cn("px-1 py-0.5 rounded text-xs font-medium", mitigationStatus.color)}>
                     {mitigationStatus.label}
                   </span>
                 </td>
-                <td className="py-1.5 px-2 text-center">
-                  <span className={cn("px-1.5 py-0.5 rounded text-xs font-medium", getEffectivenessColor(risk.mitigationEffectiveness || 'N/A'))}>
+                <td className="py-1.5 px-1 text-center">
+                  <span className={cn("px-1 py-0.5 rounded text-xs font-medium", getEffectivenessColor(risk.mitigationEffectiveness || 'N/A'))}>
                     {risk.mitigationEffectiveness || 'N/A'}
                   </span>
                 </td>
-                <td className="py-1.5 px-2">
-                  <div className="truncate max-w-[100px] text-xs" title={risk.proposedOversightOwnership.join(', ')}>
+                <td className="py-1.5 px-1">
+                  <div className="truncate text-xs" title={risk.proposedOversightOwnership.join(', ')}>
                     {risk.proposedOversightOwnership[0] || '-'}
                   </div>
                 </td>
@@ -277,6 +293,22 @@ export const DashboardView: React.FC = () => {
     if (risks.length === 0) loadRisks();
     if (controls.length === 0) loadControls();
   }, [risks.length, controls.length, loadRisks, loadControls]);
+
+  // Add container query styles
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @container (max-width: 400px) {
+        .matrix-cell-text { font-size: 0.875rem !important; }
+      }
+      @container (min-width: 600px) {
+        .matrix-cell-text { font-size: 1.25rem !important; }
+      }
+      .matrix-container { container-type: inline-size; }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
 
   // Filter risks based on selected matrix cell
   const filteredRisks = useMemo(() => {
@@ -451,8 +483,8 @@ export const DashboardView: React.FC = () => {
         </div>
       </div>
 
-      {/* Content - Optimized for no scroll */}
-      <div className="flex-1 p-3 space-y-3 overflow-hidden">
+      {/* Content */}
+      <div className="flex-1 p-3 space-y-3 overflow-auto">
         {/* Top Metrics Bar */}
         <Card className="bg-white shadow-sm">
           <div className="p-3">
@@ -503,10 +535,10 @@ export const DashboardView: React.FC = () => {
                 Risk Landscape
               </h2>
             </div>
-            <div className="grid grid-cols-[2fr,3fr] divide-x divide-slate-200 flex-1 min-h-0">
+            <div className="grid grid-cols-[5fr,7fr] divide-x divide-slate-200 flex-1 min-h-0">
               <div className="flex flex-col h-full">
                 <div className="text-sm font-medium text-slate-700 px-3 pt-2 pb-1 flex-shrink-0">Residual Risk Matrix</div>
-                <div className="flex-1 overflow-hidden p-2">
+                <div className="flex-1 p-3 matrix-container">
                   <InteractiveRiskMatrix 
                     risks={risks}
                     selectedCell={selectedMatrixCell}
