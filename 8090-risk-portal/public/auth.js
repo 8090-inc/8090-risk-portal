@@ -37,6 +37,19 @@ const configs = {
       },
       uiShown: () => {
         console.log('FirebaseUI widget rendered');
+      },
+      completeSignOut: () => {
+        console.log('Signing out user...');
+        // Sign out from Firebase Auth
+        return firebase.auth().signOut().then(() => {
+          console.log('User signed out successfully');
+          // Show a message to the user
+          document.getElementById('firebaseui-auth-container').innerHTML = 
+            '<div style="text-align: center; padding: 20px;">' +
+            '<h3>You have been signed out</h3>' +
+            '<p>You can close this window or <a href="/">return to the application</a></p>' +
+            '</div>';
+        });
       }
     }
   }
