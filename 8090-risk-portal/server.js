@@ -32,9 +32,24 @@ app.use(express.urlencoded({ extended: true }));
 // Trust proxy
 app.set('trust proxy', true);
 
-// Serve auth.html for IAP authentication
-app.use('/auth.html', express.static(path.join(__dirname, 'public')));
-app.use('/gcip-iap-bundle.js', express.static(path.join(__dirname, 'public')));
+// Serve specific files from public directory
+app.get('/auth.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'auth.html'));
+});
+
+app.get('/gcip-iap-bundle.js', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'gcip-iap-bundle.js'));
+});
+
+
+// Serve auth.js and auth-bundle.js
+app.get('/auth.js', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'auth.js'));
+});
+
+app.get('/auth-bundle.js', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'auth-bundle.js'));
+});
 
 // Handle IAP authentication mode requests
 app.use((req, res, next) => {
@@ -85,6 +100,13 @@ app.get('/health', (req, res) => {
 
 // Current user endpoint - returns IAP authenticated user
 app.get('/api/auth/me', (req, res) => {
+  console.log('=== /api/auth/me called ===');
+  console.log('IAP headers:', {
+    'x-goog-authenticated-user-email': req.header('X-Goog-Authenticated-User-Email'),
+    'x-goog-authenticated-user-id': req.header('X-Goog-Authenticated-User-Id')
+  });
+  console.log('User:', req.user);
+  
   if (req.user) {
     res.json({
       authenticated: true,
@@ -97,6 +119,7 @@ app.get('/api/auth/me', (req, res) => {
     });
   }
 });
+
 
 // Basic risks endpoint - now protected by IAP
 app.get('/api/risks', (req, res) => {

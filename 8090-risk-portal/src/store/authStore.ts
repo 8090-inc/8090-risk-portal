@@ -10,7 +10,7 @@ interface AuthStore {
   
   // Actions
   checkAuth: () => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   clearError: () => void;
 }
 
@@ -53,7 +53,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
 
   // Logout - redirect to GCIP signout
-  logout: () => {
+  logout: async () => {
     // Clear local state
     set({ 
       isAuthenticated: false,
@@ -61,9 +61,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       loading: false 
     });
     
-    // Redirect to auth page with signout mode to properly sign out from GCIP
-    // This signs out from all resources and sessions
-    window.location.href = '/auth.html?apiKey=AIzaSyC4EUspTmYLmd468f9819cCHjo85pcu4_I&mode=signout';
+    // Redirect to IAP logout URL
+    window.location.href = '/?gcp-iap-mode=GCIP_SIGNOUT';
   },
 
   // Clear error

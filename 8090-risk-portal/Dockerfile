@@ -32,6 +32,9 @@ RUN npm ci --only=production --legacy-peer-deps
 # Copy only server.js (not the server directory)
 COPY server.js ./
 
+# Copy public files (auth.html, auth.js, etc.)
+COPY public ./public
+
 # Copy the built React app from builder stage
 COPY --from=builder /app/dist ./dist
 

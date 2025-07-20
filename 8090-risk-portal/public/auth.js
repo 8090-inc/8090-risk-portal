@@ -27,27 +27,23 @@ const configs = {
     },
     // Optional callbacks
     callbacks: {
-      signInUiShown: (tenantId) => {
-        console.log(`Sign-in UI shown for tenant: ${tenantId}`);
-      },
       signInSuccess: (user, credential, redirectUrl) => {
-        console.log('Sign-in successful for user:', user.email);
         // Return true to continue the redirect automatically
         return true;
       },
-      uiShown: () => {
-        console.log('FirebaseUI widget rendered');
-      },
       completeSignOut: () => {
-        console.log('Signing out user...');
         // Sign out from Firebase Auth
         return firebase.auth().signOut().then(() => {
-          console.log('User signed out successfully');
-          // Show a message to the user
           document.getElementById('firebaseui-auth-container').innerHTML = 
             '<div style="text-align: center; padding: 20px;">' +
             '<h3>You have been signed out</h3>' +
-            '<p>You can close this window or <a href="/">return to the application</a></p>' +
+            '<p><a href="/">Return to application</a></p>' +
+            '</div>';
+        }).catch((error) => {
+          document.getElementById('firebaseui-auth-container').innerHTML = 
+            '<div style="text-align: center; padding: 20px;">' +
+            '<h3>Error during signout</h3>' +
+            '<pre>' + JSON.stringify(error, null, 2) + '</pre>' +
             '</div>';
         });
       }
@@ -56,17 +52,11 @@ const configs = {
 };
 
 // Initialize FirebaseUiHandler
-console.log('Initializing FirebaseUiHandler...');
 const handler = new firebaseui.auth.FirebaseUiHandler(
   '#firebaseui-auth-container', 
   configs
 );
 
 // Create Authentication instance and start
-console.log('Starting authentication flow...');
 const ciapInstance = new ciap.Authentication(handler);
-ciapInstance.start().then(() => {
-  console.log('Authentication flow started successfully');
-}).catch((error) => {
-  console.error('Failed to start authentication flow:', error);
-});
+ciapInstance.start();
