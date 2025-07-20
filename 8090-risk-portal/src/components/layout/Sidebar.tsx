@@ -101,6 +101,7 @@ export const Sidebar: React.FC = () => {
 
       </div>
 
+
       {/* Settings - Bottom */}
       <div className="flex-shrink-0 px-4 py-4 border-t border-slate-200 space-y-2">
         <NavItem

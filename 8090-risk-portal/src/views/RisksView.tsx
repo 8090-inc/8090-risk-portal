@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Download, RefreshCw, FileSpreadsheet } from 'lucide-react';
+import { Download, RefreshCw, FileSpreadsheet, Filter } from 'lucide-react';
 import { useRiskStore } from '../store';
 import { RiskSummaryStats } from '../components/risks/RiskSummaryStats';
 import { RiskTable } from '../components/risks/RiskTable';
 import { PageHeader } from '../components/layout/PageHeader';
-import { CollapsibleFilterPanel } from '../components/common/CollapsibleFilterPanel';
 import { Button } from '../components/ui/Button';
+import { Badge } from '../components/ui/Badge';
+import { cn } from '../utils/cn';
 import { exportRisksToExcel, exportRisksToCSV } from '../utils/exportUtils';
 import { useFilters } from '../hooks/useFilters';
 import { RISK_OWNERS } from '../constants/riskOwners';
@@ -23,13 +24,13 @@ export const RisksView: React.FC = () => {
   } = useRiskStore();
 
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
 
   const {
     activeFilters,
     savedFilterSets,
     updateFilter,
     clearAllFilters,
-    saveFilterSet,
     loadFilterSet,
     hasActiveFilters
   } = useFilters({ 
@@ -41,7 +42,7 @@ export const RisksView: React.FC = () => {
     loadRisks();
   }, [loadRisks]);
 
-  // Build filter groups with counts
+  // Build filter groups with counts - Simplified to only Category and Owner
   const filterGroups = useMemo(() => {
     const categoryOptions = Array.from(
       new Set(risks.map(r => r.riskCategory))
@@ -51,13 +52,6 @@ export const RisksView: React.FC = () => {
       count: risks.filter(r => r.riskCategory === category).length
     }));
 
-    const levelOptions = [
-      { value: 'Critical', label: 'Critical', count: 0 },
-      { value: 'High', label: 'High', count: 0 },
-      { value: 'Medium', label: 'Medium', count: 0 },
-      { value: 'Low', label: 'Low', count: 0 }
-    ];
-
     // Use standardized owner list and count occurrences
     const ownerOptions = RISK_OWNERS.map(owner => ({
       value: owner,
@@ -65,24 +59,6 @@ export const RisksView: React.FC = () => {
       count: risks.filter(r => r.proposedOversightOwnership.includes(owner)).length
     })).filter(option => option.count > 0) // Only show owners that have risks
       .sort((a, b) => b.count - a.count); // Sort by count descending
-
-    const controlOptions = [
-      { value: 'with-controls', label: 'With Controls', count: 0 },
-      { value: 'without-controls', label: 'Without Controls', count: 0 }
-    ];
-
-    // Count risk levels and control status
-    risks.forEach(risk => {
-      const level = risk.residualScoring.riskLevelCategory;
-      const levelOption = levelOptions.find(o => o.value === level);
-      if (levelOption) levelOption.count++;
-
-      if (risk.relatedControlIds.length > 0) {
-        controlOptions[0].count++;
-      } else {
-        controlOptions[1].count++;
-      }
-    });
 
     return [
       {
@@ -92,27 +68,15 @@ export const RisksView: React.FC = () => {
         multiple: true
       },
       {
-        id: 'level',
-        label: 'Risk Level',
-        options: levelOptions.filter(o => o.count > 0),
-        multiple: true
-      },
-      {
         id: 'owner',
         label: 'Risk Owner',
         options: ownerOptions.sort((a, b) => a.label.localeCompare(b.label)),
         multiple: true
-      },
-      {
-        id: 'controls',
-        label: 'Control Status',
-        options: controlOptions,
-        multiple: false
       }
     ];
   }, [risks]);
 
-  // Apply filters
+  // Apply filters - Simplified to only Category and Owner
   const filteredRisks = useMemo(() => {
     let filtered = [...risks];
 
@@ -123,13 +87,6 @@ export const RisksView: React.FC = () => {
       );
     }
 
-    // Apply level filter
-    if (activeFilters.level?.length > 0) {
-      filtered = filtered.filter(risk => 
-        activeFilters.level!.includes(risk.residualScoring.riskLevelCategory)
-      );
-    }
-
     // Apply owner filter
     if (activeFilters.owner?.length > 0) {
       filtered = filtered.filter(risk => 
@@ -137,14 +94,6 @@ export const RisksView: React.FC = () => {
           risk.proposedOversightOwnership.includes(filterOwner)
         )
       );
-    }
-
-    // Apply controls filter
-    if (activeFilters.controls?.length > 0) {
-      filtered = filtered.filter(risk => {
-        const hasControls = risk.relatedControlIds.length > 0;
-        return activeFilters.controls!.includes('with-controls') ? hasControls : !hasControls;
-      });
     }
 
     return filtered;
@@ -164,38 +113,14 @@ export const RisksView: React.FC = () => {
     setExportMenuOpen(false);
   };
 
-  // Default filter sets
+  // Default filter sets - Updated to only use Category and Owner
   const defaultFilterSets = [
-    {
-      id: 'critical-high',
-      name: 'Critical & High Risks',
-      filters: { 
-        level: ['Critical', 'High'],
-        category: [],
-        owner: [],
-        controls: []
-      },
-      isDefault: true
-    },
-    {
-      id: 'uncontrolled',
-      name: 'Uncontrolled Risks',
-      filters: { 
-        controls: ['without-controls'],
-        level: [],
-        category: [],
-        owner: []
-      },
-      isDefault: true
-    },
     {
       id: 'ai-ml-risks',
       name: 'AI/ML Specific',
       filters: { 
         category: ['AI/ML Model Risks', 'Algorithmic Risks'],
-        level: [],
-        owner: [],
-        controls: []
+        owner: []
       },
       isDefault: true
     },
@@ -204,9 +129,16 @@ export const RisksView: React.FC = () => {
       name: 'Compliance Related',
       filters: { 
         category: ['Regulatory Compliance', 'Ethical and Societal'],
-        level: [],
-        owner: [],
-        controls: []
+        owner: []
+      },
+      isDefault: true
+    },
+    {
+      id: 'by-owner',
+      name: 'My Risks',
+      filters: { 
+        category: [],
+        owner: ['R&D Team', 'IT Operations'] // Example owners, adjust as needed
       },
       isDefault: true
     }
@@ -216,21 +148,9 @@ export const RisksView: React.FC = () => {
   const stats = getStatistics();
 
   return (
-    <div className="flex h-full">
-      {/* Collapsible Filter Panel - Left Side */}
-      <CollapsibleFilterPanel
-        filterGroups={filterGroups}
-        activeFilters={activeFilters}
-        savedFilterSets={allFilterSets}
-        onFilterChange={updateFilter}
-        onClearFilters={clearAllFilters}
-        onSaveFilterSet={saveFilterSet}
-        onLoadFilterSet={loadFilterSet}
-        hasActiveFilters={hasActiveFilters}
-      />
-
-      {/* Main Content - Right Side */}
-      <div className="flex-1 space-y-6 p-6 overflow-y-auto">
+    <div className="h-full">
+      {/* Main Content - Full Width */}
+      <div className="space-y-6 p-6 overflow-y-auto">
         <PageHeader
           title={
             <span>
@@ -245,6 +165,19 @@ export const RisksView: React.FC = () => {
           description="Comprehensive view of all identified AI risks and their mitigation status"
           actions={
             <div className="flex items-center space-x-3">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowFilterPanel(!showFilterPanel)}
+                icon={<Filter className="h-4 w-4" />}
+              >
+                Filters
+                {hasActiveFilters && (
+                  <Badge size="sm" variant="primary" className="ml-2">
+                    {Object.values(activeFilters).reduce((sum, values) => sum + values.length, 0)}
+                  </Badge>
+                )}
+              </Button>
               <Button
                 variant="secondary"
                 size="sm"
@@ -293,6 +226,95 @@ export const RisksView: React.FC = () => {
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-md p-4">
             <p className="text-sm text-red-800">{error.message}</p>
+          </div>
+        )}
+
+        {/* Collapsible Filter Panel */}
+        {showFilterPanel && (
+          <div className="bg-white shadow rounded-lg p-6">
+            <div className="space-y-4">
+              {/* Saved Filter Sets */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Saved Filters</h3>
+                <div className="flex flex-wrap gap-2">
+                  {allFilterSets.map((filterSet) => (
+                    <Button
+                      key={filterSet.id}
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => loadFilterSet(filterSet)}
+                      className={cn(
+                        "text-xs",
+                        filterSet.isDefault && "text-gray-600"
+                      )}
+                    >
+                      {filterSet.name}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Filter Groups - Only Category and Owner */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filterGroups.map((group) => {
+                  const activeCount = activeFilters[group.id]?.length || 0;
+                  return (
+                    <div key={group.id}>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {group.label}
+                        {activeCount > 0 && (
+                          <Badge size="sm" variant="secondary" className="ml-2">
+                            {activeCount}
+                          </Badge>
+                        )}
+                      </label>
+                      <div className="space-y-1 max-h-40 overflow-y-auto border border-gray-200 rounded p-2">
+                        {group.options.map((option) => {
+                          const isActive = activeFilters[group.id]?.includes(option.value);
+                          return (
+                            <label
+                              key={option.value}
+                              className="flex items-center justify-between p-1 rounded cursor-pointer hover:bg-gray-50"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="checkbox"
+                                  checked={isActive}
+                                  onChange={(e) => {
+                                    const currentValues = activeFilters[group.id] || [];
+                                    const newValues = e.target.checked
+                                      ? [...currentValues, option.value]
+                                      : currentValues.filter(v => v !== option.value);
+                                    updateFilter(group.id, newValues);
+                                  }}
+                                  className="h-3 w-3 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                />
+                                <span className="text-sm text-gray-700">{option.label}</span>
+                              </div>
+                              <span className="text-xs text-gray-500">{option.count}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Clear Filters */}
+              {hasActiveFilters && (
+                <div className="flex justify-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearAllFilters}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    Clear all filters
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

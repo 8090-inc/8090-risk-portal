@@ -1,12 +1,15 @@
-import React, { useMemo, useEffect } from 'react';
-import { Download } from 'lucide-react';
+import React, { useMemo, useEffect, useState } from 'react';
+import { Download, Filter } from 'lucide-react';
 import { useControlStore } from '../store';
 import { ControlSummaryCard } from '../components/controls/ControlSummaryCard';
 import { ControlsTable } from '../components/controls/ControlsTable';
-import { CollapsibleFilterPanel } from '../components/common/CollapsibleFilterPanel';
+import { PageHeader } from '../components/layout/PageHeader';
 import { Button } from '../components/ui/Button';
 import { useAsyncOperation } from '../hooks/useErrorHandler';
 import { useFilters } from '../hooks/useFilters';
+import { Badge } from '../components/ui/Badge';
+import { cn } from '../utils/cn';
+import { exportControlsToExcel } from '../utils/exportUtils';
 
 export const ControlsView: React.FC = () => {
   const { 
@@ -22,13 +25,14 @@ export const ControlsView: React.FC = () => {
     savedFilterSets,
     updateFilter,
     clearAllFilters,
-    saveFilterSet,
     loadFilterSet,
     hasActiveFilters
   } = useFilters({ 
     storageKey: 'controls',
     defaultFilters: {}
   });
+
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
 
   const { execute: loadControlsAsync } = useAsyncOperation(loadControls, {
     onError: (error) => {
@@ -40,6 +44,7 @@ export const ControlsView: React.FC = () => {
     if (controls.length === 0) {
       loadControlsAsync();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Build filter groups with counts
@@ -138,8 +143,8 @@ export const ControlsView: React.FC = () => {
   }, [statistics]);
 
   const handleExport = () => {
-    // TODO: Implement export functionality
-    console.log('Export controls');
+    const filename = `controls-register-${new Date().toISOString().split('T')[0]}.xlsx`;
+    exportControlsToExcel(filteredControls, filename);
   };
 
   // Default filter sets
@@ -208,79 +213,168 @@ export const ControlsView: React.FC = () => {
   }
 
   return (
-    <div className="flex h-full">
-      {/* Collapsible Filter Panel - Left Side */}
-      <CollapsibleFilterPanel
-        filterGroups={filterGroups}
-        activeFilters={activeFilters}
-        savedFilterSets={allFilterSets}
-        onFilterChange={updateFilter}
-        onClearFilters={clearAllFilters}
-        onSaveFilterSet={saveFilterSet}
-        onLoadFilterSet={loadFilterSet}
-        hasActiveFilters={hasActiveFilters}
-      />
+    <div className="h-full">
+      {/* Main Content - Full Width */}
+      <div className="space-y-6 p-6 overflow-y-auto">
+        <PageHeader
+          title={
+            <span>
+              Controls
+              {hasActiveFilters && (
+                <span className="ml-2 text-lg font-normal text-gray-600">
+                  ({filteredControls.length} of {controls.length})
+                </span>
+              )}
+            </span>
+          }
+          description="Manage and monitor your AI risk control implementations"
+          actions={
+            <div className="flex items-center space-x-3">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowFilterPanel(!showFilterPanel)}
+                icon={<Filter className="h-4 w-4" />}
+              >
+                Filters
+                {hasActiveFilters && (
+                  <Badge size="sm" variant="primary" className="ml-2">
+                    {Object.values(activeFilters).reduce((sum, values) => sum + values.length, 0)}
+                  </Badge>
+                )}
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleExport}
+                icon={<Download className="h-4 w-4" />}
+              >
+                Export
+              </Button>
+            </div>
+          }
+        />
 
-      {/* Main Content - Right Side */}
-      <div className="flex-1 space-y-6 p-6 overflow-y-auto">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Controls
-            {hasActiveFilters && (
-              <span className="ml-2 text-lg font-normal text-gray-600">
-                ({filteredControls.length} of {controls.length})
-              </span>
-            )}
-          </h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Manage and monitor your AI risk control implementations
-          </p>
-        </div>
+          {/* Collapsible Filter Panel */}
+          {showFilterPanel && (
+            <div className="bg-white shadow rounded-lg p-6">
+              <div className="space-y-4">
+                {/* Saved Filter Sets */}
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 mb-2">Saved Filters</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {allFilterSets.map((filterSet) => (
+                      <Button
+                        key={filterSet.id}
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => loadFilterSet(filterSet)}
+                        className={cn(
+                          "text-xs",
+                          filterSet.isDefault && "text-gray-600"
+                        )}
+                      >
+                        {filterSet.name}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <ControlSummaryCard
-            title="Implemented"
-            count={summaryStats.ok}
-            variant="ok"
-            description="Controls fully implemented and compliant"
-          />
-          <ControlSummaryCard
-            title="Not Implemented"
-            count={summaryStats.attention}
-            variant="attention"
-            description="Controls requiring immediate attention"
-          />
-          <ControlSummaryCard
-            title="In Progress"
-            count={summaryStats.pending}
-            variant="pending"
-            description="Controls currently being implemented"
-          />
-        </div>
+                {/* Filter Groups */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {filterGroups.map((group) => {
+                    const activeCount = activeFilters[group.id]?.length || 0;
+                    return (
+                      <div key={group.id}>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          {group.label}
+                          {activeCount > 0 && (
+                            <Badge size="sm" variant="secondary" className="ml-2">
+                              {activeCount}
+                            </Badge>
+                          )}
+                        </label>
+                        <div className="space-y-1 max-h-40 overflow-y-auto border border-gray-200 rounded p-2">
+                          {group.options.map((option) => {
+                            const isActive = activeFilters[group.id]?.includes(option.value);
+                            return (
+                              <label
+                                key={option.value}
+                                className="flex items-center justify-between p-1 rounded cursor-pointer hover:bg-gray-50"
+                              >
+                                <div className="flex items-center space-x-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={isActive}
+                                    onChange={(e) => {
+                                      const currentValues = activeFilters[group.id] || [];
+                                      const newValues = e.target.checked
+                                        ? [...currentValues, option.value]
+                                        : currentValues.filter(v => v !== option.value);
+                                      updateFilter(group.id, newValues);
+                                    }}
+                                    className="h-3 w-3 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                  />
+                                  <span className="text-sm text-gray-700">{option.label}</span>
+                                </div>
+                                <span className="text-xs text-gray-500">{option.count}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
 
-        {/* Export Button */}
-        <div className="flex justify-end">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={handleExport}
-            icon={<Download className="h-4 w-4" />}
-          >
-            Export
-          </Button>
-        </div>
+                {/* Clear Filters */}
+                {hasActiveFilters && (
+                  <div className="flex justify-end">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearAllFilters}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      Clear all filters
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
-        {/* Controls Table */}
-        <div className="bg-white shadow rounded-lg p-6">
-          <ControlsTable
-            controls={filteredControls}
-            searchTerm=""
-            selectedCategories={[]}
-            selectedStatuses={[]}
-          />
-        </div>
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <ControlSummaryCard
+              title="Implemented"
+              count={summaryStats.ok}
+              variant="ok"
+              description="Controls fully implemented and compliant"
+            />
+            <ControlSummaryCard
+              title="Not Implemented"
+              count={summaryStats.attention}
+              variant="attention"
+              description="Controls requiring immediate attention"
+            />
+            <ControlSummaryCard
+              title="In Progress"
+              count={summaryStats.pending}
+              variant="pending"
+              description="Controls currently being implemented"
+            />
+          </div>
+
+          {/* Controls Table */}
+          <div className="bg-white shadow rounded-lg p-6">
+            <ControlsTable
+              controls={filteredControls}
+              searchTerm=""
+              selectedCategories={[]}
+              selectedStatuses={[]}
+            />
+          </div>
       </div>
     </div>
   );

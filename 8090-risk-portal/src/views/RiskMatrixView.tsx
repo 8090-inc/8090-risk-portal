@@ -4,6 +4,7 @@ import { ColDef } from 'ag-grid-community';
 import { Download } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
+import { PageHeader } from '../components/layout/PageHeader';
 import riskMapData from '../data/extracted-excel-data.json';
 
 import 'ag-grid-community/styles/ag-grid.css';
@@ -215,61 +216,58 @@ export const RiskMatrixView: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex-shrink-0 px-6 py-4 border-b border-slate-200 bg-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Risk Matrix</h1>
-            <p className="mt-1 text-sm text-slate-600">
-              Comprehensive view of all AI risks with initial and residual assessments
-            </p>
-          </div>
-          <div className="flex items-center space-x-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleAutoSize}
-              className="text-sm"
-            >
-              Auto-size Columns
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={handleExport}
-              icon={<Download className="h-4 w-4" />}
-            >
-              Export CSV
-            </Button>
-          </div>
-        </div>
+    <div className="h-full">
+      {/* Main Content - Full Width */}
+      <div className="space-y-6 p-6 overflow-y-auto">
+        <PageHeader
+          title="Risk Matrix"
+          description="Comprehensive view of all AI risks with initial and residual assessments"
+          actions={
+            <div className="flex items-center space-x-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleAutoSize}
+              >
+                Auto-size Columns
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleExport}
+                icon={<Download className="h-4 w-4" />}
+              >
+                Export CSV
+              </Button>
+            </div>
+          }
+        />
         
         {/* Summary Stats */}
-        <div className="mt-4 flex items-center space-x-6">
-          <div className="text-sm text-slate-600">
-            <span className="font-medium">Total Risks:</span> {riskMapData.riskMap.length}
-          </div>
-          <div className="flex items-center space-x-2">
-            <Badge variant="default" className="bg-red-100 text-red-800">
-              Critical: {riskMapData.riskMap.filter(r => r.riskLevelCategory === 'Critical').length}
-            </Badge>
-            <Badge variant="default" className="bg-orange-100 text-orange-800">
-              High: {riskMapData.riskMap.filter(r => r.riskLevelCategory === 'High').length}
-            </Badge>
-            <Badge variant="default" className="bg-yellow-100 text-yellow-800">
-              Medium: {riskMapData.riskMap.filter(r => r.riskLevelCategory === 'Medium').length}
-            </Badge>
-            <Badge variant="default" className="bg-green-100 text-green-800">
-              Low: {riskMapData.riskMap.filter(r => r.riskLevelCategory === 'Low').length}
-            </Badge>
+        <div className="bg-white shadow-sm rounded-lg p-4">
+          <div className="flex items-center space-x-6">
+            <div className="text-sm text-slate-600">
+              <span className="font-medium">Total Risks:</span> {riskMapData.riskMap.length}
+            </div>
+            <div className="flex items-center space-x-2">
+              <Badge variant="default" className="bg-red-100 text-red-800">
+                Critical: {riskMapData.riskMap.filter(r => r.riskLevelCategory === 'Critical').length}
+              </Badge>
+              <Badge variant="default" className="bg-orange-100 text-orange-800">
+                High: {riskMapData.riskMap.filter(r => r.riskLevelCategory === 'High').length}
+              </Badge>
+              <Badge variant="default" className="bg-yellow-100 text-yellow-800">
+                Medium: {riskMapData.riskMap.filter(r => r.riskLevelCategory === 'Medium').length}
+              </Badge>
+              <Badge variant="default" className="bg-green-100 text-green-800">
+                Low: {riskMapData.riskMap.filter(r => r.riskLevelCategory === 'Low').length}
+              </Badge>
+            </div>
           </div>
         </div>
-      </div>
 
 
-      {/* AG-Grid Container */}
-      <div className="flex-1 p-6 bg-slate-50">
+        {/* AG-Grid Container */}
         <div className="bg-white rounded-lg shadow-sm border border-slate-200" style={{ height: '600px' }}>
           <div className="ag-theme-alpine w-full h-full" style={{ 
             '--ag-header-background-color': '#f8fafc',

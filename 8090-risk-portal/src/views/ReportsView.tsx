@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { FileText } from 'lucide-react';
 import { Button, Spinner } from '../components/ui';
+import { PageHeader } from '../components/layout/PageHeader';
 import { TemplateSelector } from '../components/reports/TemplateSelector';
 import { PromptEditor } from '../components/reports/PromptEditor';
 import { ReportDisplay } from '../components/reports/ReportDisplay';
@@ -112,17 +113,17 @@ export const ReportsView: React.FC = () => {
   }, [generatedReport]);
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 flex items-center">
-          <FileText className="h-6 w-6 mr-2" />
-          Reports
-        </h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Generate AI-powered reports and executive summaries for your risk assessment
-        </p>
-      </div>
+    <div className="h-full">
+      <div className="space-y-6 p-6 overflow-y-auto">
+        <PageHeader
+          title={
+            <span className="flex items-center">
+              <FileText className="h-6 w-6 mr-2" />
+              Reports
+            </span>
+          }
+          description="Generate AI-powered reports and executive summaries for your risk assessment"
+        />
 
       {/* Guide */}
       {!generatedReport && <ReportsGuide />}
@@ -205,7 +206,7 @@ export const ReportsView: React.FC = () => {
           />
         </div>
       )}
-
+      </div>
     </div>
   );
 };
