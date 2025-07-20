@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bell, User, LogOut, Settings, ChevronDown } from 'lucide-react';
+import { User, LogOut, Settings, ChevronDown } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCurrentUser, useAuthStore } from '../../store/authStore';
 import { Badge } from '../ui/Badge';
@@ -44,12 +44,6 @@ export const Header: React.FC = () => {
 
       {/* Right Side Actions */}
       <div className="flex items-center space-x-4">
-        {/* Notifications */}
-        <button className="relative p-2 rounded-lg hover:bg-slate-100 transition-colors duration-200">
-          <Bell className="h-5 w-5 text-slate-600" />
-          <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
-        </button>
-
         {/* User Menu */}
         <div className="relative" ref={menuRef}>
           <button 
