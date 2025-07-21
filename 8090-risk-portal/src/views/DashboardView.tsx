@@ -70,55 +70,58 @@ const InteractiveRiskMatrix: React.FC<{
 
   return (
     <div className="h-full w-full flex flex-col" role="grid" aria-label="Risk assessment matrix">
-      <div className="flex-1 grid grid-cols-[auto_1fr]">
+      <div className="flex-1 flex">
         <div className="flex items-center justify-center px-2">
           <span className="text-slate-700 font-semibold -rotate-90 whitespace-nowrap text-sm">Impact</span>
         </div>
-        <div className="flex flex-col">
+        <div className="flex-1 flex flex-col">
           <div className="grid grid-cols-5 mb-1">
             {[1, 2, 3, 4, 5].map(l => (
               <div key={l} className="flex items-center justify-center text-slate-700 text-sm font-semibold">{l}</div>
             ))}
           </div>
-          <div className="grid grid-rows-5 grid-cols-5 gap-0.5 flex-1">
-            {[5, 4, 3, 2, 1].map(impact => 
-              [1, 2, 3, 4, 5].map(likelihood => {
-                const cellKey = `${likelihood}-${impact}`;
-                const cellRisks = matrix[cellKey] || [];
-                const cellColor = getCellColor(likelihood, impact);
-                const isSelected = selectedCell === cellKey;
-                const isHovered = hoveredCell === cellKey;
-                
-                return (
-                  <div key={cellKey} className="relative aspect-square">
-                    <div
-                      role="gridcell"
-                      aria-label={`Likelihood ${likelihood}, Impact ${impact}: ${cellRisks.length} risks`}
-                      tabIndex={0}
-                      onClick={() => handleCellClick(cellKey)}
-                      onMouseEnter={() => onCellHover(cellKey)}
-                      onMouseLeave={() => onCellHover(null)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          handleCellClick(cellKey);
-                        }
-                      }}
-                      className={cn(
-                        "absolute inset-0 flex items-center justify-center rounded font-bold cursor-pointer transition-all",
-                        cellColor,
-                        cellRisks.length > 0 ? 'text-white' : 'text-white/40',
-                        isSelected && 'ring-2 ring-slate-900 ring-offset-2',
-                        isHovered && !isSelected && 'ring-1 ring-slate-400 ring-offset-1',
-                        'hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2'
-                      )}
-                    >
-                      <span className="matrix-cell-text text-lg">{cellRisks.length || '·'}</span>
+          <div className="flex-1 relative">
+            <div className="absolute inset-0 grid grid-rows-5 grid-cols-5 gap-0.5">
+              {[5, 4, 3, 2, 1].map(impact => 
+                [1, 2, 3, 4, 5].map(likelihood => {
+                  const cellKey = `${likelihood}-${impact}`;
+                  const cellRisks = matrix[cellKey] || [];
+                  const cellColor = getCellColor(likelihood, impact);
+                  const isSelected = selectedCell === cellKey;
+                  const isHovered = hoveredCell === cellKey;
+                  
+                  return (
+                    <div key={cellKey} className="relative">
+                      <div className="pb-[100%]"></div>
+                      <div
+                        role="gridcell"
+                        aria-label={`Likelihood ${likelihood}, Impact ${impact}: ${cellRisks.length} risks`}
+                        tabIndex={0}
+                        onClick={() => handleCellClick(cellKey)}
+                        onMouseEnter={() => onCellHover(cellKey)}
+                        onMouseLeave={() => onCellHover(null)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleCellClick(cellKey);
+                          }
+                        }}
+                        className={cn(
+                          "absolute inset-0 flex items-center justify-center rounded font-bold cursor-pointer transition-all",
+                          cellColor,
+                          cellRisks.length > 0 ? 'text-white' : 'text-white/40',
+                          isSelected && 'ring-2 ring-slate-900 ring-offset-2',
+                          isHovered && !isSelected && 'ring-1 ring-slate-400 ring-offset-1',
+                          'hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2'
+                        )}
+                      >
+                        <span className="matrix-cell-text text-lg">{cellRisks.length || '·'}</span>
+                      </div>
                     </div>
-                  </div>
-                );
-              })
-            )}
+                  );
+                })
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -241,7 +244,7 @@ const InteractiveBarChart: React.FC<{
   data: Array<{ label: string; value: number; color: string; link?: string }>;
   total: number;
   showPercentage?: boolean;
-  onClick?: (item: any) => void;
+  onClick?: (item: { label: string; value: number; color: string; link?: string }) => void;
 }> = ({ data, total, showPercentage = true, onClick }) => {
   const navigate = useNavigate();
   
@@ -307,7 +310,7 @@ export const DashboardView: React.FC = () => {
       .matrix-container { container-type: inline-size; }
     `;
     document.head.appendChild(style);
-    return () => document.head.removeChild(style);
+    return () => { document.head.removeChild(style); };
   }, []);
 
   // Filter risks based on selected matrix cell
@@ -536,7 +539,7 @@ export const DashboardView: React.FC = () => {
               </h2>
             </div>
             <div className="grid grid-cols-[5fr,7fr] divide-x divide-slate-200 flex-1 min-h-0">
-              <div className="flex flex-col h-full">
+              <div className="flex flex-col h-full min-w-[300px]">
                 <div className="text-sm font-medium text-slate-700 px-3 pt-2 pb-1 flex-shrink-0">Residual Risk Matrix</div>
                 <div className="flex-1 p-3 matrix-container">
                   <InteractiveRiskMatrix 

@@ -27,7 +27,7 @@ window.location.href = '/?gcp-iap-mode=GCIP_SIGNOUT';
 ## Commands to Run After Changes
 After making code changes, always run:
 - `npm run lint` - Check for linting errors
-- `npm run typecheck` - Check for TypeScript errors
+- `npm run build:check` - Check for TypeScript errors (note: no typecheck script exists)
 
 ## Important Deployment Discovery
 The application is deployed to **Cloud Run**, not Firebase Hosting. The domain `dompe.airiskportal.com` points to an IAP-protected Load Balancer that forwards to Cloud Run.
@@ -64,8 +64,44 @@ The app has TWO authentication implementations (technical debt):
 
 The app has fully transitioned to IAP authentication via `auth.html`.
 
+## Dashboard Visual Alignment Fix
+When the sidebar expands/collapses, matrix cells must maintain square proportions. We use the "padding-bottom 100%" technique instead of aspect-square:
+
+```jsx
+<div className="relative">
+  <div className="pb-[100%]"></div>  {/* Creates square space */}
+  <div className="absolute inset-0">  {/* Content positioned absolutely */}
+    {/* Cell content */}
+  </div>
+</div>
+```
+
+This ensures cells remain square regardless of container width changes.
+
 ## Git Commit Instructions
 When making commits, always include the proper author:
 ```bash
 git commit --author="Rohit Kelapure <kelapure@gmail.com>" -m "your commit message"
 ```
+
+## Google Drive Integration
+The backend integrates with Google Drive to read/write the risk data Excel file.
+
+### Current Status
+- **Working**: All read and write operations (GET/POST endpoints)
+- **Service Account**: 290017403746-compute@developer.gserviceaccount.com
+- **File ID**: 1OzrkAUQTWY7VUNrX-_akCWIuU2ALR3sm
+
+### Important Testing Guidelines
+⚠️ **ALWAYS snapshot the Excel file before and after tests**:
+1. Tests that modify data MUST create a backup before running
+2. Tests MUST clean up after themselves by removing test data
+3. If cleanup fails, the backup should be used to restore the original state
+
+### Test Data Cleanup
+- Test risks: Any risk with description containing "test risk created by automated testing"
+- Test controls: Any control with ID starting with "TEST-"
+- Use `cleanup-test-data.cjs` to remove test data if needed
+
+### Parser Pattern Updates
+The Excel parser accepts control IDs matching: `(ACC|SEC|LOG|GOV|TEST)-\d{2}$`

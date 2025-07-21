@@ -52,6 +52,7 @@ gcip_settings.json
 iap_settings.json
 iap_settings.yaml
 iap_gcip_settings.yaml
+service-account-key.json
 
 # Python
 venv/
@@ -59,3 +60,18 @@ __pycache__/
 *.pyc
 *.py[cod]
 .pytest_cache/
+
+# Test files
+__tests__/
+*.test.js
+*.test.ts
+jest.*.cjs
+jest.*.js
+.env.test
+debug-*.cjs
+test-*.cjs
+test-*.js
+test-*.html
+analyze-*.cjs
+verify-*.cjs
+setup-*.cjs
