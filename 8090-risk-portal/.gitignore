@@ -75,3 +75,10 @@ test-*.html
 analyze-*.cjs
 verify-*.cjs
 setup-*.cjs
+
+# Trash and temporary files
+trash/
+**/trash/
+*.backup
+*.old
+*.debug.*
