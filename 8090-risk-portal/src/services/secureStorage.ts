@@ -35,7 +35,7 @@ const generateSecureToken = (length: number = 32): string => {
 
 // Mock database for development
 class MockVaultDatabase {
-  private users: Map<string, any> = new Map();
+  private users: Map<string, User> = new Map();
   private sessions: Map<string, Session> = new Map();
   private resetTokens: Map<string, { email: string; expires: Date }> = new Map();
   private passwordHistory: Map<string, string[]> = new Map();
@@ -63,7 +63,7 @@ class MockVaultDatabase {
     this.passwordHistory.set(adminUser.id, [adminUser.password]);
   }
 
-  async createUser(userData: any): Promise<any> {
+  async createUser(userData: Partial<User> & { password: string }): Promise<User> {
     const hashedPassword = await mockHashPassword(userData.password);
     const user = {
       ...userData,
@@ -80,11 +80,11 @@ class MockVaultDatabase {
     return user;
   }
 
-  async getUserByEmail(email: string): Promise<any | null> {
+  async getUserByEmail(email: string): Promise<User | null> {
     return this.users.get(email) || null;
   }
 
-  async updateUser(email: string, updates: any): Promise<any> {
+  async updateUser(email: string, updates: Partial<User>): Promise<User> {
     const user = this.users.get(email);
     if (!user) throw new Error('User not found');
     
@@ -197,8 +197,9 @@ class MockVaultDatabase {
     this.resetTokens.delete(token);
   }
 
-  async getAllUsers(): Promise<any[]> {
+  async getAllUsers(): Promise<Omit<User, 'password'>[]> {
     return Array.from(this.users.values()).map(user => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...safeUser } = user;
       return safeUser;
     });
@@ -222,38 +223,43 @@ class SecureStorageService {
   }
 
   // User management
-  async createUser(userData: any): Promise<User> {
+  async createUser(userData: Partial<User> & { password: string }): Promise<Omit<User, 'password'>> {
     const user = await this.mockDb.createUser(userData);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...safeUser } = user;
-    return safeUser;
+    return safeUser as Omit<User, 'password'>;
   }
 
-  async getUserByEmail(email: string): Promise<User | null> {
+  async getUserByEmail(email: string): Promise<Omit<User, 'password'> | null> {
     const user = await this.mockDb.getUserByEmail(email);
     if (!user) return null;
     
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...safeUser } = user;
-    return safeUser;
+    return safeUser as Omit<User, 'password'>;
   }
 
-  async updateUser(email: string, updates: any): Promise<User> {
+  async updateUser(email: string, updates: Partial<User>): Promise<Omit<User, 'password'>> {
     const user = await this.mockDb.updateUser(email, updates);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...safeUser } = user;
-    return safeUser;
+    return safeUser as Omit<User, 'password'>;
   }
 
-  async getAllUsers(): Promise<User[]> {
+  async getAllUsers(): Promise<Omit<User, 'password'>[]> {
     return this.mockDb.getAllUsers();
   }
 
   // Authentication
-  async verifyCredentials(email: string, password: string): Promise<User | null> {
+  async verifyCredentials(email: string, password: string): Promise<Omit<User, 'password'> | null> {
     const isValid = await this.mockDb.verifyPassword(email, password);
     if (!isValid) return null;
     
     const user = await this.mockDb.getUserByEmail(email);
-    const { password: _, ...safeUser } = user;
-    return safeUser;
+    if (!user) return null;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...safeUser } = user;
+    return safeUser as Omit<User, 'password'>;
   }
 
   async updatePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
@@ -359,7 +365,7 @@ export const checkPasswordStrength = (password: string): {
   if (/[0-9]/.test(password)) score++;
   else feedback.push('Password must contain numbers');
 
-  if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) score++;
+  if (/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) score++;
   else feedback.push('Password must contain special characters');
 
   // Bonus for length
@@ -372,7 +378,7 @@ export const checkPasswordStrength = (password: string): {
     /[a-z]/.test(password) &&
     /[A-Z]/.test(password) &&
     /[0-9]/.test(password) &&
-    /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+    /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password);
 
   return { score, feedback, isValid };
 };

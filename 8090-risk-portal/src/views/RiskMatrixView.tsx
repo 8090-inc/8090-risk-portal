@@ -22,7 +22,7 @@ const getRiskLevelColor = (level: string) => {
 };
 
 // Risk Level Badge Renderer
-const RiskLevelRenderer = (params: any) => {
+const RiskLevelRenderer = (params: { value: string }) => {
   const level = params.value;
   const colorClass = getRiskLevelColor(level);
   
@@ -36,7 +36,7 @@ const RiskLevelRenderer = (params: any) => {
 };
 
 // Risk Score Renderer with color coding
-const RiskScoreRenderer = (params: any) => {
+const RiskScoreRenderer = (params: { value: number | null | undefined }) => {
   const score = params.value;
   
   // Handle null/undefined values
@@ -63,7 +63,7 @@ const RiskScoreRenderer = (params: any) => {
 };
 
 // Truncated text renderer with tooltip
-const TextRenderer = (params: any) => {
+const TextRenderer = (params: { value: string | string[] | null }) => {
   let text = params.value || '';
   
   // Handle arrays (like proposedOversightOwnership)

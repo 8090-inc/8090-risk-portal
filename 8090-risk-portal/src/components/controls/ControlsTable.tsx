@@ -25,13 +25,13 @@ interface ControlsTableProps {
 
 const columnHelper = createColumnHelper<Control>();
 
-const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
+const fuzzyFilter: FilterFn<Control> = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value);
   addMeta({ itemRank });
   return itemRank.passed;
 };
 
-const rankItem = (rowValue: any, searchValue: string) => {
+const rankItem = (rowValue: unknown, searchValue: string) => {
   const value = String(rowValue).toLowerCase();
   const search = searchValue.toLowerCase();
   const passed = value.includes(search);
@@ -41,16 +41,14 @@ const rankItem = (rowValue: any, searchValue: string) => {
 
 export const ControlsTable: React.FC<ControlsTableProps> = ({
   controls,
-  searchTerm,
-  selectedCategories,
-  selectedStatuses
+  searchTerm
 }) => {
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
   // Remove double filtering - controls are already filtered by parent component
   console.log('ControlsTable: Received controls:', controls.length);
 
-  const columns = useMemo<ColumnDef<Control, any>[]>(
+  const columns = useMemo<ColumnDef<Control>[]>(
     () => [
       columnHelper.accessor('mitigationID', {
         header: 'Control ID',

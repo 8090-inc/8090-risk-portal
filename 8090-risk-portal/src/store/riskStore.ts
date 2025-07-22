@@ -377,7 +377,7 @@ export const useRiskStore = create<RiskState>()(
           
           try {
             // Update controls for this risk
-            const response = await axios.put(`/api/v1/risks/${riskId}/controls`, {
+            await axios.put(`/api/v1/risks/${riskId}/controls`, {
               controlIds
             });
             

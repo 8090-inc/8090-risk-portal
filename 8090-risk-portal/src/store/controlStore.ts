@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
+import { devtools } from 'zustand/middleware';
 import { 
   Control, 
   ControlFilters, 
@@ -127,16 +127,18 @@ const applySort = (controls: Control[], sort: ControlSort): Control[] => {
       case 'category':
         comparison = a.category.localeCompare(b.category);
         break;
-      case 'implementationStatus':
+      case 'implementationStatus': {
         const statusA = a.implementationStatus || 'Not Started';
         const statusB = b.implementationStatus || 'Not Started';
         comparison = statusA.localeCompare(statusB);
         break;
-      case 'effectiveness':
+      }
+      case 'effectiveness': {
         const effA = a.effectiveness || 'Not Assessed';
         const effB = b.effectiveness || 'Not Assessed';
         comparison = effA.localeCompare(effB);
         break;
+      }
     }
     
     return sort.direction === 'asc' ? comparison : -comparison;
@@ -372,7 +374,7 @@ export const useControlStore = create<ControlState>()(
           
           try {
             // Update risks for this control
-            const response = await axios.put(`/api/v1/controls/${controlId}/risks`, {
+            await axios.put(`/api/v1/controls/${controlId}/risks`, {
               riskIds
             });
             

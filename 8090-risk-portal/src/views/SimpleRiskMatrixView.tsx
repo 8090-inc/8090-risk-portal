@@ -169,7 +169,7 @@ const ExpandableTextCell: React.FC<{
 export const SimpleRiskMatrixView: React.FC = () => {
   const { risks, loadRisks, createRisk, updateRisk, deleteRisk } = useRiskStore();
   const { controls, loadControls, createControl } = useControlStore();
-  const [editedRisks, setEditedRisks] = useState<Record<string, any>>({});
+  const [editedRisks, setEditedRisks] = useState<Record<string, Partial<Risk>>>({});
   const [hasChanges, setHasChanges] = useState(false);
   const [showAddRiskModal, setShowAddRiskModal] = useState(false);
   const [showAddControlModal, setShowAddControlModal] = useState(false);
@@ -266,7 +266,7 @@ export const SimpleRiskMatrixView: React.FC = () => {
       setSelectedRisks(new Set());
       setShowDeleteConfirm(false);
       alert(`Successfully deleted ${selectedRisks.size} risk(s)`);
-    } catch (error) {
+    } catch {
       alert('Failed to delete some risks. Please try again.');
     }
   };
@@ -290,7 +290,7 @@ export const SimpleRiskMatrixView: React.FC = () => {
       if (!risk) continue;
       
       // Prepare the update object with proper structure
-      const updateData: any = { ...risk };
+      const updateData: Risk = { ...risk };
       
       // Basic fields
       if (changes.riskCategory !== undefined) updateData.riskCategory = changes.riskCategory;

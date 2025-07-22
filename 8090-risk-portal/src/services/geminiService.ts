@@ -95,13 +95,15 @@ class GeminiService {
       }
       
       return text;
-    } catch (error: any) {
-      if (error.message?.includes('API key')) {
-        throw new Error('Invalid API key. Please check your Gemini API key in Settings.');
-      } else if (error.message?.includes('quota')) {
-        throw new Error('API quota exceeded. Please check your Gemini API usage limits.');
-      } else if (error.message?.includes('network')) {
-        throw new Error('Network error. Please check your internet connection and try again.');
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message?.includes('API key')) {
+          throw new Error('Invalid API key. Please check your Gemini API key in Settings.');
+        } else if (error.message?.includes('quota')) {
+          throw new Error('API quota exceeded. Please check your Gemini API usage limits.');
+        } else if (error.message?.includes('network')) {
+          throw new Error('Network error. Please check your internet connection and try again.');
+        }
       }
       throw error;
     }

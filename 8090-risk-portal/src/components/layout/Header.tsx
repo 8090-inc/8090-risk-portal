@@ -1,13 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { User, LogOut, Settings, ChevronDown } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useCurrentUser, useAuthStore } from '../../store/authStore';
 import { Badge } from '../ui/Badge';
 
 export const Header: React.FC = () => {
   const user = useCurrentUser();
   const { logout } = useAuthStore();
-  const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 

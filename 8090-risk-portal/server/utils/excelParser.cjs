@@ -51,7 +51,8 @@ const CONTROL_COLUMNS = {
   GDPR_ARTICLE: 4,                   // "GDPR Article"
   EU_AI_ACT_ARTICLE: 5,              // "EU AI Act Article"
   NIST_800_53: 6,                    // "NIST 800-53 Control Family"
-  SOC_2_TSC: 7                       // "SOC 2 TSC"
+  SOC_2_TSC: 7,                       // "SOC 2 TSC"
+  RISK_CATEGORY: 8                    // "Risk Category"
 };
 
 // Column mappings for relationships
@@ -319,27 +320,36 @@ const parseControlsFromWorkbook = async (buffer) => {
   const controls = [];
   const range = XLSX.utils.decode_range(sheet['!ref']);
   
-  // Start from row 2 (skip header row - row 0 is headers, row 1 might be category)
-  let currentCategory = 'General'; // Default category
-  
+  // Start from row 1 (skip header row at row 0)
   for (let row = 1; row <= range.e.r; row++) {
     const mitigationId = getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.MITIGATION_ID })]);
     const mitigationDesc = getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.MITIGATION_DESCRIPTION })]);
-    
-    // Check if this is a category row (has text in first column but no valid control ID)
-    if (mitigationId && !CONTROL_ID_PATTERN.test(mitigationId) && !mitigationDesc) {
-      currentCategory = mitigationId;
-      continue;
-    }
     
     // Skip if no valid control ID
     if (!mitigationId || !CONTROL_ID_PATTERN.test(mitigationId)) continue;
     if (!mitigationDesc) continue;
     
+    // Read category from Risk Category column
+    let category = getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.RISK_CATEGORY })]);
+    
+    // If no category in column, determine from control ID prefix
+    if (!category) {
+      const prefix = mitigationId.split('-')[0];
+      const categoryMapping = {
+        'ACC': 'Accuracy & Judgment',
+        'SEC': 'Security & Data Privacy',
+        'LOG': 'Audit & Traceability',
+        'GOV': 'Governance & Compliance',
+        'TEST': 'Test Category'
+      };
+      category = categoryMapping[prefix] || 'General';
+      console.log(`[ExcelParser] No category in column for ${mitigationId}, using ${category} based on prefix`);
+    }
+    
     const control = {
       mitigationID: mitigationId,
       mitigationDescription: mitigationDesc,
-      category: currentCategory,
+      category: category,
       // Compliance fields
       compliance: {
         cfrPart11Annex11: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.CFR_PART11_ANNEX11 })]),
@@ -613,7 +623,7 @@ const addControlToWorkbook = async (buffer, newControl) => {
     const newSheet = XLSX.utils.aoa_to_sheet([
       ['Mitigation ID', 'Mitigation Description', '21 CFR Part 11 / Annex 11 Clause', 
        'HIPAA Safeguard', 'GDPR Article', 'EU AI Act Article', 
-       'NIST 800-53 Control Family', 'SOC 2 TSC']
+       'NIST 800-53 Control Family', 'SOC 2 TSC', 'Risk Category']
     ]);
     workbook.Sheets[controlsSheetName] = newSheet;
     workbook.SheetNames.push(controlsSheetName);
@@ -632,7 +642,8 @@ const addControlToWorkbook = async (buffer, newControl) => {
     newControl.compliance?.gdprArticle || '',
     newControl.compliance?.euAiActArticle || '',
     newControl.compliance?.nist80053 || '',
-    newControl.compliance?.soc2TSC || ''
+    newControl.compliance?.soc2TSC || '',
+    newControl.category || 'General'
   ];
   
   rowData.forEach((value, colIndex) => {
@@ -685,7 +696,8 @@ const updateControlInWorkbook = async (buffer, controlId, updatedControl) => {
     updatedControl.compliance?.gdprArticle || '',
     updatedControl.compliance?.euAiActArticle || '',
     updatedControl.compliance?.nist80053 || '',
-    updatedControl.compliance?.soc2TSC || ''
+    updatedControl.compliance?.soc2TSC || '',
+    updatedControl.category || 'General'
   ];
   
   rowData.forEach((value, colIndex) => {

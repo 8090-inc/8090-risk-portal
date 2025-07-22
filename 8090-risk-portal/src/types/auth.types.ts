@@ -111,7 +111,7 @@ export interface AuthActivity {
   timestamp: Date;
   ipAddress?: string;
   userAgent?: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 // Role permissions
@@ -242,7 +242,7 @@ export const PASSWORD_REQUIREMENTS = {
   requireLowercase: true,
   requireNumbers: true,
   requireSpecialChars: true,
-  specialCharsRegex: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/,
+  specialCharsRegex: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/,
 };
 
 // Session configuration

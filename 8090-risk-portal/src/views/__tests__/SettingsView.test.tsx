@@ -21,7 +21,7 @@ vi.mock('../../utils/pdfExport', () => ({
 
 // Mock components
 vi.mock('../../components/data/DataUpload', () => ({
-  DataUpload: ({ onDataImport, onClose }: any) => (
+  DataUpload: ({ onDataImport, onClose }: { onDataImport: (data: { risks: unknown[]; controls: unknown[] }) => void; onClose: () => void }) => (
     <div data-testid="data-upload-modal">
       <button onClick={() => onDataImport({ risks: [], controls: [] })}>Import</button>
       <button onClick={onClose}>Close</button>
@@ -46,12 +46,12 @@ describe('SettingsView', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     
-    (useRiskStore as any).mockReturnValue({
+    (useRiskStore as jest.MockedFunction<typeof useRiskStore>).mockReturnValue({
       risks: mockRisks,
       loadRisks: mockLoadRisks
     });
     
-    (useControlStore as any).mockReturnValue({
+    (useControlStore as jest.MockedFunction<typeof useControlStore>).mockReturnValue({
       controls: mockControls,
       loadControls: mockLoadControls
     });

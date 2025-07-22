@@ -4,14 +4,27 @@ import { cn } from '../../utils/cn';
 import { FilterPanel } from './FilterPanel';
 import { Badge } from '../ui/Badge';
 
+interface FilterGroup {
+  id: string;
+  label: string;
+  options: Array<{ value: string; label: string }>;
+}
+
+interface SavedFilterSet {
+  id: string;
+  name: string;
+  filters: Record<string, string[]>;
+  createdAt: string;
+}
+
 interface CollapsibleFilterPanelProps {
-  filterGroups: any[];
+  filterGroups: FilterGroup[];
   activeFilters: Record<string, string[]>;
-  savedFilterSets: any[];
+  savedFilterSets: SavedFilterSet[];
   onFilterChange: (filterId: string, values: string[]) => void;
   onClearFilters: () => void;
   onSaveFilterSet: (name: string) => void;
-  onLoadFilterSet: (filterSet: any) => void;
+  onLoadFilterSet: (filterSet: SavedFilterSet) => void;
   hasActiveFilters: boolean;
 }
 

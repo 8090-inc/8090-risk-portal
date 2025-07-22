@@ -122,11 +122,11 @@ describe('GlobalSearch Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     
-    (useRiskStore as any).mockReturnValue({
+    (useRiskStore as jest.MockedFunction<typeof useRiskStore>).mockReturnValue({
       risks: mockRisks
     });
     
-    (useControlStore as any).mockReturnValue({
+    (useControlStore as jest.MockedFunction<typeof useControlStore>).mockReturnValue({
       controls: mockControls
     });
   });

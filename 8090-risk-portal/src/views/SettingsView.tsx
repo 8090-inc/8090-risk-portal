@@ -25,6 +25,8 @@ import { useRiskStore, useControlStore, useCurrentUser } from '../store';
 import { exportRisksToExcel, exportRisksToCSV } from '../utils/exportUtils';
 import { exportRisksToPDF } from '../utils/pdfExport';
 import { getUserPermissions } from '../types/auth.types';
+import { Risk } from '../types/risk.types';
+import { Control } from '../types/control.types';
 
 export const SettingsView: React.FC = () => {
   const [showUpload, setShowUpload] = useState(false);
@@ -60,7 +62,7 @@ export const SettingsView: React.FC = () => {
     }
   };
 
-  const handleDataImport = async (data: { risks: any[], controls: any[] }) => {
+  const handleDataImport = async (data: { risks: Risk[], controls: Control[] }) => {
     try {
       console.log('Importing data:', { risksCount: data.risks.length, controlsCount: data.controls.length });
       

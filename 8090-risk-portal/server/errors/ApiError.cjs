@@ -8,7 +8,7 @@ class ApiError extends Error {
     
     this.name = 'ApiError';
     this.statusCode = statusCode;
-    this.code = errorCode.code;
+    this.code = errorCode?.code || 'UNKNOWN_ERROR';
     this.errorCode = errorCode;
     this.details = details;
     this.timestamp = new Date().toISOString();
@@ -18,15 +18,23 @@ class ApiError extends Error {
   }
   
   static formatMessage(errorCode, details) {
+    // Handle case where errorCode is undefined or doesn't have message
+    if (!errorCode || !errorCode.message) {
+      console.error('[ApiError] Invalid errorCode:', errorCode);
+      return 'An unexpected error occurred';
+    }
+    
     let message = errorCode.message;
     
     // Replace placeholders with actual values
-    Object.keys(details).forEach(key => {
-      const placeholder = `{${key}}`;
-      if (message.includes(placeholder)) {
-        message = message.replace(placeholder, details[key]);
-      }
-    });
+    if (details && typeof details === 'object') {
+      Object.keys(details).forEach(key => {
+        const placeholder = `{${key}}`;
+        if (message.includes(placeholder)) {
+          message = message.replace(placeholder, details[key]);
+        }
+      });
+    }
     
     return message;
   }
@@ -38,7 +46,7 @@ class ApiError extends Error {
         code: this.code,
         message: this.message,
         details: this.details,
-        suggestion: this.errorCode.suggestion
+        suggestion: this.errorCode?.suggestion || 'Please check the API documentation'
       },
       meta: {
         timestamp: this.timestamp,

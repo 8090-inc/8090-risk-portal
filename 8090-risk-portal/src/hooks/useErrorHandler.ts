@@ -98,7 +98,7 @@ export const useErrorHandler = () => {
 };
 
 // Hook for async operations with error handling
-export const useAsyncOperation = <T extends (...args: any[]) => Promise<any>>(
+export const useAsyncOperation = <T extends (...args: never[]) => Promise<unknown>>(
   operation: T,
   options?: {
     onSuccess?: (result: Awaited<ReturnType<T>>) => void;

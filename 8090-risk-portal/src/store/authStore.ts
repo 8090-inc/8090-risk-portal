@@ -14,7 +14,7 @@ interface AuthStore {
   clearError: () => void;
 }
 
-export const useAuthStore = create<AuthStore>((set, get) => ({
+export const useAuthStore = create<AuthStore>((set) => ({
   // Initial state
   isAuthenticated: false,
   user: null,
@@ -42,7 +42,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           loading: false
         });
       }
-    } catch (error) {
+    } catch {
       set({
         isAuthenticated: false,
         user: null,

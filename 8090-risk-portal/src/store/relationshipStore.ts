@@ -47,9 +47,7 @@ interface RelationshipState {
 
 // Helper to create risk-control relationships from mapping
 const createRiskControlRelationships = (
-  riskToControls: Map<string, string[]>,
-  _risks: Risk[],
-  _controls: Control[]
+  riskToControls: Map<string, string[]>
 ): RiskControlRelationship[] => {
   const relationships: RiskControlRelationship[] = [];
   
@@ -156,9 +154,7 @@ export const useRelationshipStore = create<RelationshipState>()(
           
           // Create risk-control relationships
           const riskControlRelationships = createRiskControlRelationships(
-            riskToControls,
-            risks,
-            controls
+            riskToControls
           );
           
           // Analyze coverage

@@ -48,7 +48,7 @@ export const EditControlModal: React.FC<EditControlModalProps> = ({
     }
   };
 
-  const updateFormData = (field: string, value: any) => {
+  const updateFormData = (field: string, value: string | string[] | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 

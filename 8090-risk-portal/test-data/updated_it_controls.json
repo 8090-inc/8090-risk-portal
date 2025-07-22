@@ -1,0 +1,112 @@
+[
+  {
+    "risk_category": "Security & Data Privacy",
+    "mitigation_id": "SEC-06",
+    "mitigation_description": "Secure Application Gateway / WAF in front of every GenAI endpoint with strong authentication, rate-limiting and DDoS protections.",
+    "cfr_part11_annex11_clause": "11.30; Annex 11 \u00a712",
+    "hipaa_safeguard": "\u00a7164.312(e)(1) (Transmission security)",
+    "gdpr_article": "Art. 32",
+    "eu_ai_act_article": "Art. 15",
+    "nist_800_53_family": [
+      "SC-7",
+      "AC-4"
+    ],
+    "soc2_tsc": "CC6.6"
+  },
+  {
+    "risk_category": "Security & Data Privacy",
+    "mitigation_id": "SEC-07",
+    "mitigation_description": "Input/Output sanitisation & validation (guard-rail models, embedding similarity, outlier detection) to block prompt-injection, data-poisoning and harmful output.",
+    "cfr_part11_annex11_clause": "11.10(a)",
+    "hipaa_safeguard": "\u00a7164.308(a)(1)",
+    "gdpr_article": "Art. 32",
+    "eu_ai_act_article": "Art. 15",
+    "nist_800_53_family": [
+      "SI-4",
+      "SI-10"
+    ],
+    "soc2_tsc": "CC7.2"
+  },
+  {
+    "risk_category": "Security & Data Privacy",
+    "mitigation_id": "SEC-08",
+    "mitigation_description": "Certificate management \u2013 all user-facing and third-party services must present Domp\u00e9-managed x.509 certs; lifecycle is governed by a central PKI.",
+    "cfr_part11_annex11_clause": "11.10(d)",
+    "hipaa_safeguard": "\u00a7164.312(d)",
+    "gdpr_article": "Art. 32",
+    "eu_ai_act_article": "Art. 15",
+    "nist_800_53_family": [
+      "SC-12",
+      "IA-5"
+    ],
+    "soc2_tsc": "CC6.1"
+  },
+  {
+    "risk_category": "Security & Data Privacy",
+    "mitigation_id": "SEC-09",
+    "mitigation_description": "Attribute-Based Access Control (ABAC) integrated with Entra ID; vector-index filtering enforced at query-time.",
+    "cfr_part11_annex11_clause": "11.10(g)",
+    "hipaa_safeguard": "\u00a7164.312(a)(1)",
+    "gdpr_article": "Art. 25",
+    "eu_ai_act_article": "Art. 10",
+    "nist_800_53_family": [
+      "AC-2",
+      "AC-6"
+    ],
+    "soc2_tsc": "CC6.3"
+  },
+  {
+    "risk_category": "Security & Data Privacy",
+    "mitigation_id": "SEC-10",
+    "mitigation_description": "Data-retention & secure-deletion workflow for RAG chunks, logs and clinical data (policy-driven, cryptographically-verifiable wipe).",
+    "cfr_part11_annex11_clause": "11.10(c)",
+    "hipaa_safeguard": "\u00a7164.310(d)(2)(i)",
+    "gdpr_article": "Art. 5(1)(e)",
+    "eu_ai_act_article": "Art. 10(5)",
+    "nist_800_53_family": [
+      "MP-6",
+      "SI-12"
+    ],
+    "soc2_tsc": "PI1.1"
+  },
+  {
+    "risk_category": "Audit & Traceability",
+    "mitigation_id": "LOG-03",
+    "mitigation_description": "Immutable, query-level audit trail (prompt, response, user, doc-IDs) retained for e-discovery & GDPR DPIA evidence.",
+    "cfr_part11_annex11_clause": "11.10(e)",
+    "hipaa_safeguard": "\u00a7164.312(b)",
+    "gdpr_article": "Art. 30",
+    "eu_ai_act_article": "Art. 10(6)",
+    "nist_800_53_family": [
+      "AU-2",
+      "AU-12"
+    ],
+    "soc2_tsc": "CC7.4"
+  },
+  {
+    "risk_category": "Governance & Compliance",
+    "mitigation_id": "GOV-04",
+    "mitigation_description": "Acceptable-Use Policy (AUP) explicitly forbids GenAI use for public-facing content & mandates vendor IP-indemnification clauses.",
+    "cfr_part11_annex11_clause": "11.10(j)",
+    "hipaa_safeguard": "",
+    "gdpr_article": "Art. 26, 28",
+    "eu_ai_act_article": "Art. 4, 52",
+    "nist_800_53_family": [
+      "PL-2"
+    ],
+    "soc2_tsc": "CC1.4"
+  },
+  {
+    "risk_category": "Accuracy & Judgement",
+    "mitigation_id": "ACC-04",
+    "mitigation_description": "Plagiarism detection & mandatory human originality review before any external publication.",
+    "cfr_part11_annex11_clause": "11.10(k)",
+    "hipaa_safeguard": "",
+    "gdpr_article": "Art. 17",
+    "eu_ai_act_article": "Art. 14(5)",
+    "nist_800_53_family": [
+      "SA-11"
+    ],
+    "soc2_tsc": "PI2.1"
+  }
+]

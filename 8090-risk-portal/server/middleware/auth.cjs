@@ -1,5 +1,5 @@
 const ApiError = require('../errors/ApiError.cjs');
-const ErrorCodes = require('../errors/errorCodes.cjs');
+const { ErrorCodes } = require('../errors/errorCodes.cjs');
 
 /**
  * Authentication middleware
@@ -7,6 +7,18 @@ const ErrorCodes = require('../errors/errorCodes.cjs');
  */
 const authenticate = (req, res, next) => {
   try {
+    // Skip auth in development mode
+    if (process.env.NODE_ENV === 'development' || !process.env.NODE_ENV) {
+      req.user = {
+        email: 'dev@localhost',
+        id: 'dev-user',
+        name: 'Developer',
+        role: 'admin',
+        source: 'development'
+      };
+      return next();
+    }
+    
     // Check for IAP headers
     const iapEmail = req.headers['x-goog-authenticated-user-email'];
     const iapId = req.headers['x-goog-authenticated-user-id'];

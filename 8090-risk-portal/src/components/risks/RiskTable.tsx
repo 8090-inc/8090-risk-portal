@@ -27,13 +27,13 @@ interface RiskTableProps {
 
 const columnHelper = createColumnHelper<Risk>();
 
-const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
+const fuzzyFilter: FilterFn<Risk> = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value);
   addMeta({ itemRank });
   return itemRank.passed;
 };
 
-const rankItem = (rowValue: any, searchValue: string) => {
+const rankItem = (rowValue: unknown, searchValue: string) => {
   const value = String(rowValue).toLowerCase();
   const search = searchValue.toLowerCase();
   const passed = value.includes(search);
@@ -64,7 +64,7 @@ export const RiskTable: React.FC<RiskTableProps> = ({
     });
   }, [risks, selectedCategories, selectedLevels]);
 
-  const columns = useMemo<ColumnDef<Risk, any>[]>(
+  const columns = useMemo<ColumnDef<Risk>[]>(
     () => [
       columnHelper.accessor('id', {
         header: 'Risk ID',

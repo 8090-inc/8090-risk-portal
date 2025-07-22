@@ -20,7 +20,7 @@ describe('TypeScript Types', () => {
   describe('Risk Types', () => {
     it('should transform Excel risk data to Risk type', () => {
       const firstRisk = extractedData.riskMap[0];
-      const transformed = transformRiskMapRow(firstRisk as any);
+      const transformed = transformRiskMapRow(firstRisk);
       
       expect(transformed).toMatchObject({
         id: expect.any(String),
