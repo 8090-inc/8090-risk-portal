@@ -9,8 +9,8 @@ import {
   UpdateRiskInput
 } from '../types';
 import { RiskValidationError } from '../types/error.types';
-import { transformExcelData, validateRisk } from '../utils/dataTransformers';
-import extractedData from '../data/extracted-excel-data.json';
+import { validateRisk } from '../utils/dataTransformers';
+import axios from 'axios';
 
 interface RiskState {
   // Data
@@ -37,6 +37,7 @@ interface RiskState {
   createRisk: (risk: CreateRiskInput) => Promise<void>;
   updateRisk: (risk: UpdateRiskInput) => Promise<void>;
   deleteRisk: (riskId: string) => Promise<void>;
+  updateRiskControls: (riskId: string, controlIds: string[]) => Promise<void>;
   refreshStatistics: () => void;
   clearError: () => void;
   getStatistics: () => RiskStatistics | null;
@@ -205,13 +206,14 @@ export const useRiskStore = create<RiskState>()(
         error: null,
         statistics: null,
         
-        // Load risks from Excel data
+        // Load risks from API
         loadRisks: async () => {
           set({ isLoading: true, error: null });
           
           try {
-            // Transform Excel data to Risk objects
-            const { risks } = transformExcelData(extractedData as any);
+            // Fetch all risks from API (not paginated)
+            const response = await axios.get('/api/v1/risks?limit=1000');
+            const risks: Risk[] = response.data.data || [];
             
             // Apply initial filters and sorting
             const filtered = applyFilters(risks, get().filters, get().searchTerm);
@@ -225,8 +227,9 @@ export const useRiskStore = create<RiskState>()(
               isLoading: false 
             });
           } catch (error) {
+            console.error('Failed to load risks:', error);
             set({ 
-              error: error instanceof Error ? error : new Error('Failed to load risks'),
+              error: error instanceof Error ? error : new Error('Failed to load risks from server'),
               isLoading: false 
             });
           }
@@ -269,22 +272,9 @@ export const useRiskStore = create<RiskState>()(
               throw new RiskValidationError('multiple', riskInput, 'validation', errors.join(', '));
             }
             
-            // Create risk object
-            const riskReduction = riskInput.initialScoring.riskLevel - riskInput.residualScoring.riskLevel;
-            const riskReductionPercentage = riskInput.initialScoring.riskLevel > 0 
-              ? Math.round((riskReduction / riskInput.initialScoring.riskLevel) * 100)
-              : 0;
-            
-            const newRisk: Risk = {
-              ...riskInput,
-              id: `risk_${Date.now()}`,
-              riskReduction,
-              riskReductionPercentage,
-              mitigationEffectiveness: 'Medium', // Calculate based on reduction
-              relatedControlIds: [],
-              createdAt: new Date(),
-              lastUpdated: new Date()
-            };
+            // Send to API
+            const response = await axios.post('/api/v1/risks', riskInput);
+            const newRisk: Risk = response.data.data;
             
             // Add to state
             const risks = [...get().risks, newRisk];
@@ -299,6 +289,7 @@ export const useRiskStore = create<RiskState>()(
               isLoading: false 
             });
           } catch (error) {
+            console.error('Failed to create risk:', error);
             set({ 
               error: error instanceof Error ? error : new Error('Failed to create risk'),
               isLoading: false 
@@ -311,25 +302,14 @@ export const useRiskStore = create<RiskState>()(
           set({ isLoading: true, error: null });
           
           try {
-            const risks = get().risks.map(risk => {
-              if (risk.id === riskUpdate.id) {
-                const initialLevel = riskUpdate.initialScoring?.riskLevel || risk.initialScoring.riskLevel;
-                const residualLevel = riskUpdate.residualScoring?.riskLevel || risk.residualScoring.riskLevel;
-                const riskReduction = initialLevel - residualLevel;
-                const riskReductionPercentage = initialLevel > 0 
-                  ? Math.round((riskReduction / initialLevel) * 100)
-                  : 0;
-                  
-                return { 
-                  ...risk, 
-                  ...riskUpdate,
-                  lastUpdated: new Date(),
-                  riskReduction,
-                  riskReductionPercentage
-                };
-              }
-              return risk;
-            });
+            // Send update to API
+            const response = await axios.put(`/api/v1/risks/${riskUpdate.id}`, riskUpdate);
+            const updatedRisk: Risk = response.data.data;
+            
+            // Update in state
+            const risks = get().risks.map(risk => 
+              risk.id === updatedRisk.id ? updatedRisk : risk
+            );
             
             const filtered = applyFilters(risks, get().filters, get().searchTerm);
             const sorted = applySort(filtered, get().sort);
@@ -343,15 +323,16 @@ export const useRiskStore = create<RiskState>()(
             });
             
             // Update selected risk if it's the one being updated
-            if (get().selectedRisk?.id === riskUpdate.id) {
-              const updatedRisk = risks.find(r => r.id === riskUpdate.id);
-              set({ selectedRisk: updatedRisk || null });
+            if (get().selectedRisk?.id === updatedRisk.id) {
+              set({ selectedRisk: updatedRisk });
             }
           } catch (error) {
+            console.error('Failed to update risk:', error);
             set({ 
               error: error instanceof Error ? error : new Error('Failed to update risk'),
               isLoading: false 
             });
+            throw error; // Re-throw to let caller handle
           }
         },
         
@@ -360,6 +341,10 @@ export const useRiskStore = create<RiskState>()(
           set({ isLoading: true, error: null });
           
           try {
+            // Send delete to API
+            await axios.delete(`/api/v1/risks/${riskId}`);
+            
+            // Remove from state
             const risks = get().risks.filter(risk => risk.id !== riskId);
             const filtered = applyFilters(risks, get().filters, get().searchTerm);
             const sorted = applySort(filtered, get().sort);
@@ -377,8 +362,45 @@ export const useRiskStore = create<RiskState>()(
               set({ selectedRisk: null });
             }
           } catch (error) {
+            console.error('Failed to delete risk:', error);
             set({ 
               error: error instanceof Error ? error : new Error('Failed to delete risk'),
+              isLoading: false 
+            });
+            throw error; // Re-throw to let caller handle
+          }
+        },
+        
+        // Update risk controls (relationship management)
+        updateRiskControls: async (riskId, controlIds) => {
+          set({ isLoading: true, error: null });
+          
+          try {
+            // Update controls for this risk
+            const response = await axios.put(`/api/v1/risks/${riskId}/controls`, {
+              controlIds
+            });
+            
+            // Update local state
+            const risks = get().risks.map(risk => 
+              risk.id === riskId 
+                ? { ...risk, relatedControlIds: controlIds }
+                : risk
+            );
+            
+            const filtered = applyFilters(risks, get().filters, get().searchTerm);
+            const sorted = applySort(filtered, get().sort);
+            const statistics = calculateStatistics(risks);
+            
+            set({ 
+              risks, 
+              filteredRisks: sorted,
+              statistics,
+              isLoading: false 
+            });
+          } catch (error) {
+            set({ 
+              error: error instanceof Error ? error : new Error('Failed to update risk controls'),
               isLoading: false 
             });
           }

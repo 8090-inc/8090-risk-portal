@@ -1,0 +1,3255 @@
+openapi: 3.0.3
+info:
+  title: 8090 Risk Portal API
+  version: 1.0.0
+  description: |
+    # 8090 Risk Portal API Documentation
+    
+    ## Overview
+    The 8090 Risk Portal API provides comprehensive management of AI-related risks and their mitigation controls. This API is designed for organizations implementing AI governance frameworks to identify, assess, and mitigate risks associated with AI systems.
+    
+    ## Core Concepts
+    
+    ### Risks
+    A **Risk** represents a potential negative outcome from AI system deployment. Each risk is:
+    - Categorized by type (e.g., Security, Accuracy, Behavioral)
+    - Scored based on likelihood (1-5) and impact (1-5)
+    - Tracked through initial and residual (post-mitigation) states
+    - Linked to one or more mitigation controls
+    
+    ### Controls
+    A **Control** represents a mitigation measure to reduce risk. Each control:
+    - Has a unique ID following pattern: `{CATEGORY}-{NUMBER}` (e.g., ACC-01, SEC-02)
+    - Describes specific actions to reduce risk
+    - Tracks implementation status and effectiveness
+    - Can mitigate multiple risks
+    
+    ### Risk-Control Relationships
+    - Many-to-many relationships between risks and controls
+    - Controls reduce risk scores from initial to residual levels
+    - Orphaned entities (risks without controls) are tracked
+    - Relationships stored in a dedicated sheet for audit trail
+    
+    ## ID Formats
+    
+    ### Risk IDs
+    - **Format**: `RISK-{SANITIZED-NAME}`
+    - **Generation**: Automatically generated from risk name
+    - **Example**: "Sensitive Information Leakage" → `RISK-SENSITIVE-INFORMATION-LEAKAGE`
+    - **Rules**: 
+      - Uppercase only
+      - Special characters removed
+      - Spaces replaced with hyphens
+      - Must be unique across system
+    
+    ### Control IDs
+    - **Format**: `{CATEGORY}-{NUMBER}`
+    - **Categories**:
+      - `ACC` - Accuracy & Judgment controls
+      - `SEC` - Security controls
+      - `LOG` - Logging & Monitoring controls
+      - `GOV` - Governance controls
+      - `TEST` - Test controls (development only)
+    - **Example**: `ACC-01`, `SEC-02`, `LOG-03`
+    - **Rules**: 
+      - Two-digit numbers (01-99)
+      - Must follow exact pattern
+      - Manually assigned by users
+    
+    ## Authentication
+    
+    The API uses Google Identity-Aware Proxy (IAP) for authentication:
+    
+    1. **Production**: Requests must include valid IAP JWT assertion
+    2. **Development**: Test mode available with `x-test-user` header
+    3. **Admin Access**: Users with `@dompe.com` email have admin privileges
+    4. **Required Headers**:
+       - `x-goog-iap-jwt-assertion`: IAP JWT token
+       - `x-goog-authenticated-user-email`: User email (set by IAP)
+    
+    ## Request/Response Format
+    
+    ### Standard Response Structure
+    ```json
+    {
+      "success": true,
+      "data": { /* resource data */ },
+      "meta": {
+        "page": 1,
+        "limit": 20,
+        "total": 33,
+        "totalPages": 2,
+        "timestamp": "2025-07-22T10:00:00Z"
+      }
+    }
+    ```
+    
+    ### Error Response Structure
+    ```json
+    {
+      "success": false,
+      "error": {
+        "code": "RISK_NOT_FOUND",
+        "message": "Risk with ID 'RISK-EXAMPLE' not found",
+        "details": { "resourceId": "RISK-EXAMPLE" },
+        "suggestion": "Verify the risk ID exists. List all risks: GET /api/v1/risks"
+      },
+      "meta": {
+        "requestId": "req_abc123",
+        "timestamp": "2025-07-22T10:00:00Z"
+      }
+    }
+    ```
+    
+    ## Query Parameters
+    
+    ### Filtering
+    - Use query parameters to filter results
+    - Multiple filters are combined with AND logic
+    - Example: `?category=Security&minScore=15&hasControls=true`
+    
+    ### Sorting
+    - Use `sort` parameter with field name
+    - Prefix with `-` for descending order
+    - Example: `?sort=-residualRiskLevel` (highest risk first)
+    
+    ### Pagination
+    - Use `page` and `limit` parameters
+    - Default: `page=1`, `limit=20`
+    - Maximum limit: 100 items per page
+    - Example: `?page=2&limit=50`
+    
+    ### Field Selection
+    - Use `fields` parameter to limit returned fields
+    - Comma-separated field names
+    - Example: `?fields=id,risk,riskCategory,residualScoring`
+    
+    ## Rate Limiting
+    
+    - **Default**: 100 requests per minute per user
+    - **Bulk Operations**: 10 requests per minute
+    - **Headers**: Rate limit info returned in response headers
+      - `X-RateLimit-Limit`: Request limit
+      - `X-RateLimit-Remaining`: Remaining requests
+      - `X-RateLimit-Reset`: Reset timestamp
+    
+    ## Data Persistence
+    
+    - Currently uses Google Drive with Excel file storage
+    - 5-minute cache for performance optimization
+    - Transactions ensure data consistency during updates
+    - Separate "Relationships" sheet maintains risk-control mappings
+    - Future migration path to database prepared through abstraction layer
+
+servers:
+  - url: https://api.dompe.airiskportal.com/api/v1
+    description: Production server with Google IAP authentication
+  - url: http://localhost:8080/api/v1
+    description: Development server with test mode support
+
+tags:
+  - name: Risks
+    description: |
+      Manage AI-related risks. Risks represent potential negative outcomes from AI systems that need to be identified, assessed, and mitigated.
+  - name: Controls
+    description: |
+      Manage mitigation controls. Controls are measures implemented to reduce the likelihood or impact of identified risks.
+  - name: Relationships
+    description: |
+      Manage risk-control relationships. These endpoints handle the many-to-many relationships between risks and their mitigation controls.
+  - name: Upload
+    description: |
+      Bulk import operations. Upload Excel files containing risks and controls for initial data population or updates.
+  - name: Health
+    description: |
+      System health monitoring. Check API availability and system status.
+
+security:
+  - GoogleIAP: []
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Check API health status
+      description: |
+        Verify the API is running and accessible. This endpoint does not require authentication and can be used for monitoring.
+        
+        **Use cases:**
+        - Uptime monitoring
+        - Load balancer health checks
+        - Pre-flight checks before operations
+      operationId: getHealth
+      security: []
+      responses:
+        '200':
+          description: API is healthy and operational
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    description: Health status indicator
+                    example: ok
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: Current server time
+                    example: "2025-07-22T10:00:00Z"
+                  version:
+                    type: string
+                    description: API version
+                    example: "1.0.0"
+                  services:
+                    type: object
+                    description: Status of dependent services
+                    properties:
+                      googleDrive:
+                        type: string
+                        description: Google Drive connection status
+                        example: connected
+                      cache:
+                        type: string
+                        description: Cache service status
+                        example: active
+              example:
+                status: ok
+                timestamp: "2025-07-22T10:00:00Z"
+                version: "1.0.0"
+                services:
+                  googleDrive: connected
+                  cache: active
+
+  /risks:
+    get:
+      tags:
+        - Risks
+      summary: List all risks with filtering and pagination
+      description: |
+        Retrieve a paginated list of risks with optional filtering and sorting capabilities.
+        
+        **Use cases:**
+        - Display risks in a dashboard table
+        - Generate risk reports by category
+        - Find high-priority risks for review
+        - Export filtered risk data
+        
+        **Filtering logic:**
+        - Multiple filters are combined with AND logic
+        - Score filters apply to residual risk scores
+        - Category filter uses exact match
+        
+        **Sorting options:**
+        - `risk`: Risk name alphabetically
+        - `riskCategory`: Category name
+        - `initialRiskLevel`: Initial risk score (1-25)
+        - `residualRiskLevel`: Current risk score after controls
+        - `lastUpdated`: Most recently modified
+        
+        **Performance notes:**
+        - Results are cached for 5 minutes
+        - Use field selection to reduce payload size
+        - Maximum 100 items per page
+      operationId: listRisks
+      parameters:
+        - $ref: '#/components/parameters/CategoryFilter'
+        - $ref: '#/components/parameters/MinScoreFilter'
+        - $ref: '#/components/parameters/MaxScoreFilter'
+        - $ref: '#/components/parameters/HasControlsFilter'
+        - $ref: '#/components/parameters/SortParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/FieldsParam'
+      responses:
+        '200':
+          description: Successfully retrieved risk list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RisksListResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/RisksListExample'
+                filtered:
+                  $ref: '#/components/examples/RisksListFilteredExample'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      tags:
+        - Risks
+      summary: Create a new risk
+      description: |
+        Create a new risk in the system. The risk ID will be automatically generated from the risk name.
+        
+        **ID Generation:**
+        - Risk name "AI Bias in Hiring" → ID: `RISK-AI-BIAS-IN-HIRING`
+        - IDs must be unique; duplicate names will be rejected
+        - Special characters are removed during ID generation
+        
+        **Required fields:**
+        - `risk`: The risk name (used for ID generation)
+        - `riskCategory`: Must be one of the predefined categories
+        
+        **Scoring:**
+        - Likelihood: 1 (Very Low) to 5 (Very High)
+        - Impact: 1 (Very Low) to 5 (Very High)
+        - Risk Level = Likelihood × Impact (1-25)
+        
+        **Side effects:**
+        - New risk created with empty control relationships
+        - Excel file updated in Google Drive
+        - Cache invalidated
+      operationId: createRisk
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiskCreateRequest'
+            examples:
+              minimal:
+                $ref: '#/components/examples/RiskCreateMinimal'
+              complete:
+                $ref: '#/components/examples/RiskCreateComplete'
+      responses:
+        '201':
+          description: Risk created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskResponse'
+              example:
+                success: true
+                data:
+                  id: "RISK-AI-BIAS-IN-HIRING"
+                  risk: "AI Bias in Hiring"
+                  riskCategory: "AI Human Impact Risks"
+                  riskDescription: "AI system may discriminate against protected groups"
+                  initialScoring:
+                    likelihood: 4
+                    impact: 5
+                    riskLevel: 20
+                  residualScoring:
+                    likelihood: 4
+                    impact: 5
+                    riskLevel: 20
+                  relatedControlIds: []
+                  lastUpdated: "2025-07-22T10:30:00Z"
+                meta:
+                  timestamp: "2025-07-22T10:30:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          description: Business rule violation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error:
+                  code: "DUPLICATE_RISK_NAME"
+                  message: "A risk with name 'AI Bias in Hiring' already exists"
+                  details:
+                    existingRiskId: "RISK-AI-BIAS-IN-HIRING"
+                  suggestion: "Use a unique risk name or update the existing risk"
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /risks/statistics:
+    get:
+      tags:
+        - Risks
+      summary: Get comprehensive risk statistics
+      description: |
+        Retrieve statistical analysis of all risks in the system. Useful for dashboards and executive reporting.
+        
+        **Included metrics:**
+        - Total risk count
+        - Distribution by category
+        - Distribution by risk level (Low/Medium/High/Critical)
+        - Control coverage statistics
+        - Average risk scores (initial vs residual)
+        - Risk reduction effectiveness
+        
+        **Risk level thresholds:**
+        - Low: 1-6
+        - Medium: 7-12
+        - High: 13-20
+        - Critical: 21-25
+        
+        **Use cases:**
+        - Executive dashboards
+        - Risk trend analysis
+        - Control effectiveness measurement
+        - Compliance reporting
+      operationId: getRiskStatistics
+      responses:
+        '200':
+          description: Risk statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskStatisticsResponse'
+              example:
+                success: true
+                data:
+                  totalRisks: 33
+                  byCategory:
+                    "Security and Data Risks": 8
+                    "AI Human Impact Risks": 6
+                    "Accuracy": 5
+                    "Behavioral Risks": 5
+                    "Transparency Risks": 4
+                    "Business/Cost Related Risks": 3
+                    "Other Risks": 2
+                  byRiskLevel:
+                    low: 5
+                    medium: 12
+                    high: 14
+                    critical: 2
+                  withControls: 28
+                  withoutControls: 5
+                  averageInitialScore: 15.2
+                  averageResidualScore: 8.7
+                  riskReductionPercentage: 42.8
+                meta:
+                  timestamp: "2025-07-22T10:00:00Z"
+                  cacheAge: 120
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /risks/high-risks:
+    get:
+      tags:
+        - Risks
+      summary: Get high-priority risks requiring attention
+      description: |
+        Retrieve risks above a specified threshold that require immediate attention or review.
+        
+        **Default threshold:** 15 (High risk)
+        
+        **Risk score interpretation:**
+        - 1-6: Low risk - Regular monitoring
+        - 7-12: Medium risk - Active monitoring
+        - 13-20: High risk - Requires mitigation
+        - 21-25: Critical risk - Immediate action required
+        
+        **Use cases:**
+        - Risk review meetings
+        - Prioritization of control implementation
+        - Alerting and escalation
+        - Compliance checks
+        
+        **Sorting:**
+        Results are automatically sorted by residual risk level (highest first)
+      operationId: getHighRisks
+      parameters:
+        - name: threshold
+          in: query
+          description: |
+            Minimum risk score threshold. Risks with residual scores at or above this value are returned.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 25
+            default: 15
+          example: 15
+      responses:
+        '200':
+          description: High-risk items retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RisksListResponse'
+              example:
+                success: true
+                data:
+                  - id: "RISK-SENSITIVE-INFORMATION-LEAKAGE"
+                    risk: "Sensitive Information Leakage"
+                    riskCategory: "Security and Data Risks"
+                    residualScoring:
+                      likelihood: 5
+                      impact: 5
+                      riskLevel: 25
+                    relatedControlIds: ["SEC-01", "SEC-02"]
+                  - id: "RISK-AI-BIAS-DISCRIMINATION"
+                    risk: "AI Bias & Discrimination"
+                    riskCategory: "AI Human Impact Risks"
+                    residualScoring:
+                      likelihood: 4
+                      impact: 5
+                      riskLevel: 20
+                    relatedControlIds: ["ACC-01", "GOV-03"]
+                meta:
+                  total: 16
+                  threshold: 15
+                  timestamp: "2025-07-22T10:00:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /risks/without-controls:
+    get:
+      tags:
+        - Risks
+      summary: Find unmitigated risks
+      description: |
+        Retrieve risks that have no associated controls, indicating they are completely unmitigated.
+        
+        **Why this matters:**
+        - Unmitigated risks represent full exposure
+        - May indicate gaps in risk management
+        - Priority candidates for control assignment
+        - Required for compliance reporting
+        
+        **Use cases:**
+        - Risk assessment completeness checks
+        - Control gap analysis
+        - Audit preparation
+        - Risk owner notifications
+        
+        **Note:** Results include full risk details to facilitate immediate action
+      operationId: getRisksWithoutControls
+      responses:
+        '200':
+          description: Unmitigated risks retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RisksListResponse'
+              example:
+                success: true
+                data:
+                  - id: "RISK-REGULATORY-COMPLIANCE"
+                    risk: "Regulatory Compliance Risk"
+                    riskCategory: "Business/Cost Related Risks"
+                    riskDescription: "Failure to comply with emerging AI regulations"
+                    initialScoring:
+                      likelihood: 4
+                      impact: 4
+                      riskLevel: 16
+                    residualScoring:
+                      likelihood: 4
+                      impact: 4
+                      riskLevel: 16
+                    relatedControlIds: []
+                    issueOwner: "compliance@dompe.com"
+                meta:
+                  total: 5
+                  percentageUnmitigated: 15.2
+                  timestamp: "2025-07-22T10:00:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /risks/{id}:
+    get:
+      tags:
+        - Risks
+      summary: Get detailed information about a specific risk
+      description: |
+        Retrieve complete details for a single risk by its ID.
+        
+        **Returned information:**
+        - Full risk details including all fields
+        - Initial and residual risk scores
+        - List of associated control IDs
+        - Metadata (creation date, last update)
+        
+        **Use cases:**
+        - Risk detail views
+        - Risk editing forms
+        - Audit trail review
+        - Integration with other systems
+      operationId: getRiskById
+      parameters:
+        - $ref: '#/components/parameters/RiskId'
+      responses:
+        '200':
+          description: Risk retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskResponse'
+              example:
+                success: true
+                data:
+                  id: "RISK-SENSITIVE-INFORMATION-LEAKAGE"
+                  riskCategory: "Security and Data Risks"
+                  risk: "Sensitive Information Leakage"
+                  riskDescription: "AI systems may inadvertently expose sensitive data through model outputs, training data leakage, or prompt injection attacks"
+                  dataGatheringOrGenerationStage: "Data collection and model training"
+                  deploymentAndUsePhase: "Production deployment"
+                  subjectMatterStakeholder: "Data Protection Officer, Security Team"
+                  initialScoring:
+                    likelihood: 5
+                    impact: 5
+                    riskLevel: 25
+                  agreedMitigation: "Implement data classification, output filtering, and access controls"
+                  residualScoring:
+                    likelihood: 2
+                    impact: 5
+                    riskLevel: 10
+                  issueOwner: "security@dompe.com"
+                  comment: "Critical risk requiring multiple layers of controls"
+                  riskLevel: "High"
+                  relatedControlIds: ["SEC-01", "SEC-02", "LOG-01", "GOV-02"]
+                  lastUpdated: "2025-07-20T14:30:00Z"
+                meta:
+                  timestamp: "2025-07-22T10:00:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/RiskNotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    put:
+      tags:
+        - Risks
+      summary: Completely replace an existing risk
+      description: |
+        Perform a full update of a risk, replacing all fields with the provided values.
+        
+        **Important notes:**
+        - All fields in the request body will replace existing values
+        - Omitted optional fields will be set to null
+        - Risk ID cannot be changed (generated from original name)
+        - Related control IDs are managed through relationship endpoints
+        
+        **Side effects:**
+        - Risk data updated in Excel file
+        - Last updated timestamp refreshed
+        - Cache invalidated
+        - Audit trail updated
+        
+        **Use case:** Complete risk data replacement from external systems
+      operationId: updateRisk
+      parameters:
+        - $ref: '#/components/parameters/RiskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiskUpdateRequest'
+            example:
+              risk: "Sensitive Information Leakage"
+              riskCategory: "Security and Data Risks"
+              riskDescription: "Updated: AI systems may expose sensitive data through various attack vectors"
+              initialScoring:
+                likelihood: 5
+                impact: 5
+                riskLevel: 25
+              residualScoring:
+                likelihood: 1
+                impact: 5
+                riskLevel: 5
+              issueOwner: "ciso@dompe.com"
+              comment: "Risk significantly reduced after implementing controls"
+      responses:
+        '200':
+          description: Risk updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/RiskNotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    patch:
+      tags:
+        - Risks
+      summary: Partially update specific fields of a risk
+      description: |
+        Update only the specified fields of a risk, leaving other fields unchanged.
+        
+        **Advantages over PUT:**
+        - Update only changed fields
+        - Preserve unmodified data
+        - Smaller request payload
+        - Reduce risk of accidental data loss
+        
+        **Common update scenarios:**
+        - Update risk scores after assessment
+        - Change issue owner
+        - Add or update comments
+        - Modify risk description
+        
+        **Note:** To update control relationships, use the relationship endpoints
+      operationId: patchRisk
+      parameters:
+        - $ref: '#/components/parameters/RiskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiskPatchRequest'
+            examples:
+              updateScores:
+                summary: Update only risk scores
+                value:
+                  residualScoring:
+                    likelihood: 2
+                    impact: 5
+                    riskLevel: 10
+                  comment: "Risk reduced after implementing SEC-03"
+              updateOwner:
+                summary: Change issue owner
+                value:
+                  issueOwner: "newowner@dompe.com"
+      responses:
+        '200':
+          description: Risk updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/RiskNotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      tags:
+        - Risks
+      summary: Delete a risk and clean up all relationships
+      description: |
+        Permanently delete a risk from the system. This operation cannot be undone.
+        
+        **Cascade effects:**
+        - Risk removed from Risks sheet
+        - All risk-control relationships deleted
+        - Control data updated to remove risk references
+        - Relationships sheet updated
+        
+        **Pre-deletion checks:**
+        - Verify risk exists
+        - Check user permissions
+        - Log deletion for audit trail
+        
+        **Use cases:**
+        - Remove obsolete risks
+        - Clean up test data
+        - Correct data entry errors
+        
+        **Warning:** This action is irreversible. Consider marking risks as inactive instead of deleting.
+      operationId: deleteRisk
+      parameters:
+        - $ref: '#/components/parameters/RiskId'
+      responses:
+        '204':
+          description: Risk deleted successfully (no content returned)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/RiskNotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /risks/{riskId}/controls:
+    get:
+      tags:
+        - Relationships
+      summary: List all controls mitigating a specific risk
+      description: |
+        Retrieve all controls that are currently assigned to mitigate this risk.
+        
+        **Returned data:**
+        - Full control details for each related control
+        - Implementation status and effectiveness
+        - Control metadata
+        
+        **Use cases:**
+        - Risk detail pages showing mitigation measures
+        - Control effectiveness analysis
+        - Risk assessment reports
+        - Compliance documentation
+      operationId: getControlsForRisk
+      parameters:
+        - $ref: '#/components/parameters/RiskIdPath'
+      responses:
+        '200':
+          description: Controls retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ControlsListResponse'
+              example:
+                success: true
+                data:
+                  - mitigationID: "SEC-01"
+                    mitigationDescription: "Implement data loss prevention (DLP) tools"
+                    effectiveness: "High"
+                    implementation:
+                      status: "Implemented"
+                      implementationDate: "2025-01-15"
+                  - mitigationID: "SEC-02"
+                    mitigationDescription: "Regular security audits and penetration testing"
+                    effectiveness: "Medium"
+                    implementation:
+                      status: "In Progress"
+                meta:
+                  total: 2
+                  riskId: "RISK-SENSITIVE-INFORMATION-LEAKAGE"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/RiskNotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    put:
+      tags:
+        - Relationships
+      summary: Replace all controls for a risk
+      description: |
+        Replace the entire set of controls associated with a risk. This is a full replacement operation.
+        
+        **Important:**
+        - Existing relationships are removed
+        - New relationships are created
+        - Order is preserved for display purposes
+        
+        **Use cases:**
+        - Bulk control assignment
+        - Control set replacement
+        - Risk mitigation plan updates
+        
+        **Validation:**
+        - All control IDs must exist
+        - Duplicate control IDs are ignored
+        - Empty array removes all controls
+      operationId: setControlsForRisk
+      parameters:
+        - $ref: '#/components/parameters/RiskIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - controlIds
+              properties:
+                controlIds:
+                  type: array
+                  description: Array of control IDs to assign to this risk
+                  items:
+                    type: string
+                    pattern: '^(ACC|SEC|LOG|GOV|TEST)-\d{2}$'
+                  example: ["ACC-01", "SEC-02", "LOG-03"]
+            example:
+              controlIds: ["ACC-01", "SEC-02", "LOG-03", "GOV-01"]
+      responses:
+        '200':
+          description: Controls updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              example:
+                success: true
+                message: "Successfully updated controls for risk RISK-SENSITIVE-INFORMATION-LEAKAGE"
+                meta:
+                  controlsAdded: 4
+                  controlsRemoved: 2
+                  timestamp: "2025-07-22T10:00:00Z"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error:
+                  code: "INVALID_CONTROL_ID"
+                  message: "Control ID 'SEC-99' not found in the system"
+                  details:
+                    invalidIds: ["SEC-99"]
+                  suggestion: "Verify all control IDs exist. List controls: GET /api/v1/controls"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /risks/{riskId}/controls/{controlId}:
+    post:
+      tags:
+        - Relationships
+      summary: Add a single control to a risk
+      description: |
+        Add a control to mitigate a risk without affecting other control relationships.
+        
+        **Behavior:**
+        - Idempotent: Adding an existing relationship has no effect
+        - Validates both risk and control exist
+        - Updates both directions of relationship
+        
+        **Use cases:**
+        - Incremental control assignment
+        - Quick control additions
+        - Workflow-based control assignment
+      operationId: addControlToRisk
+      parameters:
+        - $ref: '#/components/parameters/RiskIdPath'
+        - $ref: '#/components/parameters/ControlIdPath'
+      responses:
+        '200':
+          description: Control added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              example:
+                success: true
+                message: "Control ACC-01 added to risk RISK-SENSITIVE-INFORMATION-LEAKAGE"
+                meta:
+                  relationshipCreated: true
+                  timestamp: "2025-07-22T10:00:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      tags:
+        - Relationships
+      summary: Remove a control from a risk
+      description: |
+        Remove a single control from a risk's mitigation plan.
+        
+        **Effects:**
+        - Relationship deleted from both directions
+        - Risk scores may need manual recalculation
+        - Audit trail updated
+        
+        **Use cases:**
+        - Remove ineffective controls
+        - Update mitigation strategies
+        - Correct assignment errors
+      operationId: removeControlFromRisk
+      parameters:
+        - $ref: '#/components/parameters/RiskIdPath'
+        - $ref: '#/components/parameters/ControlIdPath'
+      responses:
+        '200':
+          description: Control removed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              example:
+                success: true
+                message: "Control ACC-01 removed from risk RISK-SENSITIVE-INFORMATION-LEAKAGE"
+                meta:
+                  relationshipDeleted: true
+                  remainingControls: 3
+                  timestamp: "2025-07-22T10:00:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /risks/{riskId}/controls/bulk:
+    post:
+      tags:
+        - Relationships
+      summary: Add multiple controls to a risk in one operation
+      description: |
+        Efficiently add multiple controls to a risk in a single API call.
+        
+        **Advantages:**
+        - Single transaction for consistency
+        - Better performance than individual adds
+        - Atomic operation (all or nothing)
+        
+        **Behavior:**
+        - Existing relationships are preserved
+        - Duplicates are ignored
+        - Invalid IDs cause entire operation to fail
+      operationId: addBulkControlsToRisk
+      parameters:
+        - $ref: '#/components/parameters/RiskIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - controlIds
+              properties:
+                controlIds:
+                  type: array
+                  description: Array of control IDs to add
+                  items:
+                    type: string
+                    pattern: '^(ACC|SEC|LOG|GOV|TEST)-\d{2}$'
+                  minItems: 1
+                  example: ["ACC-01", "SEC-02", "LOG-03"]
+            example:
+              controlIds: ["ACC-02", "SEC-03", "GOV-02"]
+      responses:
+        '200':
+          description: Controls added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              example:
+                success: true
+                message: "Successfully added 3 controls to risk"
+                meta:
+                  controlsAdded: 3
+                  duplicatesIgnored: 1
+                  totalControls: 7
+                  timestamp: "2025-07-22T10:00:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /controls:
+    get:
+      tags:
+        - Controls
+      summary: List all controls with filtering and pagination
+      description: |
+        Retrieve a paginated list of controls with filtering and sorting capabilities.
+        
+        **Use cases:**
+        - Control inventory management
+        - Implementation status tracking
+        - Effectiveness reporting
+        - Compliance audits
+        
+        **Filter combinations:**
+        - By category for department-specific views
+        - By status for implementation tracking
+        - By effectiveness for performance analysis
+        
+        **Sorting options:**
+        - `mitigationID`: Control ID (ACC-01, SEC-02, etc.)
+        - `priority`: Implementation priority
+        - `effectiveness`: Control effectiveness rating
+        - `implementationStatus`: Current status
+        - `lastUpdated`: Most recent modification
+      operationId: listControls
+      parameters:
+        - name: category
+          in: query
+          description: |
+            Filter by control category based on ID prefix.
+            - ACC: Accuracy & Judgment
+            - SEC: Security
+            - LOG: Logging & Monitoring
+            - GOV: Governance
+            - TEST: Test controls
+          schema:
+            type: string
+            enum: [ACC, SEC, LOG, GOV, TEST]
+          example: SEC
+        - name: status
+          in: query
+          description: Filter by implementation status
+          schema:
+            type: string
+            enum: [Implemented, "In Progress", Planned, "Not Implemented"]
+          example: Implemented
+        - name: effectiveness
+          in: query
+          description: Filter by effectiveness rating
+          schema:
+            type: string
+            enum: [High, Medium, Low, "Not Assessed"]
+          example: High
+        - $ref: '#/components/parameters/SortParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/FieldsParam'
+      responses:
+        '200':
+          description: List of controls retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ControlsListResponse'
+              example:
+                success: true
+                data:
+                  - mitigationID: "SEC-01"
+                    mitigationDescription: "Implement data loss prevention (DLP) tools"
+                    mitigationType: "Technical"
+                    effectiveness: "High"
+                    implementation:
+                      status: "Implemented"
+                      implementationDate: "2025-01-15"
+                    relatedRiskIds: ["RISK-SENSITIVE-INFORMATION-LEAKAGE", "RISK-DATA-PRIVACY"]
+                  - mitigationID: "ACC-01"
+                    mitigationDescription: "Regular model accuracy testing and validation"
+                    mitigationType: "Process"
+                    effectiveness: "Medium"
+                    implementation:
+                      status: "In Progress"
+                    relatedRiskIds: ["RISK-AI-BIAS-DISCRIMINATION"]
+                meta:
+                  page: 1
+                  limit: 20
+                  total: 13
+                  totalPages: 1
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      tags:
+        - Controls
+      summary: Create a new control
+      description: |
+        Create a new control in the system. Unlike risks, control IDs must be manually specified following the pattern.
+        
+        **ID Format Requirements:**
+        - Pattern: `{CATEGORY}-{NUMBER}`
+        - Categories: ACC, SEC, LOG, GOV, TEST
+        - Numbers: 01-99 (two digits required)
+        - Example: `SEC-03`, `ACC-12`
+        
+        **Required fields:**
+        - `mitigationID`: Must follow the pattern
+        - `mitigationDescription`: Clear description of the control
+        
+        **Best practices:**
+        - Use sequential numbering within categories
+        - Provide detailed implementation instructions
+        - Set realistic effectiveness expectations
+        - Assign clear ownership
+      operationId: createControl
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ControlCreateRequest'
+            examples:
+              security:
+                summary: Security control example
+                value:
+                  mitigationID: "SEC-03"
+                  mitigationDescription: "Implement end-to-end encryption for AI model inputs and outputs"
+                  mitigationType: "Technical"
+                  objective: "Protect data confidentiality in transit and at rest"
+                  howItWillBeDone: "Deploy TLS 1.3 for API communications and AES-256 for data storage"
+                  priority: "High"
+                  effectiveness: "High"
+                  implementation:
+                    status: "Planned"
+                    responsibleParty: "security@dompe.com"
+              governance:
+                summary: Governance control example
+                value:
+                  mitigationID: "GOV-05"
+                  mitigationDescription: "Establish AI ethics review board"
+                  mitigationType: "Organizational"
+                  objective: "Ensure ethical AI deployment"
+                  priority: "Medium"
+      responses:
+        '201':
+          description: Control created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ControlResponse'
+        '400':
+          description: Invalid control data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error:
+                  code: "INVALID_CONTROL_PATTERN"
+                  message: "Control ID 'SECURITY-1' does not match required pattern"
+                  details:
+                    providedId: "SECURITY-1"
+                    expectedPattern: "^(ACC|SEC|LOG|GOV|TEST)-\\d{2}$"
+                  suggestion: "Use format: ACC-01, SEC-02, LOG-03, GOV-04, TEST-99"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          description: Business rule violation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error:
+                  code: "DUPLICATE_CONTROL_ID"
+                  message: "Control with ID 'SEC-03' already exists"
+                  suggestion: "Use a different control ID or update the existing control"
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /controls/statistics:
+    get:
+      tags:
+        - Controls
+      summary: Get control implementation and effectiveness statistics
+      description: |
+        Retrieve statistical analysis of control implementation and effectiveness across the organization.
+        
+        **Included metrics:**
+        - Implementation status distribution
+        - Effectiveness ratings
+        - Category breakdown
+        - Coverage statistics
+        - Implementation timeline
+        
+        **Use cases:**
+        - Control program maturity assessment
+        - Resource allocation decisions
+        - Board reporting
+        - Audit readiness checks
+      operationId: getControlStatistics
+      responses:
+        '200':
+          description: Control statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ControlStatisticsResponse'
+              example:
+                success: true
+                data:
+                  totalControls: 13
+                  byStatus:
+                    implemented: 5
+                    inProgress: 3
+                    planned: 4
+                    notImplemented: 1
+                  byEffectiveness:
+                    high: 4
+                    medium: 5
+                    low: 2
+                    notAssessed: 2
+                  byCategory:
+                    ACC: 3
+                    SEC: 4
+                    LOG: 2
+                    GOV: 3
+                    TEST: 1
+                  withRisks: 11
+                  withoutRisks: 2
+                  averageRisksPerControl: 2.5
+                  implementationRate: 38.5
+                meta:
+                  timestamp: "2025-07-22T10:00:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /controls/by-category:
+    get:
+      tags:
+        - Controls
+      summary: Get controls grouped by category
+      description: |
+        Retrieve all controls organized by their category for easy navigation and management.
+        
+        **Categories:**
+        - **ACC**: Accuracy & Judgment - Controls for model accuracy and decision quality
+        - **SEC**: Security - Controls for data protection and system security
+        - **LOG**: Logging & Monitoring - Controls for audit trails and observability
+        - **GOV**: Governance - Controls for policies, procedures, and oversight
+        - **TEST**: Test - Controls used for testing (non-production)
+        
+        **Use cases:**
+        - Department-specific control views
+        - Category-based reporting
+        - Control portfolio analysis
+        - Implementation planning by team
+      operationId: getControlsByCategory
+      responses:
+        '200':
+          description: Controls grouped by category
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ControlsByCategoryResponse'
+              example:
+                success: true
+                data:
+                  ACC:
+                    - mitigationID: "ACC-01"
+                      mitigationDescription: "Regular model accuracy testing"
+                      effectiveness: "High"
+                    - mitigationID: "ACC-02"
+                      mitigationDescription: "Bias detection and mitigation"
+                      effectiveness: "Medium"
+                  SEC:
+                    - mitigationID: "SEC-01"
+                      mitigationDescription: "Data loss prevention tools"
+                      effectiveness: "High"
+                    - mitigationID: "SEC-02"
+                      mitigationDescription: "Security audits"
+                      effectiveness: "Medium"
+                  LOG:
+                    - mitigationID: "LOG-01"
+                      mitigationDescription: "Comprehensive audit logging"
+                      effectiveness: "High"
+                  GOV:
+                    - mitigationID: "GOV-01"
+                      mitigationDescription: "AI governance framework"
+                      effectiveness: "High"
+                meta:
+                  totalCategories: 4
+                  timestamp: "2025-07-22T10:00:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /controls/without-risks:
+    get:
+      tags:
+        - Controls
+      summary: Find orphaned controls not assigned to any risks
+      description: |
+        Retrieve controls that are not currently assigned to mitigate any risks.
+        
+        **Why this matters:**
+        - Orphaned controls may indicate:
+          - Obsolete controls that can be removed
+          - New controls awaiting assignment
+          - Gaps in risk assessment
+        - Resource optimization opportunities
+        
+        **Use cases:**
+        - Control portfolio cleanup
+        - Resource reallocation
+        - Control effectiveness review
+        - Audit findings
+      operationId: getOrphanedControls
+      responses:
+        '200':
+          description: Orphaned controls retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ControlsListResponse'
+              example:
+                success: true
+                data:
+                  - mitigationID: "TEST-01"
+                    mitigationDescription: "Test control for development"
+                    mitigationType: "Test"
+                    relatedRiskIds: []
+                  - mitigationID: "GOV-04"
+                    mitigationDescription: "Quarterly AI governance review"
+                    mitigationType: "Process"
+                    relatedRiskIds: []
+                    comment: "Newly created, pending risk assignment"
+                meta:
+                  total: 2
+                  percentageOrphaned: 15.4
+                  timestamp: "2025-07-22T10:00:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /controls/effectiveness-report:
+    get:
+      tags:
+        - Controls
+      summary: Generate control effectiveness analysis report
+      description: |
+        Generate a comprehensive report analyzing control effectiveness across different dimensions.
+        
+        **Report includes:**
+        - Overall effectiveness distribution
+        - Effectiveness by category
+        - Correlation with risk reduction
+        - Implementation vs effectiveness analysis
+        - Recommendations for improvement
+        
+        **Effectiveness ratings:**
+        - **High**: Control significantly reduces risk (>70% reduction)
+        - **Medium**: Control moderately reduces risk (30-70% reduction)
+        - **Low**: Control minimally reduces risk (<30% reduction)
+        - **Not Assessed**: Effectiveness not yet measured
+        
+        **Use cases:**
+        - Board reporting on control effectiveness
+        - Control optimization decisions
+        - Budget allocation for improvements
+        - Compliance demonstrations
+      operationId: getEffectivenessReport
+      responses:
+        '200':
+          description: Effectiveness report generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EffectivenessReportResponse'
+              example:
+                success: true
+                data:
+                  summary:
+                    totalControls: 13
+                    assessedControls: 11
+                    averageEffectiveness: "Medium"
+                    highEffectivenessPercentage: 36.4
+                  byCategory:
+                    ACC:
+                      total: 3
+                      high: 1
+                      medium: 2
+                      low: 0
+                      averageRiskReduction: 45
+                    SEC:
+                      total: 4
+                      high: 2
+                      medium: 1
+                      low: 1
+                      averageRiskReduction: 60
+                  topPerformers:
+                    - controlId: "SEC-01"
+                      description: "Data loss prevention tools"
+                      riskReduction: 80
+                      risksAddressed: 3
+                  improvements:
+                    - controlId: "LOG-02"
+                      currentEffectiveness: "Low"
+                      recommendation: "Enhance monitoring coverage and alert thresholds"
+                  correlations:
+                    implementedHighEffectiveness: 0.75
+                    plannedHighEffectiveness: 0.20
+                meta:
+                  reportGeneratedAt: "2025-07-22T10:00:00Z"
+                  dataFreshness: "5 minutes"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /controls/{id}:
+    get:
+      tags:
+        - Controls
+      summary: Get detailed information about a specific control
+      description: |
+        Retrieve complete details for a single control by its ID.
+        
+        **Returned information:**
+        - Full control details
+        - Implementation status and dates
+        - Effectiveness ratings
+        - List of mitigated risks
+        - Audit trail information
+        
+        **Use cases:**
+        - Control detail views
+        - Implementation tracking
+        - Effectiveness reviews
+        - Audit documentation
+      operationId: getControlById
+      parameters:
+        - $ref: '#/components/parameters/ControlId'
+      responses:
+        '200':
+          description: Control retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ControlResponse'
+              example:
+                success: true
+                data:
+                  mitigationID: "SEC-01"
+                  mitigationDescription: "Implement data loss prevention (DLP) tools to prevent unauthorized data exfiltration"
+                  mitigationType: "Technical"
+                  objective: "Prevent sensitive data leakage through AI systems"
+                  howItWillBeDone: "Deploy enterprise DLP solution with AI-specific policies, monitor all model outputs"
+                  priority: "High"
+                  timeToImplement: "3 months"
+                  costBenefit: "High cost but critical for compliance"
+                  effectiveness: "High"
+                  implementation:
+                    status: "Implemented"
+                    implementationDate: "2025-01-15"
+                    responsibleParty: "security@dompe.com"
+                    complianceCheck: "Passed Q1 2025 audit"
+                    notes: "Successfully blocking 99.2% of sensitive data in outputs"
+                  relatedRiskIds: [
+                    "RISK-SENSITIVE-INFORMATION-LEAKAGE",
+                    "RISK-DATA-PRIVACY-VIOLATION",
+                    "RISK-REGULATORY-COMPLIANCE"
+                  ]
+                  lastUpdated: "2025-02-10T09:15:00Z"
+                meta:
+                  timestamp: "2025-07-22T10:00:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/ControlNotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    put:
+      tags:
+        - Controls
+      summary: Completely replace an existing control
+      description: |
+        Perform a full update of a control, replacing all fields except the ID.
+        
+        **Important notes:**
+        - Control ID cannot be changed
+        - All fields will be replaced
+        - Related risk IDs managed separately
+        - Implementation history preserved
+        
+        **Validation:**
+        - ID must match URL parameter
+        - ID pattern must be valid
+        - Required fields must be present
+      operationId: updateControl
+      parameters:
+        - $ref: '#/components/parameters/ControlId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ControlUpdateRequest'
+      responses:
+        '200':
+          description: Control updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ControlResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/ControlNotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    patch:
+      tags:
+        - Controls
+      summary: Partially update specific fields of a control
+      description: |
+        Update only specified fields of a control, commonly used for status updates.
+        
+        **Common updates:**
+        - Implementation status changes
+        - Effectiveness ratings
+        - Responsible party assignments
+        - Notes and comments
+        
+        **Workflow support:**
+        - Status transitions (Planned → In Progress → Implemented)
+        - Effectiveness assessments after implementation
+        - Compliance check results
+      operationId: patchControl
+      parameters:
+        - $ref: '#/components/parameters/ControlId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ControlPatchRequest'
+            examples:
+              statusUpdate:
+                summary: Update implementation status
+                value:
+                  implementation:
+                    status: "Implemented"
+                    implementationDate: "2025-07-20"
+                    notes: "Deployment completed successfully"
+              effectivenessUpdate:
+                summary: Update effectiveness after assessment
+                value:
+                  effectiveness: "High"
+                  implementation:
+                    complianceCheck: "Passed audit on 2025-07-21"
+      responses:
+        '200':
+          description: Control updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ControlResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/ControlNotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      tags:
+        - Controls
+      summary: Delete a control and clean up all relationships
+      description: |
+        Permanently delete a control from the system.
+        
+        **Cascade effects:**
+        - Control removed from Controls sheet
+        - All risk-control relationships deleted
+        - Risk residual scores may need recalculation
+        - Audit trail updated
+        
+        **Warning:** Consider the impact on risk mitigation before deleting active controls.
+      operationId: deleteControl
+      parameters:
+        - $ref: '#/components/parameters/ControlId'
+      responses:
+        '204':
+          description: Control deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/ControlNotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /controls/{controlId}/risks:
+    get:
+      tags:
+        - Relationships
+      summary: List all risks mitigated by a specific control
+      description: |
+        Retrieve all risks that this control helps mitigate.
+        
+        **Use cases:**
+        - Control effectiveness analysis
+        - Impact assessment for control changes
+        - Resource allocation decisions
+        - Compliance reporting
+      operationId: getRisksForControl
+      parameters:
+        - $ref: '#/components/parameters/ControlIdPath'
+      responses:
+        '200':
+          description: Risks retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RisksListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/ControlNotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    put:
+      tags:
+        - Relationships
+      summary: Replace all risks for a control
+      description: |
+        Replace the entire set of risks associated with a control.
+        
+        **Use cases:**
+        - Bulk risk assignment after control assessment
+        - Control scope redefinition
+        - Cleanup after risk consolidation
+      operationId: setRisksForControl
+      parameters:
+        - $ref: '#/components/parameters/ControlIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - riskIds
+              properties:
+                riskIds:
+                  type: array
+                  description: Array of risk IDs this control mitigates
+                  items:
+                    type: string
+                    pattern: '^RISK-[A-Z0-9-]+$'
+                  example: ["RISK-SENSITIVE-INFORMATION-LEAKAGE", "RISK-AI-BIAS-DISCRIMINATION"]
+      responses:
+        '200':
+          description: Risks updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /controls/{controlId}/risks/{riskId}:
+    post:
+      tags:
+        - Relationships
+      summary: Add a risk to be mitigated by this control
+      description: |
+        Add a single risk to the set of risks mitigated by this control.
+        
+        **Validation:**
+        - Both control and risk must exist
+        - Duplicate relationships are ignored
+        - Bidirectional update performed
+      operationId: addRiskToControl
+      parameters:
+        - $ref: '#/components/parameters/ControlIdPath'
+        - $ref: '#/components/parameters/RiskIdPath'
+      responses:
+        '200':
+          description: Risk added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      tags:
+        - Relationships
+      summary: Remove a risk from this control's scope
+      description: |
+        Remove a risk from the set of risks mitigated by this control.
+        
+        **Effects:**
+        - Relationship removed bidirectionally
+        - Risk may become unmitigated
+        - Audit trail updated
+      operationId: removeRiskFromControl
+      parameters:
+        - $ref: '#/components/parameters/ControlIdPath'
+        - $ref: '#/components/parameters/RiskIdPath'
+      responses:
+        '200':
+          description: Risk removed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /controls/{controlId}/risks/bulk:
+    post:
+      tags:
+        - Relationships
+      summary: Add multiple risks to a control in one operation
+      description: |
+        Efficiently assign multiple risks to be mitigated by this control.
+        
+        **Use cases:**
+        - Initial control setup
+        - Expanding control scope
+        - Bulk risk assignment after assessment
+      operationId: addBulkRisksToControl
+      parameters:
+        - $ref: '#/components/parameters/ControlIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - riskIds
+              properties:
+                riskIds:
+                  type: array
+                  description: Array of risk IDs to add
+                  items:
+                    type: string
+                    pattern: '^RISK-[A-Z0-9-]+$'
+                  minItems: 1
+                  example: ["RISK-SENSITIVE-INFORMATION-LEAKAGE", "RISK-AI-BIAS-DISCRIMINATION"]
+      responses:
+        '200':
+          description: Risks added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /relationships/matrix:
+    get:
+      tags:
+        - Relationships
+      summary: Get complete risk-control relationship matrix
+      description: |
+        Retrieve a comprehensive matrix showing all risk-control relationships.
+        
+        **Matrix format:**
+        - Rows represent risks
+        - Each row lists associated controls
+        - Includes risk and control details
+        - Summary statistics provided
+        
+        **Use cases:**
+        - Relationship visualization
+        - Coverage gap analysis
+        - Export for reporting
+        - Audit documentation
+      operationId: getRelationshipMatrix
+      responses:
+        '200':
+          description: Relationship matrix retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelationshipMatrixResponse'
+              example:
+                success: true
+                data:
+                  matrix:
+                    - riskId: "RISK-SENSITIVE-INFORMATION-LEAKAGE"
+                      riskName: "Sensitive Information Leakage"
+                      riskLevel: "High"
+                      controls:
+                        - controlId: "SEC-01"
+                          controlDescription: "Data loss prevention tools"
+                          effectiveness: "High"
+                        - controlId: "SEC-02"
+                          controlDescription: "Security audits"
+                          effectiveness: "Medium"
+                  totalRelationships: 75
+                  risksWithControls: 28
+                  controlsWithRisks: 11
+                  averageControlsPerRisk: 2.7
+                  coveragePercentage: 84.8
+                meta:
+                  timestamp: "2025-07-22T10:00:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /relationships/orphaned:
+    get:
+      tags:
+        - Relationships
+      summary: Find entities without relationships
+      description: |
+        Identify risks without controls and controls without risks in a single query.
+        
+        **Why this matters:**
+        - Unmitigated risks pose full exposure
+        - Unused controls waste resources
+        - Indicates gaps in risk management
+        - Required for complete coverage
+        
+        **Response includes:**
+        - List of orphaned risks with details
+        - List of orphaned controls with details
+        - Summary statistics
+        - Recommendations
+      operationId: getOrphanedEntities
+      responses:
+        '200':
+          description: Orphaned entities retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrphanedEntitiesResponse'
+              example:
+                success: true
+                data:
+                  orphanedRisks:
+                    - id: "RISK-REGULATORY-COMPLIANCE"
+                      risk: "Regulatory Compliance Risk"
+                      riskCategory: "Business/Cost Related Risks"
+                      residualScoring:
+                        riskLevel: 16
+                  orphanedControls:
+                    - mitigationID: "TEST-01"
+                      mitigationDescription: "Test control"
+                  summary:
+                    totalOrphanedRisks: 5
+                    totalOrphanedControls: 2
+                    riskCoveragePercentage: 84.8
+                    controlUtilizationPercentage: 84.6
+                  recommendations:
+                    - "5 risks require immediate control assignment"
+                    - "Consider removing 2 unused test controls"
+                meta:
+                  timestamp: "2025-07-22T10:00:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /relationships/validate:
+    get:
+      tags:
+        - Relationships
+      summary: Validate consistency of all relationships
+      description: |
+        Perform comprehensive validation of all risk-control relationships to ensure data integrity.
+        
+        **Validation checks:**
+        - Bidirectional consistency
+        - Orphaned references
+        - Circular dependencies
+        - Data integrity issues
+        
+        **Use cases:**
+        - Pre-audit validation
+        - Data quality checks
+        - Troubleshooting
+        - Migration verification
+      operationId: validateRelationships
+      responses:
+        '200':
+          description: Validation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResponse'
+              example:
+                success: true
+                data:
+                  isValid: false
+                  errors:
+                    - type: "INCONSISTENT_RELATIONSHIP"
+                      message: "Risk RISK-AI-BIAS references control ACC-01, but control doesn't reference the risk"
+                      details:
+                        riskId: "RISK-AI-BIAS"
+                        controlId: "ACC-01"
+                  warnings:
+                    - type: "HIGH_RISK_LOW_CONTROLS"
+                      message: "High risk RISK-DATA-BREACH has only 1 control"
+                      details:
+                        riskId: "RISK-DATA-BREACH"
+                        riskLevel: 20
+                        controlCount: 1
+                  summary:
+                    totalRelationships: 75
+                    errors: 2
+                    warnings: 5
+                meta:
+                  validatedAt: "2025-07-22T10:00:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /upload/excel:
+    post:
+      tags:
+        - Upload
+      summary: Upload Excel file with risks and controls
+      description: |
+        Upload an Excel file containing risks and controls for bulk import or update.
+        
+        **File requirements:**
+        - Format: .xlsx (Excel 2007+)
+        - Must contain "Risks" and "Controls" sheets
+        - Headers must match expected format
+        - Maximum file size: 10MB
+        
+        **Processing:**
+        - Validates all data before import
+        - Updates existing records by ID
+        - Creates new records for new IDs
+        - Generates detailed report
+        
+        **Sheet formats:**
+        - Risks: 16 columns including scores
+        - Controls: Implementation details
+        - Relationships: Separate sheet (optional)
+        
+        **Error handling:**
+        - Validation errors prevent import
+        - Partial imports not allowed
+        - Detailed error reporting
+      operationId: uploadExcel
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Excel file (.xlsx) containing risks and controls
+                mode:
+                  type: string
+                  enum: [replace, merge]
+                  default: merge
+                  description: |
+                    - replace: Replace all existing data
+                    - merge: Update existing, add new
+      responses:
+        '200':
+          description: File processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResponse'
+              example:
+                success: true
+                data:
+                  risksProcessed: 33
+                  risksCreated: 5
+                  risksUpdated: 28
+                  controlsProcessed: 13
+                  controlsCreated: 2
+                  controlsUpdated: 11
+                  relationshipsCreated: 15
+                  errors: []
+                  warnings:
+                    - row: 15
+                      message: "Risk score calculated as 12, but sheet shows 13"
+                meta:
+                  processingTime: 2.5
+                  timestamp: "2025-07-22T10:00:00Z"
+        '400':
+          description: Invalid file or data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error:
+                  code: "INVALID_EXCEL_FORMAT"
+                  message: "Missing required sheet: Controls"
+                  details:
+                    foundSheets: ["Risks", "Summary"]
+                    requiredSheets: ["Risks", "Controls"]
+                  suggestion: "Ensure Excel file contains both 'Risks' and 'Controls' sheets"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          description: File too large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+components:
+  securitySchemes:
+    GoogleIAP:
+      type: apiKey
+      in: header
+      name: x-goog-iap-jwt-assertion
+      description: |
+        Google Identity-Aware Proxy JWT assertion for authentication.
+        In development, use x-test-user header instead.
+
+  parameters:
+    RiskId:
+      name: id
+      in: path
+      required: true
+      description: |
+        Risk identifier in format RISK-{NAME}.
+        Example: RISK-SENSITIVE-INFORMATION-LEAKAGE
+      schema:
+        type: string
+        pattern: '^RISK-[A-Z0-9-]+$'
+        example: RISK-SENSITIVE-INFORMATION-LEAKAGE
+
+    RiskIdPath:
+      name: riskId
+      in: path
+      required: true
+      description: Risk identifier
+      schema:
+        type: string
+        pattern: '^RISK-[A-Z0-9-]+$'
+        example: RISK-SENSITIVE-INFORMATION-LEAKAGE
+
+    ControlId:
+      name: id
+      in: path
+      required: true
+      description: |
+        Control identifier in format {CATEGORY}-{NUMBER}.
+        Categories: ACC, SEC, LOG, GOV, TEST
+        Example: ACC-01, SEC-02
+      schema:
+        type: string
+        pattern: '^(ACC|SEC|LOG|GOV|TEST)-\d{2}$'
+        example: ACC-01
+
+    ControlIdPath:
+      name: controlId
+      in: path
+      required: true
+      description: Control identifier
+      schema:
+        type: string
+        pattern: '^(ACC|SEC|LOG|GOV|TEST)-\d{2}$'
+        example: ACC-01
+
+    CategoryFilter:
+      name: category
+      in: query
+      description: |
+        Filter by risk category. Categories represent different types of AI-related risks.
+      schema:
+        type: string
+        enum:
+          - "Behavioral Risks"
+          - "Accuracy"
+          - "Transparency Risks"
+          - "Security and Data Risks"
+          - "Business/Cost Related Risks"
+          - "AI Human Impact Risks"
+          - "Other Risks"
+      example: "Security and Data Risks"
+
+    MinScoreFilter:
+      name: minScore
+      in: query
+      description: |
+        Minimum residual risk score (1-25).
+        Score = Likelihood × Impact
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 25
+      example: 15
+
+    MaxScoreFilter:
+      name: maxScore
+      in: query
+      description: |
+        Maximum residual risk score (1-25).
+        Score = Likelihood × Impact
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 25
+      example: 20
+
+    HasControlsFilter:
+      name: hasControls
+      in: query
+      description: |
+        Filter by control presence.
+        - true: Only risks with controls
+        - false: Only risks without controls
+      schema:
+        type: boolean
+      example: true
+
+    SortParam:
+      name: sort
+      in: query
+      description: |
+        Sort field with optional direction prefix.
+        Use '-' prefix for descending order.
+        Available fields vary by resource type.
+      schema:
+        type: string
+      examples:
+        ascending:
+          value: riskLevel
+          summary: Sort by risk level ascending
+        descending:
+          value: -residualRiskLevel
+          summary: Sort by residual risk level descending
+
+    PageParam:
+      name: page
+      in: query
+      description: Page number for pagination (1-based)
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      example: 2
+
+    LimitParam:
+      name: limit
+      in: query
+      description: |
+        Number of items per page.
+        Maximum: 100 items
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      example: 50
+
+    FieldsParam:
+      name: fields
+      in: query
+      description: |
+        Comma-separated list of fields to include in response.
+        Reduces payload size for large datasets.
+      schema:
+        type: string
+      example: id,risk,riskCategory,residualScoring
+
+  schemas:
+    Risk:
+      type: object
+      required:
+        - id
+        - risk
+        - riskCategory
+      properties:
+        id:
+          type: string
+          pattern: '^RISK-[A-Z0-9-]+$'
+          description: |
+            Unique identifier generated from risk name.
+            Format: RISK-{SANITIZED-NAME}
+          example: RISK-SENSITIVE-INFORMATION-LEAKAGE
+        riskCategory:
+          type: string
+          description: Category grouping for the risk
+          enum:
+            - "Behavioral Risks"
+            - "Accuracy"
+            - "Transparency Risks"
+            - "Security and Data Risks"
+            - "Business/Cost Related Risks"
+            - "AI Human Impact Risks"
+            - "Other Risks"
+          example: "Security and Data Risks"
+        risk:
+          type: string
+          description: Human-readable risk name
+          example: "Sensitive Information Leakage"
+        riskDescription:
+          type: string
+          description: Detailed description of the risk and its potential impact
+          example: "AI systems may inadvertently expose sensitive data through model outputs"
+        dataGatheringOrGenerationStage:
+          type: string
+          description: AI lifecycle stage where risk originates
+          example: "Data collection and model training"
+        deploymentAndUsePhase:
+          type: string
+          description: Deployment phase where risk manifests
+          example: "Production deployment"
+        subjectMatterStakeholder:
+          type: string
+          description: Key stakeholders affected by or responsible for this risk
+          example: "Data Protection Officer, Security Team"
+        initialScoring:
+          $ref: '#/components/schemas/RiskScoring'
+          description: Risk assessment before controls
+        agreedMitigation:
+          type: string
+          description: Agreed approach to mitigate the risk
+          example: "Implement data classification and output filtering"
+        residualScoring:
+          $ref: '#/components/schemas/RiskScoring'
+          description: Risk assessment after controls applied
+        issueOwner:
+          type: string
+          description: Person responsible for managing this risk
+          example: "security@dompe.com"
+        comment:
+          type: string
+          description: Additional notes or context
+        riskLevel:
+          type: string
+          description: Calculated risk level based on residual score
+          enum: [Low, Medium, High, Critical]
+          example: High
+        relatedControlIds:
+          type: array
+          description: IDs of controls mitigating this risk
+          items:
+            type: string
+            pattern: '^(ACC|SEC|LOG|GOV|TEST)-\d{2}$'
+          example: ["SEC-01", "SEC-02", "LOG-01"]
+        lastUpdated:
+          type: string
+          format: date-time
+          description: Last modification timestamp
+          example: "2025-07-22T10:00:00Z"
+
+    RiskScoring:
+      type: object
+      required:
+        - likelihood
+        - impact
+        - riskLevel
+      properties:
+        likelihood:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: |
+            Probability of risk occurring:
+            1 = Very Low, 2 = Low, 3 = Medium, 4 = High, 5 = Very High
+          example: 4
+        impact:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: |
+            Severity if risk occurs:
+            1 = Very Low, 2 = Low, 3 = Medium, 4 = High, 5 = Very High
+          example: 5
+        riskLevel:
+          type: integer
+          minimum: 1
+          maximum: 25
+          description: |
+            Calculated risk score (likelihood × impact).
+            1-6 = Low, 7-12 = Medium, 13-20 = High, 21-25 = Critical
+          example: 20
+
+    Control:
+      type: object
+      required:
+        - mitigationID
+        - mitigationDescription
+      properties:
+        mitigationID:
+          type: string
+          pattern: '^(ACC|SEC|LOG|GOV|TEST)-\d{2}$'
+          description: |
+            Unique control identifier.
+            Format: {CATEGORY}-{NUMBER}
+            ACC=Accuracy, SEC=Security, LOG=Logging, GOV=Governance, TEST=Test
+          example: ACC-01
+        mitigationDescription:
+          type: string
+          description: Clear description of what the control does
+          example: "Regular model accuracy testing and validation"
+        mitigationType:
+          type: string
+          description: Type of control
+          enum: [Technical, Process, Organizational, Training]
+          example: Process
+        objective:
+          type: string
+          description: What the control aims to achieve
+          example: "Ensure AI model outputs remain accurate and unbiased"
+        howItWillBeDone:
+          type: string
+          description: Implementation approach and methods
+          example: "Monthly accuracy tests using holdout datasets, bias detection tools"
+        priority:
+          type: string
+          description: Implementation priority
+          enum: [Low, Medium, High, Critical]
+          example: High
+        timeToImplement:
+          type: string
+          description: Estimated implementation duration
+          example: "3 months"
+        costBenefit:
+          type: string
+          description: Cost-benefit analysis summary
+          example: "Medium cost with high risk reduction benefit"
+        effectiveness:
+          type: string
+          description: |
+            How effective the control is at reducing risk:
+            High = >70% reduction, Medium = 30-70%, Low = <30%
+          enum: [High, Medium, Low, "Not Assessed"]
+          example: High
+        implementation:
+          $ref: '#/components/schemas/ControlImplementation'
+        relatedRiskIds:
+          type: array
+          description: IDs of risks mitigated by this control
+          items:
+            type: string
+            pattern: '^RISK-[A-Z0-9-]+$'
+          example: ["RISK-AI-BIAS-DISCRIMINATION", "RISK-MODEL-DRIFT"]
+        lastUpdated:
+          type: string
+          format: date-time
+          description: Last modification timestamp
+          example: "2025-07-22T10:00:00Z"
+
+    ControlImplementation:
+      type: object
+      description: Implementation details and status
+      properties:
+        status:
+          type: string
+          description: Current implementation status
+          enum: [Implemented, "In Progress", Planned, "Not Implemented"]
+          example: Implemented
+        implementationDate:
+          type: string
+          format: date
+          description: Date when control was/will be implemented
+          example: "2025-01-15"
+        responsibleParty:
+          type: string
+          description: Person/team responsible for implementation
+          example: "security@dompe.com"
+        complianceCheck:
+          type: string
+          description: Latest compliance verification status
+          example: "Passed Q1 2025 audit"
+        notes:
+          type: string
+          description: Implementation notes and observations
+          example: "Successfully integrated with existing security stack"
+
+    RiskCreateRequest:
+      type: object
+      required:
+        - risk
+        - riskCategory
+      properties:
+        risk:
+          type: string
+          minLength: 1
+          description: Risk name (will be used to generate ID)
+          example: "AI Model Data Poisoning"
+        riskCategory:
+          type: string
+          description: Risk category
+          enum:
+            - "Behavioral Risks"
+            - "Accuracy"
+            - "Transparency Risks"
+            - "Security and Data Risks"
+            - "Business/Cost Related Risks"
+            - "AI Human Impact Risks"
+            - "Other Risks"
+        riskDescription:
+          type: string
+          description: Detailed risk description
+        dataGatheringOrGenerationStage:
+          type: string
+        deploymentAndUsePhase:
+          type: string
+        subjectMatterStakeholder:
+          type: string
+        initialScoring:
+          $ref: '#/components/schemas/RiskScoring'
+        agreedMitigation:
+          type: string
+        residualScoring:
+          $ref: '#/components/schemas/RiskScoring'
+        issueOwner:
+          type: string
+        comment:
+          type: string
+
+    RiskUpdateRequest:
+      allOf:
+        - $ref: '#/components/schemas/RiskCreateRequest'
+        - type: object
+          description: Full risk update (all fields required)
+
+    RiskPatchRequest:
+      type: object
+      description: Partial risk update (only included fields updated)
+      properties:
+        risk:
+          type: string
+        riskCategory:
+          type: string
+        riskDescription:
+          type: string
+        dataGatheringOrGenerationStage:
+          type: string
+        deploymentAndUsePhase:
+          type: string
+        subjectMatterStakeholder:
+          type: string
+        initialScoring:
+          $ref: '#/components/schemas/RiskScoring'
+        agreedMitigation:
+          type: string
+        residualScoring:
+          $ref: '#/components/schemas/RiskScoring'
+        issueOwner:
+          type: string
+        comment:
+          type: string
+
+    ControlCreateRequest:
+      type: object
+      required:
+        - mitigationID
+        - mitigationDescription
+      properties:
+        mitigationID:
+          type: string
+          pattern: '^(ACC|SEC|LOG|GOV|TEST)-\d{2}$'
+          description: Control ID following pattern
+        mitigationDescription:
+          type: string
+          minLength: 1
+          description: Control description
+        mitigationType:
+          type: string
+        objective:
+          type: string
+        howItWillBeDone:
+          type: string
+        priority:
+          type: string
+          enum: [Low, Medium, High, Critical]
+        timeToImplement:
+          type: string
+        costBenefit:
+          type: string
+        effectiveness:
+          type: string
+          enum: [High, Medium, Low, "Not Assessed"]
+        implementation:
+          $ref: '#/components/schemas/ControlImplementation'
+
+    ControlUpdateRequest:
+      allOf:
+        - $ref: '#/components/schemas/ControlCreateRequest'
+        - type: object
+          description: Full control update
+
+    ControlPatchRequest:
+      type: object
+      description: Partial control update
+      properties:
+        mitigationDescription:
+          type: string
+        mitigationType:
+          type: string
+        objective:
+          type: string
+        howItWillBeDone:
+          type: string
+        priority:
+          type: string
+        timeToImplement:
+          type: string
+        costBenefit:
+          type: string
+        effectiveness:
+          type: string
+        implementation:
+          $ref: '#/components/schemas/ControlImplementation'
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          description: Human-readable success message
+        meta:
+          type: object
+          description: Additional metadata
+          properties:
+            timestamp:
+              type: string
+              format: date-time
+          additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              description: Machine-readable error code
+              example: RISK_NOT_FOUND
+            message:
+              type: string
+              description: Human-readable error message
+            details:
+              type: object
+              description: Additional error context
+            suggestion:
+              type: string
+              description: Helpful suggestion for resolution
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+            timestamp:
+              type: string
+              format: date-time
+
+    RiskResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/Risk'
+        meta:
+          type: object
+          properties:
+            timestamp:
+              type: string
+              format: date-time
+
+    RisksListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Risk'
+        meta:
+          type: object
+          properties:
+            page:
+              type: integer
+              description: Current page number
+            limit:
+              type: integer
+              description: Items per page
+            total:
+              type: integer
+              description: Total number of items
+            totalPages:
+              type: integer
+              description: Total number of pages
+            timestamp:
+              type: string
+              format: date-time
+
+    ControlResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/Control'
+        meta:
+          type: object
+          properties:
+            timestamp:
+              type: string
+              format: date-time
+
+    ControlsListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Control'
+        meta:
+          type: object
+          properties:
+            page:
+              type: integer
+            limit:
+              type: integer
+            total:
+              type: integer
+            totalPages:
+              type: integer
+            timestamp:
+              type: string
+              format: date-time
+
+    RiskStatisticsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            totalRisks:
+              type: integer
+              description: Total number of risks
+            byCategory:
+              type: object
+              description: Risk count by category
+              additionalProperties:
+                type: integer
+            byRiskLevel:
+              type: object
+              description: Risk count by level
+              properties:
+                low:
+                  type: integer
+                medium:
+                  type: integer
+                high:
+                  type: integer
+                critical:
+                  type: integer
+            withControls:
+              type: integer
+              description: Risks with at least one control
+            withoutControls:
+              type: integer
+              description: Risks with no controls
+            averageInitialScore:
+              type: number
+              description: Average initial risk score
+            averageResidualScore:
+              type: number
+              description: Average residual risk score
+            riskReductionPercentage:
+              type: number
+              description: Average risk reduction from controls
+        meta:
+          type: object
+
+    ControlStatisticsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            totalControls:
+              type: integer
+            byStatus:
+              type: object
+              properties:
+                implemented:
+                  type: integer
+                inProgress:
+                  type: integer
+                planned:
+                  type: integer
+                notImplemented:
+                  type: integer
+            byEffectiveness:
+              type: object
+              properties:
+                high:
+                  type: integer
+                medium:
+                  type: integer
+                low:
+                  type: integer
+                notAssessed:
+                  type: integer
+            byCategory:
+              type: object
+              additionalProperties:
+                type: integer
+            withRisks:
+              type: integer
+            withoutRisks:
+              type: integer
+            averageRisksPerControl:
+              type: number
+            implementationRate:
+              type: number
+              description: Percentage of controls implemented
+        meta:
+          type: object
+
+    ControlsByCategoryResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          description: Controls grouped by category
+          additionalProperties:
+            type: array
+            items:
+              $ref: '#/components/schemas/Control'
+        meta:
+          type: object
+
+    EffectivenessReportResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            summary:
+              type: object
+              description: Overall effectiveness summary
+            byCategory:
+              type: object
+              description: Effectiveness breakdown by category
+            topPerformers:
+              type: array
+              description: Most effective controls
+              items:
+                type: object
+            improvements:
+              type: array
+              description: Controls needing improvement
+              items:
+                type: object
+            correlations:
+              type: object
+              description: Statistical correlations
+        meta:
+          type: object
+
+    RelationshipMatrixResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            matrix:
+              type: array
+              items:
+                type: object
+                properties:
+                  riskId:
+                    type: string
+                  riskName:
+                    type: string
+                  riskLevel:
+                    type: string
+                  controls:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        controlId:
+                          type: string
+                        controlDescription:
+                          type: string
+                        effectiveness:
+                          type: string
+            totalRelationships:
+              type: integer
+            risksWithControls:
+              type: integer
+            controlsWithRisks:
+              type: integer
+            averageControlsPerRisk:
+              type: number
+            coveragePercentage:
+              type: number
+        meta:
+          type: object
+
+    OrphanedEntitiesResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            orphanedRisks:
+              type: array
+              items:
+                $ref: '#/components/schemas/Risk'
+            orphanedControls:
+              type: array
+              items:
+                $ref: '#/components/schemas/Control'
+            summary:
+              type: object
+              properties:
+                totalOrphanedRisks:
+                  type: integer
+                totalOrphanedControls:
+                  type: integer
+                riskCoveragePercentage:
+                  type: number
+                controlUtilizationPercentage:
+                  type: number
+            recommendations:
+              type: array
+              items:
+                type: string
+        meta:
+          type: object
+
+    ValidationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            isValid:
+              type: boolean
+              description: Whether all relationships are valid
+            errors:
+              type: array
+              description: Critical validation errors
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  message:
+                    type: string
+                  details:
+                    type: object
+            warnings:
+              type: array
+              description: Non-critical issues
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  message:
+                    type: string
+                  details:
+                    type: object
+            summary:
+              type: object
+              properties:
+                totalRelationships:
+                  type: integer
+                errors:
+                  type: integer
+                warnings:
+                  type: integer
+        meta:
+          type: object
+
+    UploadResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            risksProcessed:
+              type: integer
+            risksCreated:
+              type: integer
+            risksUpdated:
+              type: integer
+            controlsProcessed:
+              type: integer
+            controlsCreated:
+              type: integer
+            controlsUpdated:
+              type: integer
+            relationshipsCreated:
+              type: integer
+            errors:
+              type: array
+              items:
+                type: object
+                properties:
+                  row:
+                    type: integer
+                  sheet:
+                    type: string
+                  message:
+                    type: string
+            warnings:
+              type: array
+              items:
+                type: object
+                properties:
+                  row:
+                    type: integer
+                  sheet:
+                    type: string
+                  message:
+                    type: string
+        meta:
+          type: object
+          properties:
+            processingTime:
+              type: number
+              description: Processing time in seconds
+            timestamp:
+              type: string
+              format: date-time
+
+  responses:
+    Unauthorized:
+      description: Authentication required or invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: AUTH_REQUIRED
+              message: Authentication is required to access this resource
+              suggestion: Please ensure you are logged in and your session is valid
+
+    BadRequest:
+      description: Invalid request format or parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: INVALID_REQUEST
+              message: Invalid request parameters
+              details:
+                errors:
+                  - field: minScore
+                    message: Must be between 1 and 25
+              suggestion: Review the API documentation for valid parameters
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    RiskNotFound:
+      description: Risk not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: RISK_NOT_FOUND
+              message: Risk with ID 'RISK-EXAMPLE' not found in the system
+              details:
+                resourceId: RISK-EXAMPLE
+                resourceType: risk
+              suggestion: Verify the risk ID exists. List all risks using GET /api/v1/risks
+
+    ControlNotFound:
+      description: Control not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: CONTROL_NOT_FOUND
+              message: Control with ID 'ACC-99' not found in the system
+              details:
+                resourceId: ACC-99
+                resourceType: control
+              suggestion: Verify the control ID exists. List all controls using GET /api/v1/controls
+
+    UnprocessableEntity:
+      description: Business logic or validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: INTERNAL_ERROR
+              message: An unexpected error occurred
+              suggestion: Please try again later. If the problem persists, contact support
+
+  examples:
+    RisksListExample:
+      summary: Standard risk list response
+      value:
+        success: true
+        data:
+          - id: "RISK-SENSITIVE-INFORMATION-LEAKAGE"
+            riskCategory: "Security and Data Risks"
+            risk: "Sensitive Information Leakage"
+            riskDescription: "AI systems may inadvertently expose sensitive data"
+            initialScoring:
+              likelihood: 5
+              impact: 5
+              riskLevel: 25
+            residualScoring:
+              likelihood: 2
+              impact: 5
+              riskLevel: 10
+            relatedControlIds: ["SEC-01", "SEC-02", "LOG-01"]
+            riskLevel: "Medium"
+          - id: "RISK-AI-BIAS-DISCRIMINATION"
+            riskCategory: "AI Human Impact Risks"
+            risk: "AI Bias & Discrimination"
+            riskDescription: "AI models may exhibit bias against protected groups"
+            initialScoring:
+              likelihood: 4
+              impact: 5
+              riskLevel: 20
+            residualScoring:
+              likelihood: 2
+              impact: 5
+              riskLevel: 10
+            relatedControlIds: ["ACC-01", "GOV-03"]
+            riskLevel: "Medium"
+        meta:
+          page: 1
+          limit: 20
+          total: 33
+          totalPages: 2
+          timestamp: "2025-07-22T10:00:00Z"
+
+    RisksListFilteredExample:
+      summary: Filtered risk list
+      value:
+        success: true
+        data:
+          - id: "RISK-SENSITIVE-INFORMATION-LEAKAGE"
+            riskCategory: "Security and Data Risks"
+            risk: "Sensitive Information Leakage"
+            residualScoring:
+              likelihood: 5
+              impact: 5
+              riskLevel: 25
+            relatedControlIds: ["SEC-01", "SEC-02"]
+        meta:
+          page: 1
+          limit: 20
+          total: 8
+          totalPages: 1
+          filters:
+            category: "Security and Data Risks"
+            minScore: 20
+          timestamp: "2025-07-22T10:00:00Z"
+
+    RiskCreateMinimal:
+      summary: Minimal risk creation
+      value:
+        risk: "AI Model Data Poisoning"
+        riskCategory: "Security and Data Risks"
+
+    RiskCreateComplete:
+      summary: Complete risk with all fields
+      value:
+        risk: "AI Model Data Poisoning"
+        riskCategory: "Security and Data Risks"
+        riskDescription: "Attackers may inject malicious data into training sets to compromise model behavior"
+        dataGatheringOrGenerationStage: "Training data collection"
+        deploymentAndUsePhase: "Model training and validation"
+        subjectMatterStakeholder: "ML Engineering, Security Team"
+        initialScoring:
+          likelihood: 3
+          impact: 5
+          riskLevel: 15
+        agreedMitigation: "Implement data validation, anomaly detection in training pipeline"
+        residualScoring:
+          likelihood: 1
+          impact: 5
+          riskLevel: 5
+        issueOwner: "mlsecurity@dompe.com"
+        comment: "Critical risk for models trained on external data"

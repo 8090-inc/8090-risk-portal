@@ -32,6 +32,10 @@ export const ControlsView: React.FC = () => {
     defaultFilters: {}
   });
 
+  // Debug: Log filter state
+  console.log('ControlsView: Active filters:', activeFilters);
+  console.log('ControlsView: Has active filters:', hasActiveFilters);
+
   const [showFilterPanel, setShowFilterPanel] = useState(false);
 
   const { execute: loadControlsAsync } = useAsyncOperation(loadControls, {
@@ -47,6 +51,15 @@ export const ControlsView: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Debug: Log controls when they change
+  useEffect(() => {
+    console.log('ControlsView: Controls updated:', controls.length, controls);
+    if (controls.length > 0) {
+      console.log('ControlsView: First control:', controls[0]);
+      console.log('ControlsView: Control statuses:', controls.map(c => c.implementationStatus));
+    }
+  }, [controls]);
+
   // Build filter groups with counts
   const filterGroups = useMemo(() => {
     const categoryOptions = Array.from(
@@ -61,7 +74,7 @@ export const ControlsView: React.FC = () => {
       { value: 'Implemented', label: 'Implemented', count: 0 },
       { value: 'In Progress', label: 'In Progress', count: 0 },
       { value: 'Planned', label: 'Planned', count: 0 },
-      { value: 'Not Implemented', label: 'Not Implemented', count: 0 }
+      { value: 'Not Started', label: 'Not Started', count: 0 }
     ];
 
     const effectivenessOptions = [
@@ -73,7 +86,7 @@ export const ControlsView: React.FC = () => {
 
     // Count statuses and effectiveness
     controls.forEach(control => {
-      const status = control.implementationStatus || 'Not Implemented';
+      const status = control.implementationStatus || 'Not Started';
       const statusOption = statusOptions.find(o => o.value === status);
       if (statusOption) statusOption.count++;
 
@@ -113,12 +126,13 @@ export const ControlsView: React.FC = () => {
       filtered = filtered.filter(control => 
         activeFilters.category!.includes(control.category)
       );
+      console.log('ControlsView: After category filter:', filtered.length);
     }
 
     // Apply status filter
     if (activeFilters.status?.length > 0) {
       filtered = filtered.filter(control => 
-        activeFilters.status!.includes(control.implementationStatus || 'Not Implemented')
+        activeFilters.status!.includes(control.implementationStatus || 'Not Started')
       );
     }
 
@@ -132,12 +146,20 @@ export const ControlsView: React.FC = () => {
     return filtered;
   }, [controls, activeFilters]);
 
+  // Auto-clear invalid filters when no controls match
+  useEffect(() => {
+    if (controls.length > 0 && hasActiveFilters && filteredControls.length === 0) {
+      console.warn('ControlsView: No controls match current filters, clearing filters');
+      clearAllFilters();
+    }
+  }, [controls.length, hasActiveFilters, filteredControls.length, clearAllFilters]);
+
   const summaryStats = useMemo(() => {
     if (!statistics) return { ok: 0, attention: 0, pending: 0 };
     
     return {
       ok: statistics.byImplementationStatus['Implemented'] || 0,
-      attention: statistics.byImplementationStatus['Not Implemented'] || 0,
+      attention: statistics.byImplementationStatus['Not Started'] || 0,
       pending: statistics.byImplementationStatus['In Progress'] || 0
     };
   }, [statistics]);
@@ -163,7 +185,7 @@ export const ControlsView: React.FC = () => {
       id: 'needs-attention',
       name: 'Needs Attention',
       filters: { 
-        status: ['Not Implemented', 'Planned'],
+        status: ['Not Started', 'Planned'],
         effectiveness: ['Low', 'Not Assessed'],
         category: []
       },
@@ -230,6 +252,16 @@ export const ControlsView: React.FC = () => {
           description="Manage and monitor your AI risk control implementations"
           actions={
             <div className="flex items-center space-x-3">
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearAllFilters}
+                  className="text-red-600 hover:text-red-700 mr-2"
+                >
+                  Clear Filters
+                </Button>
+              )}
               <Button
                 variant="secondary"
                 size="sm"
@@ -250,6 +282,20 @@ export const ControlsView: React.FC = () => {
                 icon={<Download className="h-4 w-4" />}
               >
                 Export
+              </Button>
+              {/* Debug button to clear filters */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  localStorage.removeItem('controls_filters');
+                  localStorage.removeItem('controls_filterSets');
+                  localStorage.removeItem('control-store');
+                  window.location.reload();
+                }}
+                className="text-red-600"
+              >
+                Clear Cache
               </Button>
             </div>
           }
@@ -353,7 +399,7 @@ export const ControlsView: React.FC = () => {
               description="Controls fully implemented and compliant"
             />
             <ControlSummaryCard
-              title="Not Implemented"
+              title="Not Started"
               count={summaryStats.attention}
               variant="attention"
               description="Controls requiring immediate attention"
@@ -368,6 +414,10 @@ export const ControlsView: React.FC = () => {
 
           {/* Controls Table */}
           <div className="bg-white shadow rounded-lg p-6">
+            {console.log('ControlsView: Rendering ControlsTable with controls:', filteredControls.length)}
+            {console.log('ControlsView: First filtered control:', filteredControls[0])}
+            {console.log('ControlsView: Has active filters:', hasActiveFilters)}
+            {console.log('ControlsView: Active filters detail:', JSON.stringify(activeFilters))}
             <ControlsTable
               controls={filteredControls}
               searchTerm=""

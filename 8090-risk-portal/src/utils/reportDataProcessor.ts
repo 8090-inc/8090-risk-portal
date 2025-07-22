@@ -1,22 +1,5 @@
 import { TemplateData } from '../services/geminiService';
-
-interface Risk {
-  riskCategory: string;
-  risk: string;
-  riskDescription: string;
-  initialLikelihood: number;
-  initialImpact: number;
-  initialRiskLevel: number;
-  riskLevelCategory: string;
-  exampleMitigations: string;
-  agreedMitigation: string;
-  proposedOversightOwnership: string;
-  proposedSupport: string;
-  notes: string;
-  residualLikelihood: number;
-  residualImpact: number;
-  residualRiskLevel: number;
-}
+import { Risk } from '../types/risk.types';
 
 export function extractTemplateData(risks: Risk[]): TemplateData {
   // Group risks by category
@@ -29,10 +12,10 @@ export function extractTemplateData(risks: Risk[]): TemplateData {
   }, {} as Record<string, Risk[]>);
 
   // Count risks by level
-  const criticalRisks = risks.filter(r => r.riskLevelCategory === 'Critical');
-  const highRisks = risks.filter(r => r.riskLevelCategory === 'High');
-  const mediumRisks = risks.filter(r => r.riskLevelCategory === 'Medium');
-  const lowRisks = risks.filter(r => r.riskLevelCategory === 'Low');
+  const criticalRisks = risks.filter(r => r.initialScoring.riskLevelCategory === 'Critical');
+  const highRisks = risks.filter(r => r.initialScoring.riskLevelCategory === 'High');
+  const mediumRisks = risks.filter(r => r.initialScoring.riskLevelCategory === 'Medium');
+  const lowRisks = risks.filter(r => r.initialScoring.riskLevelCategory === 'Low');
 
   // Format risk distribution
   const riskDistribution = `Critical: ${criticalRisks.length}, High: ${highRisks.length}, Medium: ${mediumRisks.length}, Low: ${lowRisks.length}`;
@@ -50,8 +33,8 @@ export function extractTemplateData(risks: Risk[]): TemplateData {
   // Format impact by category
   const impactByCategory = Object.entries(risksByCategory)
     .map(([category, categoryRisks]) => {
-      const criticalCount = categoryRisks.filter(r => r.riskLevelCategory === 'Critical').length;
-      const highCount = categoryRisks.filter(r => r.riskLevelCategory === 'High').length;
+      const criticalCount = categoryRisks.filter(r => r.initialScoring.riskLevelCategory === 'Critical').length;
+      const highCount = categoryRisks.filter(r => r.initialScoring.riskLevelCategory === 'High').length;
       return `• ${category}: ${categoryRisks.length} risks (${criticalCount} Critical, ${highCount} High)`;
     })
     .join('\n');

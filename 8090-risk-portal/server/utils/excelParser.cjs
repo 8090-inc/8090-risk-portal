@@ -1,4 +1,5 @@
 const XLSX = require('xlsx');
+const { generateRiskId } = require('./idGenerator.cjs');
 
 // Column mappings for risks - Updated to include ID column
 const RISK_COLUMNS = {
@@ -41,20 +42,27 @@ const LEGACY_RISK_COLUMNS = {
   RESIDUAL_RISK_CATEGORY: 15
 };
 
-// Column mappings for controls
+// Column mappings for controls - matches actual Excel format
 const CONTROL_COLUMNS = {
-  CONTROL_ID: 0,
-  CONTROL_NAME: 1,
-  CONTROL_DESCRIPTION: 2,
-  CONTROL_TYPE: 3,
-  IMPLEMENTATION_STATUS: 4,
-  EFFECTIVENESS: 5,
-  OWNER: 6,
-  LAST_REVIEW_DATE: 7,
-  NEXT_REVIEW_DATE: 8,
-  EVIDENCE: 9,
-  RELATED_RISKS: 10,
-  NOTES: 11
+  MITIGATION_ID: 0,                   // "Mitigation ID"
+  MITIGATION_DESCRIPTION: 1,          // "Mitigation Description"
+  CFR_PART11_ANNEX11: 2,             // "21 CFR Part 11 / Annex 11 Clause"
+  HIPAA_SAFEGUARD: 3,                // "HIPAA Safeguard"
+  GDPR_ARTICLE: 4,                   // "GDPR Article"
+  EU_AI_ACT_ARTICLE: 5,              // "EU AI Act Article"
+  NIST_800_53: 6,                    // "NIST 800-53 Control Family"
+  SOC_2_TSC: 7                       // "SOC 2 TSC"
+};
+
+// Column mappings for relationships
+const RELATIONSHIP_COLUMNS = {
+  CONTROL_ID: 0,                      // "Control ID"
+  RISK_ID: 1,                         // "Risk ID"
+  LINK_TYPE: 2,                       // "Link Type"
+  EFFECTIVENESS: 3,                   // "Effectiveness"
+  NOTES: 4,                           // "Notes"
+  CREATED_DATE: 5,                    // "Created"
+  LAST_UPDATED: 6                     // "Updated"
 };
 
 // Valid control ID pattern
@@ -72,15 +80,12 @@ const getCellValue = (cell) => {
 const parseArrayValue = (value) => {
   if (!value) return [];
   if (Array.isArray(value)) return value;
+  if (typeof value === 'number') return [value.toString()];
+  if (typeof value !== 'string') return [];
   return value.split(',').map(item => item.trim()).filter(item => item);
 };
 
-// Generate risk ID
-const generateRiskId = (riskName) => {
-  const sanitized = riskName.replace(/[^a-zA-Z0-9]/g, '-').toUpperCase();
-  const timestamp = Date.now().toString().slice(-4);
-  return `RISK-${sanitized}-${timestamp}`;
-};
+// Risk ID generation is handled by idGenerator.cjs
 
 // Check if a value is a header value
 const isHeaderValue = (value) => {
@@ -224,8 +229,8 @@ const parseRisksFromWorkbook = async (buffer) => {
       },
       exampleMitigations: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: columns.EXAMPLE_MITIGATIONS })]),
       agreedMitigation: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: columns.AGREED_MITIGATION })]),
-      proposedOversightOwnership: parseArrayValue(getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: columns.PROPOSED_OVERSIGHT_OWNERSHIP })])),
-      proposedSupport: parseArrayValue(getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: columns.PROPOSED_SUPPORT })])),
+      proposedOversightOwnership: parseArrayValue(getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: columns.PROPOSED_OVERSIGHT_OWNERSHIP })]) || ''),
+      proposedSupport: parseArrayValue(getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: columns.PROPOSED_SUPPORT })]) || ''),
       notes: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: columns.NOTES })]),
       residualScoring: {
         likelihood: residualLikelihood,
@@ -236,7 +241,7 @@ const parseRisksFromWorkbook = async (buffer) => {
       riskReduction: riskReduction,
       riskReductionPercentage: riskReductionPercentage,
       mitigationEffectiveness: riskReductionPercentage >= 75 ? 'High' : riskReductionPercentage >= 50 ? 'Medium' : 'Low',
-      relatedControlIds: [],
+      relatedControlIds: [], // Will be populated from relationships sheet
       lastUpdated: new Date().toISOString(),
       createdAt: new Date().toISOString()
     };
@@ -257,6 +262,46 @@ const parseRisksFromWorkbook = async (buffer) => {
   return risks;
 };
 
+// Parse relationships from workbook
+const parseRelationshipsFromWorkbook = async (buffer) => {
+  const workbook = XLSX.read(buffer, { type: 'buffer' });
+  
+  // Look for Relationships sheet
+  const relationshipsSheetName = workbook.SheetNames.find(name => 
+    name.toLowerCase() === 'relationships'
+  );
+  
+  if (!relationshipsSheetName) {
+    return [];
+  }
+  
+  const sheet = workbook.Sheets[relationshipsSheetName];
+  const relationships = [];
+  const range = XLSX.utils.decode_range(sheet['!ref']);
+  
+  // Start from row 1 (skip header row)
+  for (let row = 1; row <= range.e.r; row++) {
+    const controlId = getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: RELATIONSHIP_COLUMNS.CONTROL_ID })]);
+    const riskId = getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: RELATIONSHIP_COLUMNS.RISK_ID })]);
+    
+    if (!controlId || !riskId) continue;
+    
+    const relationship = {
+      controlId,
+      riskId,
+      linkType: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: RELATIONSHIP_COLUMNS.LINK_TYPE })]) || 'Mitigates',
+      effectiveness: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: RELATIONSHIP_COLUMNS.EFFECTIVENESS })]) || 'Medium',
+      notes: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: RELATIONSHIP_COLUMNS.NOTES })]) || '',
+      createdDate: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: RELATIONSHIP_COLUMNS.CREATED_DATE })]) || new Date().toISOString(),
+      lastUpdated: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: RELATIONSHIP_COLUMNS.LAST_UPDATED })]) || new Date().toISOString()
+    };
+    
+    relationships.push(relationship);
+  }
+  
+  return relationships;
+};
+
 // Parse controls from workbook
 const parseControlsFromWorkbook = async (buffer) => {
   const workbook = XLSX.read(buffer, { type: 'buffer' });
@@ -274,26 +319,45 @@ const parseControlsFromWorkbook = async (buffer) => {
   const controls = [];
   const range = XLSX.utils.decode_range(sheet['!ref']);
   
-  // Start from row 2 (skip header row)
+  // Start from row 2 (skip header row - row 0 is headers, row 1 might be category)
+  let currentCategory = 'General'; // Default category
+  
   for (let row = 1; row <= range.e.r; row++) {
-    const controlId = getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.CONTROL_ID })]);
-    const controlName = getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.CONTROL_NAME })]);
+    const mitigationId = getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.MITIGATION_ID })]);
+    const mitigationDesc = getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.MITIGATION_DESCRIPTION })]);
     
-    if (!controlId || !controlName) continue;
-    if (!CONTROL_ID_PATTERN.test(controlId)) continue;
+    // Check if this is a category row (has text in first column but no valid control ID)
+    if (mitigationId && !CONTROL_ID_PATTERN.test(mitigationId) && !mitigationDesc) {
+      currentCategory = mitigationId;
+      continue;
+    }
+    
+    // Skip if no valid control ID
+    if (!mitigationId || !CONTROL_ID_PATTERN.test(mitigationId)) continue;
+    if (!mitigationDesc) continue;
     
     const control = {
-      mitigationID: controlId,
-      mitigationDescription: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.CONTROL_DESCRIPTION })]),
-      category: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.CONTROL_TYPE })]),
-      implementationStatus: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.IMPLEMENTATION_STATUS })]),
-      effectiveness: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.EFFECTIVENESS })]),
-      owner: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.OWNER })]),
-      lastReviewDate: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.LAST_REVIEW_DATE })]),
-      nextReviewDate: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.NEXT_REVIEW_DATE })]),
-      evidence: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.EVIDENCE })]),
-      relatedRiskIds: parseArrayValue(getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.RELATED_RISKS })])),
-      notes: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.NOTES })]),
+      mitigationID: mitigationId,
+      mitigationDescription: mitigationDesc,
+      category: currentCategory,
+      // Compliance fields
+      compliance: {
+        cfrPart11Annex11: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.CFR_PART11_ANNEX11 })]),
+        hipaaSafeguard: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.HIPAA_SAFEGUARD })]),
+        gdprArticle: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.GDPR_ARTICLE })]),
+        euAiActArticle: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.EU_AI_ACT_ARTICLE })]),
+        nist80053: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.NIST_800_53 })]),
+        soc2TSC: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.SOC_2_TSC })])
+      },
+      // Default operational fields (not in Excel but needed by API)
+      implementationStatus: 'Planned',
+      effectiveness: 'Not Assessed',
+      owner: '',
+      lastReviewDate: '',
+      nextReviewDate: '',
+      evidence: '',
+      relatedRiskIds: [], // Will be populated from relationships sheet
+      notes: '',
       lastUpdated: new Date().toISOString(),
       createdAt: new Date().toISOString()
     };
@@ -409,7 +473,7 @@ const updateRiskInWorkbook = async (buffer, riskId, updatedRisk) => {
     } else {
       // Legacy format: match by regenerated ID
       const riskName = getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: LEGACY_RISK_COLUMNS.RISK_NAME })]);
-      if (generateRiskId(riskName) === riskId) {
+      if (riskName && generateRiskId(riskName) === riskId) {
         riskRow = row;
         break;
       }
@@ -497,7 +561,7 @@ const deleteRiskFromWorkbook = async (buffer, riskId) => {
     } else {
       // Legacy format: match by regenerated ID
       const riskName = getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: LEGACY_RISK_COLUMNS.RISK_NAME })]);
-      if (generateRiskId(riskName) === riskId) {
+      if (riskName && generateRiskId(riskName) === riskId) {
         riskRow = row;
         break;
       }
@@ -544,12 +608,12 @@ const addControlToWorkbook = async (buffer, newControl) => {
   );
   
   if (!controlsSheetName) {
-    // Create new Controls sheet
-    controlsSheetName = 'Controls';
+    // Create new Controls sheet with actual format
+    controlsSheetName = 'Controls Mapping';
     const newSheet = XLSX.utils.aoa_to_sheet([
-      ['Control ID', 'Control Name', 'Description', 'Type', 'Implementation Status', 
-       'Effectiveness', 'Owner', 'Last Review Date', 'Next Review Date', 
-       'Evidence', 'Related Risks', 'Notes']
+      ['Mitigation ID', 'Mitigation Description', '21 CFR Part 11 / Annex 11 Clause', 
+       'HIPAA Safeguard', 'GDPR Article', 'EU AI Act Article', 
+       'NIST 800-53 Control Family', 'SOC 2 TSC']
     ]);
     workbook.Sheets[controlsSheetName] = newSheet;
     workbook.SheetNames.push(controlsSheetName);
@@ -559,20 +623,16 @@ const addControlToWorkbook = async (buffer, newControl) => {
   const range = XLSX.utils.decode_range(sheet['!ref']);
   const newRow = range.e.r + 1;
   
-  // Add new control data
+  // Add new control data - matching the actual Excel format
   const rowData = [
     newControl.mitigationID,
     newControl.mitigationDescription,
-    newControl.mitigationDescription,  // Description column
-    newControl.category || 'Preventive',
-    newControl.implementationStatus,
-    newControl.effectiveness,
-    newControl.owner,
-    newControl.lastReviewDate,
-    newControl.nextReviewDate,
-    newControl.evidence,
-    Array.isArray(newControl.relatedRiskIds) ? newControl.relatedRiskIds.join(', ') : (newControl.relatedRiskIds || ''),
-    newControl.notes || ''
+    newControl.compliance?.cfrPart11Annex11 || '',
+    newControl.compliance?.hipaaSafeguard || '',
+    newControl.compliance?.gdprArticle || '',
+    newControl.compliance?.euAiActArticle || '',
+    newControl.compliance?.nist80053 || '',
+    newControl.compliance?.soc2TSC || ''
   ];
   
   rowData.forEach((value, colIndex) => {
@@ -605,7 +665,7 @@ const updateControlInWorkbook = async (buffer, controlId, updatedControl) => {
   
   // Find the control row
   for (let row = 1; row <= range.e.r; row++) {
-    const id = getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.CONTROL_ID })]);
+    const id = getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.MITIGATION_ID })]);
     if (id === controlId) {
       controlRow = row;
       break;
@@ -616,20 +676,16 @@ const updateControlInWorkbook = async (buffer, controlId, updatedControl) => {
     throw new Error(`Control with ID ${controlId} not found`);
   }
   
-  // Update control data
+  // Update control data - matching the actual Excel format
   const rowData = [
     updatedControl.mitigationID,
     updatedControl.mitigationDescription,
-    updatedControl.mitigationDescription,  // Description column
-    updatedControl.category || 'Preventive',
-    updatedControl.implementationStatus,
-    updatedControl.effectiveness,
-    updatedControl.owner,
-    updatedControl.lastReviewDate,
-    updatedControl.nextReviewDate,
-    updatedControl.evidence,
-    Array.isArray(updatedControl.relatedRiskIds) ? updatedControl.relatedRiskIds.join(', ') : (updatedControl.relatedRiskIds || ''),
-    updatedControl.notes || ''
+    updatedControl.compliance?.cfrPart11Annex11 || '',
+    updatedControl.compliance?.hipaaSafeguard || '',
+    updatedControl.compliance?.gdprArticle || '',
+    updatedControl.compliance?.euAiActArticle || '',
+    updatedControl.compliance?.nist80053 || '',
+    updatedControl.compliance?.soc2TSC || ''
   ];
   
   rowData.forEach((value, colIndex) => {
@@ -658,7 +714,7 @@ const deleteControlFromWorkbook = async (buffer, controlId) => {
   
   // Find the control row
   for (let row = 1; row <= range.e.r; row++) {
-    const id = getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.CONTROL_ID })]);
+    const id = getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.MITIGATION_ID })]);
     if (id === controlId) {
       controlRow = row;
       break;
@@ -695,13 +751,150 @@ const deleteControlFromWorkbook = async (buffer, controlId) => {
   return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
 };
 
+// Add relationship to workbook
+const addRelationshipToWorkbook = async (buffer, controlId, riskId, linkType = 'Mitigates', effectiveness = 'Medium', notes = '') => {
+  const workbook = XLSX.read(buffer, { type: 'buffer' });
+  
+  // Find or create Relationships sheet
+  let relationshipsSheetName = workbook.SheetNames.find(name => 
+    name.toLowerCase() === 'relationships'
+  );
+  
+  if (!relationshipsSheetName) {
+    // Create new Relationships sheet
+    relationshipsSheetName = 'Relationships';
+    const newSheet = XLSX.utils.aoa_to_sheet([
+      ['Control ID', 'Risk ID', 'Link Type', 'Effectiveness', 'Notes', 'Created', 'Updated']
+    ]);
+    workbook.Sheets[relationshipsSheetName] = newSheet;
+    workbook.SheetNames.push(relationshipsSheetName);
+  }
+  
+  const sheet = workbook.Sheets[relationshipsSheetName];
+  const range = XLSX.utils.decode_range(sheet['!ref']);
+  const newRow = range.e.r + 1;
+  
+  // Add new relationship data
+  const now = new Date().toISOString();
+  const rowData = [
+    controlId,
+    riskId,
+    linkType,
+    effectiveness,
+    notes,
+    now,
+    now
+  ];
+  
+  rowData.forEach((value, colIndex) => {
+    const cell = { t: 's', v: value || '' };
+    sheet[XLSX.utils.encode_cell({ r: newRow, c: colIndex })] = cell;
+  });
+  
+  // Update range
+  range.e.r = newRow;
+  sheet['!ref'] = XLSX.utils.encode_range(range);
+  
+  return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+};
+
+// Remove relationship from workbook
+const removeRelationshipFromWorkbook = async (buffer, controlId, riskId) => {
+  const workbook = XLSX.read(buffer, { type: 'buffer' });
+  
+  const relationshipsSheetName = workbook.SheetNames.find(name => 
+    name.toLowerCase() === 'relationships'
+  );
+  
+  if (!relationshipsSheetName) {
+    return buffer; // No relationships sheet, nothing to remove
+  }
+  
+  const sheet = workbook.Sheets[relationshipsSheetName];
+  const range = XLSX.utils.decode_range(sheet['!ref']);
+  
+  // Find the relationship row
+  let relationshipRow = -1;
+  for (let row = 1; row <= range.e.r; row++) {
+    const rowControlId = getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: RELATIONSHIP_COLUMNS.CONTROL_ID })]);
+    const rowRiskId = getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: RELATIONSHIP_COLUMNS.RISK_ID })]);
+    
+    if (rowControlId === controlId && rowRiskId === riskId) {
+      relationshipRow = row;
+      break;
+    }
+  }
+  
+  if (relationshipRow === -1) {
+    return buffer; // Relationship not found
+  }
+  
+  // Delete row by shifting all rows below up
+  for (let row = relationshipRow; row < range.e.r; row++) {
+    for (let col = 0; col <= range.e.c; col++) {
+      const sourceCell = sheet[XLSX.utils.encode_cell({ r: row + 1, c: col })];
+      const targetCell = XLSX.utils.encode_cell({ r: row, c: col });
+      
+      if (sourceCell) {
+        sheet[targetCell] = sourceCell;
+      } else {
+        delete sheet[targetCell];
+      }
+    }
+  }
+  
+  // Delete the last row
+  for (let col = 0; col <= range.e.c; col++) {
+    delete sheet[XLSX.utils.encode_cell({ r: range.e.r, c: col })];
+  }
+  
+  // Update range
+  range.e.r--;
+  sheet['!ref'] = XLSX.utils.encode_range(range);
+  
+  return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+};
+
+// Remove all relationships for a risk
+const removeAllRelationshipsForRisk = async (buffer, riskId) => {
+  const relationships = await parseRelationshipsFromWorkbook(buffer);
+  let currentBuffer = buffer;
+  
+  for (const rel of relationships) {
+    if (rel.riskId === riskId) {
+      currentBuffer = await removeRelationshipFromWorkbook(currentBuffer, rel.controlId, riskId);
+    }
+  }
+  
+  return currentBuffer;
+};
+
+// Remove all relationships for a control
+const removeAllRelationshipsForControl = async (buffer, controlId) => {
+  const relationships = await parseRelationshipsFromWorkbook(buffer);
+  let currentBuffer = buffer;
+  
+  for (const rel of relationships) {
+    if (rel.controlId === controlId) {
+      currentBuffer = await removeRelationshipFromWorkbook(currentBuffer, controlId, rel.riskId);
+    }
+  }
+  
+  return currentBuffer;
+};
+
 module.exports = {
   parseRisksFromWorkbook,
   parseControlsFromWorkbook,
+  parseRelationshipsFromWorkbook,
   addRiskToWorkbook,
   updateRiskInWorkbook,
   deleteRiskFromWorkbook,
   addControlToWorkbook,
   updateControlInWorkbook,
-  deleteControlFromWorkbook
+  deleteControlFromWorkbook,
+  addRelationshipToWorkbook,
+  removeRelationshipFromWorkbook,
+  removeAllRelationshipsForRisk,
+  removeAllRelationshipsForControl
 };

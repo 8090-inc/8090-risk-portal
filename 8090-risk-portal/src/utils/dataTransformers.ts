@@ -11,8 +11,8 @@ import type {
 import type { 
   RiskMapRow, 
   ControlsMappingRow, 
-  ExcelDataV2 as ExcelData 
-} from '../services/excel/excelParserV2';
+  ExcelData 
+} from '../types/excel.types';
 import { parseOwners } from '../constants/riskOwners';
 
 // Generate a URL-safe ID from a string

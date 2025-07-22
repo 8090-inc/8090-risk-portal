@@ -192,7 +192,8 @@ describe('Risk Store', () => {
         notes: 'New notes',
         exampleMitigations: '',
         riskReduction: 16,
-        riskReductionPercentage: 64
+        riskReductionPercentage: 64,
+        relatedControlIds: []
       };
       
       await createRisk(newRisk);

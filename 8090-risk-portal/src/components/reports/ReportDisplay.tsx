@@ -32,7 +32,7 @@ export const ReportDisplay: React.FC<ReportDisplayProps> = ({
           return `<ul key="${idx}" class="list-disc list-inside space-y-1 text-slate-700 ml-4">${items}</ul>`;
         }
         // Handle bold text
-        let formatted = paragraph.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        const formatted = paragraph.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
         // Regular paragraph
         return `<p key="${idx}" class="text-slate-700 leading-relaxed">${formatted}</p>`;
       })

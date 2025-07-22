@@ -402,3 +402,105 @@ const findDataStartRow = (sheet, range, columns) => {
    - Better test coverage
 
 **Critical Insight**: The Excel file structure in production is often more complex than test data. Always analyze the actual production file structure before implementing parsers.
+
+### Excel File Structure - Detailed Row and Column Layout
+
+**Production File**: Google Drive ID `1OzrkAUQTWY7VUNrX-_akCWIuU2ALR3sm`
+
+**Row Structure**:
+```
+Row 0: Title row (e.g., "General AI Risk Map")
+Row 1: Empty or subtitle
+Row 2: Section headers/merged cells
+Row 3: Additional headers/formatting
+Row 4: Column headers row (actual field names)
+Row 5+: Data rows start here
+- Empty rows between risk categories (DO NOT stop parsing!)
+- Total rows in production file: ~996
+```
+
+**Column Structure (16 columns total)**:
+
+| Column | Index | Field Name | Type | Description |
+|--------|-------|------------|------|-------------|
+| A | 0 | Risk Category | String | e.g., "Behavioral Risks", "Accuracy", "Security and Data Risks" |
+| B | 1 | Risk Name | String | The specific risk title |
+| C | 2 | Risk Description | String | Detailed description of the risk |
+| D | 3 | Initial Likelihood | Number (1-5) | Pre-mitigation likelihood score |
+| E | 4 | Initial Impact | Number (1-5) | Pre-mitigation impact score |
+| F | 5 | Initial Risk Level | Number | Calculated: Likelihood × Impact |
+| G | 6 | Initial Risk Level Category | String | e.g., "High", "Medium", "Low" |
+| H | 7 | Example Mitigations | String | Suggested mitigation strategies |
+| I | 8 | Agreed Mitigation | String | The chosen mitigation approach |
+| J | 9 | Proposed Oversight Ownership | String | Comma-separated list of owners |
+| K | 10 | Proposed Support | String | Comma-separated list of support roles |
+| L | 11 | Notes | String | Additional notes (often empty) |
+| M | 12 | Residual Likelihood | Number (1-5) | Post-mitigation likelihood score |
+| N | 13 | Residual Impact | Number (1-5) | Post-mitigation impact score |
+| O | 14 | Residual Risk Level | Number | Calculated: Residual Likelihood × Impact |
+| P | 15 | Residual Risk Level Category | String | e.g., "High", "Medium", "Low" |
+
+**Valid Risk Categories**:
+1. Behavioral Risks
+2. Accuracy
+3. Transparency Risks
+4. Security and Data Risks
+5. Business/Cost Related Risks
+6. AI Human Impact Risks
+7. Other Risks
+
+**Data Quality Notes**:
+- Not all risks have explicit category cells (inherit from previous row)
+- Some cells may be empty (especially Notes column)
+- Proposed Support/Ownership may contain comma-separated values
+- Risk Level calculations should match Likelihood × Impact
+
+---
+
+## Date: July 22, 2025 - Development Environment Setup
+
+### Starting the Development Servers
+
+**Backend Server**:
+```bash
+# Navigate to project root
+cd 8090-risk-portal
+
+# Start the backend server on port 8080
+node server.cjs
+
+# The server will:
+# - Run on http://localhost:8080
+# - Connect to Google Drive for Excel data
+# - Serve API endpoints at /api/*
+# - Log output to server.log
+```
+
+**Frontend Development Server**:
+```bash
+# In a new terminal, navigate to project root
+cd 8090-risk-portal
+
+# CRITICAL: Kill any existing processes on port 3000
+lsof -ti:3000 | xargs kill -9
+
+# Start the frontend dev server on port 3000
+npm run dev
+
+# The frontend will:
+# - Run on http://localhost:3000
+# - Proxy API requests to backend on port 8080
+# - Enable hot module replacement
+# - Log output to frontend.log
+```
+
+**Important Notes**:
+1. **ALWAYS start backend first** - Frontend needs the API to be available
+2. **Frontend MUST run on port 3000** - Other ports will break authentication
+3. **Check logs** - Both servers write to `.log` files for debugging
+4. **Environment** - Backend uses `.env` file for Google Drive credentials
+
+**Common Issues**:
+- If "port already in use" error: Kill the process and try again
+- If authentication loops: Ensure backend is running and proxy is configured
+- If data doesn't load: Check server.log for Google Drive connection issues

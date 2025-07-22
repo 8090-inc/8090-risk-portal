@@ -1,30 +1,28 @@
 import React, { useState, useCallback } from 'react';
-import { FileSpreadsheet, AlertCircle, CheckCircle, X } from 'lucide-react';
+import { FileSpreadsheet, AlertCircle, CheckCircle, X, Upload } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { cn } from '../../utils/cn';
-import * as XLSX from 'xlsx';
-import type { Risk, Control } from '../../types';
 
 interface DataUploadProps {
-  onDataImport: (data: { risks: Risk[], controls: Control[] }) => void;
+  onDataImport: (data: { message: string }) => void;
   onClose: () => void;
 }
 
-interface ValidationResult {
-  valid: boolean;
-  errors: string[];
-  warnings: string[];
-  data?: {
-    risks: Risk[];
-    controls: Control[];
+interface UploadResult {
+  success: boolean;
+  message: string;
+  details?: {
+    risksImported?: number;
+    controlsImported?: number;
+    errors?: string[];
   };
 }
 
 export const DataUpload: React.FC<DataUploadProps> = ({ onDataImport, onClose }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -36,176 +34,32 @@ export const DataUpload: React.FC<DataUploadProps> = ({ onDataImport, onClose })
     setIsDragging(false);
   }, []);
 
-  const validateExcelData = async (file: File): Promise<ValidationResult> => {
+  const uploadFile = async (file: File): Promise<UploadResult> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
     try {
-      const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data, { type: 'array' });
-      
-      const errors: string[] = [];
-      const warnings: string[] = [];
+      const response = await fetch('/api/v1/upload/excel', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      });
 
-      // Check for required sheets
-      const requiredSheets = ['Risk Map', 'Controls Mapping', 'Scoring Result Index'];
-      const missingSheets = requiredSheets.filter(sheet => !workbook.SheetNames.includes(sheet));
-      
-      if (missingSheets.length > 0) {
-        errors.push(`Missing required sheets: ${missingSheets.join(', ')}`);
-        return { valid: false, errors, warnings };
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || 'Upload failed');
       }
 
-      // Parse Risk Map sheet
-      const riskSheet = workbook.Sheets['Risk Map'];
-      const riskData = XLSX.utils.sheet_to_json(riskSheet, { header: 1 }) as any[][];
-      
-      if (riskData.length < 2) {
-        errors.push('Risk Map sheet is empty');
-        return { valid: false, errors, warnings };
-      }
-
-      // Validate Risk Map columns
-      const expectedRiskColumns = [
-        'Risk Category', 'Risk', 'Risk Description', 'Likelihood', 'Impact',
-        'Risk Level', 'Risk Level Category', 'Example Mitigations',
-        'Agreed workable mitigation', 'Proposed Oversight Ownership',
-        'Proposed Support', 'Notes', 'Likelihood (Residual)', 'Impact (Residual)',
-        'Risk Level (Residual)', 'Risk Level Category (Residual)'
-      ];
-
-      const riskHeaders = riskData[0] as string[];
-      const missingRiskColumns = expectedRiskColumns.filter((col, idx) => 
-        idx < riskHeaders.length && riskHeaders[idx] !== col && col !== 'Example Mitigations'
-      );
-
-      if (missingRiskColumns.length > 0) {
-        warnings.push(`Risk Map has different column names: ${missingRiskColumns.join(', ')}`);
-      }
-
-      // Parse Controls sheet
-      const controlsSheet = workbook.Sheets['Controls Mapping'];
-      const controlsData = XLSX.utils.sheet_to_json(controlsSheet, { header: 1 }) as any[][];
-      
-      if (controlsData.length < 2) {
-        errors.push('Controls Mapping sheet is empty');
-        return { valid: false, errors, warnings };
-      }
-
-      // Convert to our data format
-      const risks: Risk[] = [];
-      const controls: Control[] = [];
-
-      // Process risks (skip header row)
-      for (let i = 1; i < riskData.length; i++) {
-        const row = riskData[i];
-        if (!row || row.length === 0) continue;
-
-        const initialRiskLevel = Number(row[5]) || 0;
-        const residualRiskLevel = Number(row[14]) || 0;
-        const riskReduction = initialRiskLevel - residualRiskLevel;
-        const riskReductionPercentage = initialRiskLevel > 0 
-          ? Math.round((riskReduction / initialRiskLevel) * 100)
-          : 0;
-        
-        // Determine mitigation effectiveness based on reduction percentage
-        let mitigationEffectiveness: 'Low' | 'Medium' | 'High' = 'Medium';
-        if (riskReductionPercentage >= 60) {
-          mitigationEffectiveness = 'High';
-        } else if (riskReductionPercentage <= 30) {
-          mitigationEffectiveness = 'Low';
-        }
-
-        const risk: Risk = {
-          id: `AIR-${String(i).padStart(2, '0')}`,
-          riskCategory: row[0] || '',
-          risk: row[1] || '',
-          riskDescription: row[2] || '',
-          initialScoring: {
-            likelihood: (Number(row[3]) || 0) as 1 | 2 | 3 | 4 | 5,
-            impact: (Number(row[4]) || 0) as 1 | 2 | 3 | 4 | 5,
-            riskLevel: initialRiskLevel,
-            riskLevelCategory: row[6] || ''
-          },
-          exampleMitigations: '', // Column H is skipped in Excel
-          agreedMitigation: row[8] || '',
-          proposedOversightOwnership: row[9] || '',
-          proposedSupport: row[10] || '',
-          notes: row[11] || '',
-          residualScoring: {
-            likelihood: (Number(row[12]) || 0) as 1 | 2 | 3 | 4 | 5,
-            impact: (Number(row[13]) || 0) as 1 | 2 | 3 | 4 | 5,
-            riskLevel: residualRiskLevel,
-            riskLevelCategory: row[15] || ''
-          },
-          riskReduction,
-          riskReductionPercentage,
-          mitigationEffectiveness,
-          relatedControlIds: [],
-          createdAt: new Date(),
-          lastUpdated: new Date()
-        };
-
-        // Validate risk data
-        if (!risk.risk) {
-          errors.push(`Row ${i + 1}: Missing risk name`);
-        }
-        if (risk.initialScoring.likelihood < 1 || risk.initialScoring.likelihood > 5) {
-          errors.push(`Row ${i + 1}: Invalid likelihood value (${risk.initialScoring.likelihood})`);
-        }
-        if (risk.initialScoring.impact < 1 || risk.initialScoring.impact > 5) {
-          errors.push(`Row ${i + 1}: Invalid impact value (${risk.initialScoring.impact})`);
-        }
-
-        risks.push(risk);
-      }
-
-      // Process controls
-      for (let i = 1; i < controlsData.length; i++) {
-        const row = controlsData[i];
-        if (!row || row.length === 0) continue;
-
-        const control: Control = {
-          mitigationID: row[0] || `CTRL-${String(i).padStart(2, '0')}`,
-          mitigationDescription: row[1] || '',
-          category: 'Technical Controls' as any, // Default category
-          implementationStatus: 'Planned',
-          effectiveness: 'Not Assessed',
-          relatedRiskIds: [],
-          compliance: {
-            cfrPart11Annex11: row[2] || '',
-            hipaaSafeguard: row[3] || '',
-            gdprArticle: row[4] || '',
-            euAiActArticle: row[5] || '',
-            nist80053: row[6] || '',
-            soc2TSC: row[7] || ''
-          },
-          complianceScore: 0.5,
-          createdAt: new Date(),
-          lastUpdated: new Date()
-        };
-
-        if (!control.mitigationDescription) {
-          errors.push(`Control row ${i + 1}: Missing description`);
-        }
-
-        controls.push(control);
-      }
-
-      // Summary
-      if (errors.length === 0) {
-        warnings.push(`Found ${risks.length} risks and ${controls.length} controls`);
-        return {
-          valid: true,
-          errors,
-          warnings,
-          data: { risks, controls }
-        };
-      }
-
-      return { valid: false, errors, warnings };
+      return {
+        success: true,
+        message: 'File uploaded successfully',
+        details: data.data
+      };
     } catch (error) {
       return {
-        valid: false,
-        errors: [`Failed to parse Excel file: ${error instanceof Error ? error.message : 'Unknown error'}`],
-        warnings: []
+        success: false,
+        message: error instanceof Error ? error.message : 'Unknown error occurred'
       };
     }
   };
@@ -214,13 +68,17 @@ export const DataUpload: React.FC<DataUploadProps> = ({ onDataImport, onClose })
     e.preventDefault();
     setIsDragging(false);
 
-    const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile && (droppedFile.name.endsWith('.xlsx') || droppedFile.name.endsWith('.xls'))) {
-      setFile(droppedFile);
-      setIsProcessing(true);
-      const result = await validateExcelData(droppedFile);
-      setValidationResult(result);
-      setIsProcessing(false);
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    const excelFile = droppedFiles.find(file => 
+      file.name.endsWith('.xlsx') || file.name.endsWith('.xls')
+    );
+
+    if (excelFile) {
+      setFile(excelFile);
+      setIsUploading(true);
+      const result = await uploadFile(excelFile);
+      setUploadResult(result);
+      setIsUploading(false);
     }
   }, []);
 
@@ -228,154 +86,138 @@ export const DataUpload: React.FC<DataUploadProps> = ({ onDataImport, onClose })
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
-      setIsProcessing(true);
-      const result = await validateExcelData(selectedFile);
-      setValidationResult(result);
-      setIsProcessing(false);
+      setIsUploading(true);
+      const result = await uploadFile(selectedFile);
+      setUploadResult(result);
+      setIsUploading(false);
     }
   }, []);
 
   const handleImport = () => {
-    if (validationResult?.valid && validationResult.data) {
-      onDataImport(validationResult.data);
+    if (uploadResult?.success) {
+      onDataImport({ message: uploadResult.message });
+      onClose();
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-900">Import Excel Data</h2>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-600"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold text-slate-900">Import Excel Data</h2>
+            <button
+              onClick={onClose}
+              className="text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
 
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
           <div
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             className={cn(
               "border-2 border-dashed rounded-lg p-8 text-center transition-colors",
-              isDragging
-                ? "border-[#0055D4] bg-[#0055D4]/5"
+              isDragging 
+                ? "border-8090-primary bg-8090-primary/5" 
                 : "border-slate-300 hover:border-slate-400"
             )}
           >
             <FileSpreadsheet className="h-12 w-12 text-slate-400 mx-auto mb-4" />
             <p className="text-sm text-slate-600 mb-2">
-              Drag and drop your Excel file here, or{' '}
-              <label className="text-[#0055D4] hover:text-[#0055D4]/80 cursor-pointer font-medium">
-                browse
-                <input
-                  type="file"
-                  accept=".xlsx,.xls"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-              </label>
+              Drag and drop your Excel file here, or
             </p>
-            <p className="text-xs text-slate-500">
-              Accepted format: General AI Risk Map.xlsx
-            </p>
+            <label className="inline-block">
+              <input
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleFileSelect}
+                className="hidden"
+                disabled={isUploading}
+              />
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                disabled={isUploading}
+                className="cursor-pointer"
+              >
+                Browse Files
+              </Button>
+            </label>
           </div>
 
           {file && (
             <div className="mt-4 p-4 bg-slate-50 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <FileSpreadsheet className="h-5 w-5 text-slate-400" />
-                <span className="text-sm text-slate-700">{file.name}</span>
-                <span className="text-xs text-slate-500">
-                  ({(file.size / 1024).toFixed(1)} KB)
-                </span>
+              <p className="text-sm text-slate-700">
+                <span className="font-medium">Selected file:</span> {file.name}
+              </p>
+            </div>
+          )}
+
+          {isUploading && (
+            <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+              <div className="flex items-center">
+                <Upload className="h-5 w-5 text-blue-600 mr-2 animate-pulse" />
+                <p className="text-sm text-blue-700">Uploading and processing file...</p>
               </div>
             </div>
           )}
 
-          {isProcessing && (
-            <div className="mt-4 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0055D4] mx-auto"></div>
-              <p className="mt-2 text-sm text-slate-600">Validating data...</p>
-            </div>
-          )}
-
-          {validationResult && !isProcessing && (
-            <div className="mt-4 space-y-4">
-              {/* Validation Summary */}
-              <div className={cn(
-                "p-4 rounded-lg",
-                validationResult.valid
-                  ? "bg-green-50 border border-green-200"
-                  : "bg-red-50 border border-red-200"
-              )}>
-                <div className="flex items-start space-x-2">
-                  {validationResult.valid ? (
-                    <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                  ) : (
-                    <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+          {uploadResult && (
+            <div className={cn(
+              "mt-4 p-4 rounded-lg",
+              uploadResult.success ? "bg-green-50" : "bg-red-50"
+            )}>
+              <div className="flex items-start">
+                {uploadResult.success ? (
+                  <CheckCircle className="h-5 w-5 text-green-600 mr-2 flex-shrink-0 mt-0.5" />
+                ) : (
+                  <AlertCircle className="h-5 w-5 text-red-600 mr-2 flex-shrink-0 mt-0.5" />
+                )}
+                <div className="flex-1">
+                  <p className={cn(
+                    "text-sm font-medium",
+                    uploadResult.success ? "text-green-800" : "text-red-800"
+                  )}>
+                    {uploadResult.message}
+                  </p>
+                  {uploadResult.details && (
+                    <div className="mt-2 text-sm text-slate-600">
+                      {uploadResult.details.risksImported && (
+                        <p>Risks imported: {uploadResult.details.risksImported}</p>
+                      )}
+                      {uploadResult.details.controlsImported && (
+                        <p>Controls imported: {uploadResult.details.controlsImported}</p>
+                      )}
+                      {uploadResult.details.errors && uploadResult.details.errors.length > 0 && (
+                        <div className="mt-2">
+                          <p className="font-medium text-red-700">Errors:</p>
+                          <ul className="list-disc list-inside">
+                            {uploadResult.details.errors.map((error, index) => (
+                              <li key={index} className="text-red-600">{error}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
                   )}
-                  <div className="flex-1">
-                    <h3 className={cn(
-                      "font-medium",
-                      validationResult.valid ? "text-green-900" : "text-red-900"
-                    )}>
-                      {validationResult.valid ? 'Validation Passed' : 'Validation Failed'}
-                    </h3>
-                    {validationResult.valid && validationResult.data && (
-                      <p className="text-sm text-green-700 mt-1">
-                        Ready to import {validationResult.data.risks.length} risks 
-                        and {validationResult.data.controls.length} controls
-                      </p>
-                    )}
-                  </div>
                 </div>
               </div>
-
-              {/* Errors */}
-              {validationResult.errors.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium text-red-900">Errors:</h4>
-                  <ul className="list-disc list-inside space-y-1">
-                    {validationResult.errors.map((error, idx) => (
-                      <li key={idx} className="text-sm text-red-700">{error}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Warnings */}
-              {validationResult.warnings.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium text-yellow-900">Warnings:</h4>
-                  <ul className="list-disc list-inside space-y-1">
-                    {validationResult.warnings.map((warning, idx) => (
-                      <li key={idx} className="text-sm text-yellow-700">{warning}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
             </div>
           )}
-        </div>
 
-        <div className="px-6 py-4 border-t border-slate-200 flex justify-end space-x-3">
-          <Button
-            variant="secondary"
-            onClick={onClose}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            onClick={handleImport}
-            disabled={!validationResult?.valid || isProcessing}
-          >
-            Import Data
-          </Button>
+          <div className="mt-6 flex justify-end space-x-3">
+            <Button variant="secondary" onClick={onClose}>
+              Cancel
+            </Button>
+            {uploadResult?.success && (
+              <Button variant="primary" onClick={handleImport}>
+                Complete Import
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>

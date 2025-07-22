@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Shield, FileWarning, CheckCircle, Clock, XCircle, AlertCircle, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Shield, FileWarning, CheckCircle, Clock, XCircle, AlertCircle, ExternalLink, Edit } from 'lucide-react';
 import { useControlStore, useRiskStore } from '../store';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
-import type { Control, Risk } from '../types';
+import { Modal } from '../components/ui/Modal';
+import { MultiSelect } from '../components/ui/MultiSelect';
+import { EditControlModal } from '../components/controls/EditControlModal';
+import type { Control, Risk, UpdateControlInput } from '../types';
 import { cn } from '../utils/cn';
 
 interface TabContentProps {
@@ -67,7 +70,7 @@ const DetailsTab: React.FC<TabContentProps> = ({ control }) => {
               
               <div>
                 <label className="text-sm font-medium text-gray-500">Related Risks</label>
-                <p className="mt-1 text-sm text-gray-900">{control.relatedRiskIds.length} risks mitigated</p>
+                <p className="mt-1 text-sm text-gray-900">{control.relatedRiskIds?.length || 0} risks mitigated</p>
               </div>
             </div>
             
@@ -268,7 +271,20 @@ const ComplianceTab: React.FC<TabContentProps> = ({ control }) => {
   );
 };
 
-const RelatedRisksTab: React.FC<TabContentProps> = ({ relatedRisks }) => {
+const RelatedRisksTab: React.FC<TabContentProps> = ({ control, relatedRisks }) => {
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedRiskIds, setSelectedRiskIds] = useState<string[]>(control.relatedRiskIds);
+  const { risks } = useRiskStore();
+  const { updateControlRisks } = useControlStore();
+
+  const handleSaveRisks = async () => {
+    try {
+      await updateControlRisks(control.mitigationID, selectedRiskIds);
+      setShowEditModal(false);
+    } catch {
+      alert('Failed to update risks. Please try again.');
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -277,6 +293,14 @@ const RelatedRisksTab: React.FC<TabContentProps> = ({ relatedRisks }) => {
           <FileWarning className="h-5 w-5 mr-2 text-8090-primary" />
           Mitigated Risks ({relatedRisks.length})
         </h3>
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={<Edit className="h-4 w-4" />}
+          onClick={() => setShowEditModal(true)}
+        >
+          Edit Risks
+        </Button>
       </div>
 
       {relatedRisks.length === 0 ? (
@@ -343,6 +367,48 @@ const RelatedRisksTab: React.FC<TabContentProps> = ({ relatedRisks }) => {
           ))}
         </div>
       )}
+
+      {/* Edit Risks Modal */}
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        title="Edit Related Risks"
+        size="lg"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Select risks that are mitigated by this control.
+          </p>
+          
+          <MultiSelect
+            options={risks.map(risk => ({
+              value: risk.id,
+              label: `${risk.id.toUpperCase()} - ${risk.risk}`
+            }))}
+            value={selectedRiskIds}
+            onChange={setSelectedRiskIds}
+            placeholder="Select risks..."
+          />
+          
+          <div className="flex justify-end space-x-3 pt-4">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setSelectedRiskIds(control.relatedRiskIds);
+                setShowEditModal(false);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSaveRisks}
+            >
+              Save Changes
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
@@ -350,9 +416,10 @@ const RelatedRisksTab: React.FC<TabContentProps> = ({ relatedRisks }) => {
 export const ControlDetailView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { controls, loadControls } = useControlStore();
+  const { controls, loadControls, updateControl } = useControlStore();
   const { risks, loadRisks } = useRiskStore();
   const [activeTab, setActiveTab] = useState<'details' | 'compliance' | 'risks'>('details');
+  const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
     if (controls.length === 0) {
@@ -364,7 +431,7 @@ export const ControlDetailView: React.FC = () => {
   }, [controls.length, risks.length, loadControls, loadRisks]);
 
   const control = controls.find(c => c.mitigationID === id);
-  const relatedRisks = risks.filter(r => r.relatedControlIds.includes(id || ''));
+  const relatedRisks = risks.filter(r => r.relatedControlIds?.includes(id || ''));
 
   if (!control) {
     return (
@@ -380,6 +447,20 @@ export const ControlDetailView: React.FC = () => {
       </div>
     );
   }
+
+  const handleSaveControl = async (updatedControl: Partial<Control>) => {
+    try {
+      if (!updatedControl.mitigationID) {
+        console.error('Control ID is required for update');
+        return;
+      }
+      await updateControl(updatedControl as UpdateControlInput);
+      setShowEditModal(false);
+    } catch {
+      // Error will be displayed by the store
+      console.error('Failed to update control:', error);
+    }
+  };
 
   const tabs = [
     { id: 'details', label: 'Details', icon: Shield },
@@ -402,17 +483,19 @@ export const ControlDetailView: React.FC = () => {
         </Button>
         
         <div className="flex-1">
-          <div className="flex items-center space-x-3">
-            <h1 className="text-2xl font-bold text-gray-900">{control.mitigationDescription}</h1>
-            <Badge variant={
-              control.implementationStatus === 'Implemented' ? 'success' :
-              control.implementationStatus === 'In Progress' ? 'warning' :
-              control.implementationStatus === 'Planned' ? 'default' : 'secondary'
-            }>
-              {control.implementationStatus || 'Not Started'}
-            </Badge>
-          </div>
+          <h1 className="text-2xl font-bold text-gray-900">{control.mitigationDescription}</h1>
           <p className="text-sm text-gray-600 mt-1">Control ID: {control.mitigationID.toUpperCase()}</p>
+        </div>
+        
+        <div className="flex items-center space-x-3">
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setShowEditModal(true)}
+            icon={<Edit className="h-4 w-4" />}
+          >
+            Edit Control
+          </Button>
         </div>
       </div>
 
@@ -446,6 +529,14 @@ export const ControlDetailView: React.FC = () => {
         {activeTab === 'compliance' && <ComplianceTab control={control} relatedRisks={relatedRisks} />}
         {activeTab === 'risks' && <RelatedRisksTab control={control} relatedRisks={relatedRisks} />}
       </div>
+
+      {/* Edit Control Modal */}
+      <EditControlModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        control={control}
+        onSave={handleSaveControl}
+      />
     </div>
   );
 };

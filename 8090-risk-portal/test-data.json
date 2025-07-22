@@ -1,0 +1,170 @@
+{
+  "disclaimer": {
+    "controls_illustrative": "These example controls are illustrative of best practice. They might not be representative of all controls required to meet legal obligations. We recommend you check with your legal department to ensure controls effect compliance with regulatory obligations.",
+    "examples_illustrative": "These examples are illustrative and may not reflect how your organization manages the risk."
+  },
+  "risk_areas": [
+    {
+      "id": "ACC-4582",
+      "risk_category": "Behavioral Risks",
+      "risk": "Accuracy",
+      "risk_description": "All AI models, including generative AI (GenAI) models, can experience suboptimal performance in certain scenarios, and the unknown reason for this nonperformance can be alarming for other stakeholders. While occasional performance dips may be tolerable, the stakes are higher as GenAI becomes increasingly widespread and is deployed more deeply within the organization. The risk of factual inaccuracies is often referred to as \"hallucinations,\" but the issue extends beyond that. GenAI models are also prone to providing false or confusing responses, a phenomenon not entirely new to the field of AI. These challenges are historically known as misclassifications or overgeneralizations. Further, GenAI tools are misleading with their confident tone they often take.",
+      "initial_risk_scoring": {
+        "likelihood": 4,
+        "impact": 5,
+        "risk_level": 20,
+        "risk_level_category": "Critical"
+      },
+      "mitigations": {
+        "example_mitigations": "Informing Users: Raising awareness among users about the limitations of GenAI models is crucial. As is encouraging users to maintain a critical approach when interacting with GenAI outputs, and verifying information through trusted sources before making decisions based on AI-generated content.",
+        "agreed_workable_mitigation": "Implement rigorous model validation and require human verification of GenAI outputs to ensure accuracy meets regulatory standards. 8090 and Dompe have aligned on pre-agreed upon metrics for success and accuracy for each AI project.",
+        "responsibilities": [
+          {
+            "owner": "8090",
+            "tasks": [
+              {
+                "title": "System Design & Validation (RAG)",
+                "description": "8090 will implement and validate a Retrieval-Augmented Generation (RAG) architecture. This system will use a validated, version-controlled corpus of Dompé's GxP documents as the single source of truth."
+              },
+              {
+                "title": "Prompt Engineering & Guardrails",
+                "description": "8090 will develop and validate standardized prompt templates that instruct the model to use only the provided context and to state \"Information not found in provided context\" when an answer is not present."
+              }
+            ]
+          },
+          {
+            "owner": "Dompe",
+            "tasks": [
+              {
+                "title": "Human-in-the-Loop (HITL) Verification",
+                "description": "Dompe will ensure that all AI-generated outputs for GxP-regulated decisions are verified and approved by a qualified expert. This process, including electronic signatures, must comply with 21 CFR Part 11 and EU Annex 11.13."
+              },
+              {
+                "title": "Continuous Monitoring & CAPA",
+                "description": "Dompe will implement a user feedback mechanism for reporting inaccuracies. These reports will trigger Dompe's formal CAPA process."
+              }
+            ]
+          }
+        ],
+        "proposed_oversight_ownership": [
+          "HR",
+          "Compliance"
+        ],
+        "proposed_support": [
+          "LOBs",
+          "Legal",
+          "IT Security",
+          "AI Leader"
+        ],
+        "notes": "As this is a corporatewide policy/training issue"
+      },
+      "residual_risk_scoring": {
+        "likelihood": 2,
+        "impact": 3,
+        "risk_level": 6,
+        "risk_level_category": "Medium"
+      },
+      "riskCategory": "Behavioral Risks",
+      "riskName": "Accuracy",
+      "riskDescription": "All AI models, including generative AI (GenAI) models, can experience suboptimal performance in certain scenarios...",
+      "initialScoring": {
+        "likelihood": 4,
+        "impact": 5,
+        "riskLevel": 20,
+        "riskLevelCategory": "Critical"
+      },
+      "exampleMitigations": "Informing Users: Raising awareness among users about the limitations of GenAI models is crucial...",
+      "agreedMitigation": "Implement rigorous model validation and require human verification of GenAI outputs...",
+      "proposedOversightOwnership": ["HR", "Compliance"],
+      "proposedSupport": ["LOBs", "Legal", "IT Security", "AI Leader"],
+      "residualScoring": {
+        "likelihood": 2,
+        "impact": 3,
+        "riskLevel": 6,
+        "riskLevelCategory": "Medium"
+      },
+      "riskReduction": 14,
+      "riskReductionPercentage": 70,
+      "mitigationEffectiveness": "High",
+      "relatedControlIds": ["ACC-01", "ACC-02"],
+      "lastUpdated": "2025-07-21T16:24:12.790Z",
+      "createdAt": "2025-07-21T16:24:12.790Z"
+    },
+    {
+      "id": "SEN-2858",
+      "risk_category": "Security and Data Risks",
+      "risk": "Sensitive Information Leakage",
+      "risk_description": "Sensitive information leakage in AI systems presents a significant risk where confidential data, including personal information, proprietary business data, or regulated content, may be inadvertently exposed through AI model outputs.",
+      "initial_risk_scoring": {
+        "likelihood": 3,
+        "impact": 4,
+        "risk_level": 12,
+        "risk_level_category": "High"
+      },
+      "mitigations": {
+        "example_mitigations": "Data Minimization: Limit the amount of sensitive data used in training and fine-tuning AI models. Use synthetic or anonymized data sets wherever possible to reduce the risk of exposing real sensitive information.",
+        "agreed_workable_mitigation": "Implement comprehensive data governance with encryption, access controls, and monitoring to prevent unauthorized access to sensitive information processed by AI systems.",
+        "responsibilities": [
+          {
+            "owner": "8090",
+            "tasks": [
+              {
+                "title": "Data Encryption & Security",
+                "description": "Implement end-to-end encryption for all data processing and ensure secure data handling practices."
+              }
+            ]
+          },
+          {
+            "owner": "Dompe",
+            "tasks": [
+              {
+                "title": "Data Classification & Access Control",
+                "description": "Establish clear data classification policies and implement role-based access controls."
+              }
+            ]
+          }
+        ],
+        "proposed_oversight_ownership": [
+          "Privacy",
+          "IT Security"
+        ],
+        "proposed_support": [
+          "Legal",
+          "Compliance"
+        ],
+        "notes": "Critical for GDPR and other privacy regulations compliance"
+      },
+      "residual_risk_scoring": {
+        "likelihood": 1,
+        "impact": 2,
+        "risk_level": 2,
+        "risk_level_category": "Low"
+      },
+      "riskCategory": "Security and Data Risks",
+      "riskName": "Sensitive Information Leakage", 
+      "riskDescription": "Sensitive information leakage in AI systems presents a significant risk...",
+      "initialScoring": {
+        "likelihood": 3,
+        "impact": 4,
+        "riskLevel": 12,
+        "riskLevelCategory": "High"
+      },
+      "exampleMitigations": "Data Minimization: Limit the amount of sensitive data used in training...",
+      "agreedMitigation": "Implement comprehensive data governance with encryption, access controls...",
+      "proposedOversightOwnership": ["Privacy", "IT Security"],
+      "proposedSupport": ["Legal", "Compliance"],
+      "residualScoring": {
+        "likelihood": 1,
+        "impact": 2,
+        "riskLevel": 2,
+        "riskLevelCategory": "Low"
+      },
+      "riskReduction": 10,
+      "riskReductionPercentage": 83,
+      "mitigationEffectiveness": "High",
+      "relatedControlIds": ["SEC-01", "SEC-02"],
+      "lastUpdated": "2025-07-21T16:24:12.790Z",
+      "createdAt": "2025-07-21T16:24:12.790Z"
+    }
+  ]
+}

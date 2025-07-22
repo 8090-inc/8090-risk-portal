@@ -11,8 +11,6 @@ import {
   Risk,
   Control
 } from '../types';
-import { transformExcelData } from '../utils/dataTransformers';
-import extractedData from '../data/extracted-excel-data.json';
 
 interface RelationshipState {
   // Data
@@ -146,12 +144,19 @@ export const useRelationshipStore = create<RelationshipState>()(
         set({ isLoading: true, error: null });
         
         try {
-          // Get relationships from Excel data
-          const { relationships } = transformExcelData(extractedData as any);
+          // Extract relationships from risks and controls data
+          const riskToControls = new Map<string, string[]>();
+          
+          // Build mapping from risks' relatedControlIds
+          risks.forEach(risk => {
+            if (risk.relatedControlIds && risk.relatedControlIds.length > 0) {
+              riskToControls.set(risk.id, risk.relatedControlIds);
+            }
+          });
           
           // Create risk-control relationships
           const riskControlRelationships = createRiskControlRelationships(
-            relationships.riskToControls,
+            riskToControls,
             risks,
             controls
           );

@@ -47,17 +47,8 @@ export const ControlsTable: React.FC<ControlsTableProps> = ({
 }) => {
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
-  const filteredControls = useMemo(() => {
-    return controls.filter(control => {
-      if (selectedCategories.length > 0 && !selectedCategories.includes(control.category)) {
-        return false;
-      }
-      if (selectedStatuses.length > 0 && !selectedStatuses.includes(control.implementationStatus || 'Not Implemented')) {
-        return false;
-      }
-      return true;
-    });
-  }, [controls, selectedCategories, selectedStatuses]);
+  // Remove double filtering - controls are already filtered by parent component
+  console.log('ControlsTable: Received controls:', controls.length);
 
   const columns = useMemo<ColumnDef<Control, any>[]>(
     () => [
@@ -88,7 +79,7 @@ export const ControlsTable: React.FC<ControlsTableProps> = ({
       columnHelper.accessor('implementationStatus', {
         header: 'Status',
         cell: info => {
-          const status = info.getValue() || 'Not Implemented';
+          const status = info.getValue() || 'Not Started';
           const variant = status === 'Implemented' ? 'success' : 
                           status === 'In Progress' ? 'warning' : 'default';
           return (
@@ -141,7 +132,7 @@ export const ControlsTable: React.FC<ControlsTableProps> = ({
   );
 
   const table = useReactTable({
-    data: filteredControls,
+    data: controls, // Use controls directly, not filteredControls
     columns,
     state: {
       sorting,

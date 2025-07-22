@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { FileText } from 'lucide-react';
 import { Button, Spinner } from '../components/ui';
 import { PageHeader } from '../components/layout/PageHeader';
@@ -9,9 +9,12 @@ import { ReportsGuide } from '../components/reports/ReportsGuide';
 import { reportTemplates } from '../data/reportTemplates';
 import { geminiService } from '../services/geminiService';
 import { extractTemplateData } from '../utils/reportDataProcessor';
-import riskData from '../data/extracted-excel-data.json';
+import { useRiskStore, useControlStore } from '../store';
 
 export const ReportsView: React.FC = () => {
+  // Get live data from stores
+  const { risks, loadRisks } = useRiskStore();
+  const { loadControls } = useControlStore();
   const [selectedTemplate, setSelectedTemplate] = useState('executive');
   const [currentPrompt, setCurrentPrompt] = useState(reportTemplates.executive.template);
   const [isModified, setIsModified] = useState(false);
@@ -19,6 +22,12 @@ export const ReportsView: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationProgress, setGenerationProgress] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  // Load risks and controls on mount
+  useEffect(() => {
+    loadRisks();
+    loadControls();
+  }, [loadRisks, loadControls]);
 
   // Handle template change
   const handleTemplateChange = useCallback((templateId: string) => {
@@ -56,8 +65,8 @@ export const ReportsView: React.FC = () => {
     setGenerationProgress('Preparing data...');
 
     try {
-      // Extract template data from risks
-      const templateData = extractTemplateData(riskData.riskMap);
+      // Extract template data from live risks
+      const templateData = extractTemplateData(risks);
       
       // Process the template with actual data
       const processedPrompt = geminiService.processTemplate(currentPrompt, templateData);

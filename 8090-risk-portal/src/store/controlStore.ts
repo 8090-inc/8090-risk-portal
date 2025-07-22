@@ -10,8 +10,8 @@ import {
   ControlAssessment
 } from '../types';
 import { ControlValidationError } from '../types/error.types';
-import { transformExcelData, validateControl } from '../utils/dataTransformers';
-import extractedData from '../data/extracted-excel-data.json';
+import { validateControl } from '../utils/dataTransformers';
+import axios from 'axios';
 
 interface ControlState {
   // Data
@@ -38,6 +38,7 @@ interface ControlState {
   createControl: (control: CreateControlInput) => Promise<void>;
   updateControl: (control: UpdateControlInput) => Promise<void>;
   deleteControl: (controlId: string) => Promise<void>;
+  updateControlRisks: (controlId: string, riskIds: string[]) => Promise<void>;
   assessControl: (assessment: ControlAssessment) => Promise<void>;
   refreshStatistics: () => void;
   clearError: () => void;
@@ -187,8 +188,7 @@ const calculateStatistics = (controls: Control[]): ControlStatistics => {
 
 export const useControlStore = create<ControlState>()(
   devtools(
-    persist(
-      (set, get) => ({
+    (set, get) => ({
         // Initial state
         controls: [],
         filteredControls: [],
@@ -200,13 +200,17 @@ export const useControlStore = create<ControlState>()(
         error: null,
         statistics: null,
         
-        // Load controls from Excel data
+        // Load controls from API
         loadControls: async () => {
+          console.log('controlStore: loadControls called');
           set({ isLoading: true, error: null });
           
           try {
-            // Transform Excel data to Control objects
-            const { controls } = transformExcelData(extractedData as any);
+            // Fetch all controls from API (not paginated)
+            console.log('controlStore: Making API call to /api/v1/controls');
+            const response = await axios.get('/api/v1/controls?limit=1000');
+            console.log('controlStore: API response received', { status: response.status, dataLength: response.data.data?.length || 0 });
+            const controls: Control[] = response.data.data || [];
             
             // Apply initial filters and sorting
             const filtered = applyFilters(controls, get().filters, get().searchTerm);
@@ -220,8 +224,9 @@ export const useControlStore = create<ControlState>()(
               isLoading: false 
             });
           } catch (error) {
+            console.error('Failed to load controls:', error);
             set({ 
-              error: error instanceof Error ? error : new Error('Failed to load controls'),
+              error: error instanceof Error ? error : new Error('Failed to load controls from server'),
               isLoading: false 
             });
           }
@@ -264,13 +269,9 @@ export const useControlStore = create<ControlState>()(
               throw new ControlValidationError('multiple', controlInput, 'validation', errors.join(', '));
             }
             
-            // Create control object
-            const newControl: Control = {
-              ...controlInput,
-              relatedRiskIds: [],
-              createdAt: new Date(),
-              lastUpdated: new Date()
-            };
+            // Send to API
+            const response = await axios.post('/api/v1/controls', controlInput);
+            const newControl: Control = response.data.data;
             
             // Add to state
             const controls = [...get().controls, newControl];
@@ -285,6 +286,7 @@ export const useControlStore = create<ControlState>()(
               isLoading: false 
             });
           } catch (error) {
+            console.error('Failed to create control:', error);
             set({ 
               error: error instanceof Error ? error : new Error('Failed to create control'),
               isLoading: false 
@@ -297,14 +299,13 @@ export const useControlStore = create<ControlState>()(
           set({ isLoading: true, error: null });
           
           try {
+            // Send update to API
+            const response = await axios.put(`/api/v1/controls/${controlUpdate.mitigationID}`, controlUpdate);
+            const updatedControl: Control = response.data.data;
+            
+            // Update in state
             const controls = get().controls.map(control => 
-              control.mitigationID === controlUpdate.mitigationID 
-                ? { 
-                    ...control, 
-                    ...controlUpdate,
-                    lastUpdated: new Date()
-                  }
-                : control
+              control.mitigationID === updatedControl.mitigationID ? updatedControl : control
             );
             
             const filtered = applyFilters(controls, get().filters, get().searchTerm);
@@ -319,15 +320,16 @@ export const useControlStore = create<ControlState>()(
             });
             
             // Update selected control if it's the one being updated
-            if (get().selectedControl?.mitigationID === controlUpdate.mitigationID) {
-              const updatedControl = controls.find(c => c.mitigationID === controlUpdate.mitigationID);
-              set({ selectedControl: updatedControl || null });
+            if (get().selectedControl?.mitigationID === updatedControl.mitigationID) {
+              set({ selectedControl: updatedControl });
             }
           } catch (error) {
+            console.error('Failed to update control:', error);
             set({ 
               error: error instanceof Error ? error : new Error('Failed to update control'),
               isLoading: false 
             });
+            throw error; // Re-throw to let caller handle
           }
         },
         
@@ -336,6 +338,10 @@ export const useControlStore = create<ControlState>()(
           set({ isLoading: true, error: null });
           
           try {
+            // Send delete request to API
+            await axios.delete(`/api/v1/controls/${controlId}`);
+            
+            // Update local state
             const controls = get().controls.filter(control => control.mitigationID !== controlId);
             const filtered = applyFilters(controls, get().filters, get().searchTerm);
             const sorted = applySort(filtered, get().sort);
@@ -355,6 +361,41 @@ export const useControlStore = create<ControlState>()(
           } catch (error) {
             set({ 
               error: error instanceof Error ? error : new Error('Failed to delete control'),
+              isLoading: false 
+            });
+          }
+        },
+        
+        // Update control risks (relationship management)
+        updateControlRisks: async (controlId, riskIds) => {
+          set({ isLoading: true, error: null });
+          
+          try {
+            // Update risks for this control
+            const response = await axios.put(`/api/v1/controls/${controlId}/risks`, {
+              riskIds
+            });
+            
+            // Update local state
+            const controls = get().controls.map(control => 
+              control.mitigationID === controlId 
+                ? { ...control, relatedRiskIds: riskIds }
+                : control
+            );
+            
+            const filtered = applyFilters(controls, get().filters, get().searchTerm);
+            const sorted = applySort(filtered, get().sort);
+            const statistics = calculateStatistics(controls);
+            
+            set({ 
+              controls, 
+              filteredControls: sorted,
+              statistics,
+              isLoading: false 
+            });
+          } catch (error) {
+            set({ 
+              error: error instanceof Error ? error : new Error('Failed to update control risks'),
               isLoading: false 
             });
           }
@@ -405,14 +446,6 @@ export const useControlStore = create<ControlState>()(
         clearError: () => {
           set({ error: null });
         }
-      }),
-      {
-        name: 'control-store',
-        partialize: (state) => ({
-          filters: state.filters,
-          sort: state.sort
-        })
-      }
-    )
+      })
   )
 );

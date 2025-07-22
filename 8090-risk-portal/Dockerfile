@@ -29,8 +29,13 @@ COPY package*.json ./
 # Install production-only dependencies
 RUN npm ci --only=production --legacy-peer-deps
 
-# Copy only server.js (not the server directory)
-COPY server.js ./
+# Copy server files
+COPY server.cjs ./
+COPY server ./server
+
+# Copy service account key (this will be injected at build time)
+# Note: In production, use Google Secret Manager instead
+COPY service-account-key.json ./
 
 # Copy public files (auth.html, auth.js, etc.)
 COPY public ./public
@@ -44,5 +49,5 @@ EXPOSE 8080
 # Set environment to production
 ENV NODE_ENV=production
 
-# Start the unified server - explicitly use server.js
-CMD ["node", "server.js"]
+# Start the unified server - explicitly use server.cjs
+CMD ["node", "server.cjs"]

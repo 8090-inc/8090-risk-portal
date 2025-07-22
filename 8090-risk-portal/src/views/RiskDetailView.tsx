@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Shield, Users, AlertTriangle, FileText, Brain, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Shield, Users, AlertTriangle, FileText, Brain, ExternalLink, Edit } from 'lucide-react';
 import { useRiskStore, useControlStore } from '../store';
 import { RiskLevelBadge } from '../components/risks/RiskLevelBadge';
 import { MitigationDisplay } from '../components/risks/MitigationDisplay';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
+import { Modal } from '../components/ui/Modal';
+import { MultiSelect } from '../components/ui/MultiSelect';
 import type { Risk, Control } from '../types';
 
 interface TabContentProps {
@@ -210,7 +212,21 @@ const DetailsTab: React.FC<TabContentProps> = ({ risk }) => {
   );
 };
 
-const ControlsTab: React.FC<TabContentProps> = ({ relatedControls }) => {
+const ControlsTab: React.FC<TabContentProps> = ({ risk, relatedControls }) => {
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedControlIds, setSelectedControlIds] = useState<string[]>(risk.relatedControlIds);
+  const { controls } = useControlStore();
+  const { updateRiskControls } = useRiskStore();
+
+  const handleSaveControls = async () => {
+    try {
+      await updateRiskControls(risk.id, selectedControlIds);
+      setShowEditModal(false);
+    } catch {
+      alert('Failed to update controls. Please try again.');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -218,6 +234,14 @@ const ControlsTab: React.FC<TabContentProps> = ({ relatedControls }) => {
           <Shield className="h-5 w-5 mr-2 text-8090-primary" />
           Related Controls ({relatedControls.length})
         </h3>
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={<Edit className="h-4 w-4" />}
+          onClick={() => setShowEditModal(true)}
+        >
+          Edit Controls
+        </Button>
       </div>
 
       {relatedControls.length === 0 ? (
@@ -303,6 +327,48 @@ const ControlsTab: React.FC<TabContentProps> = ({ relatedControls }) => {
           ))}
         </div>
       )}
+
+      {/* Edit Controls Modal */}
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        title="Edit Related Controls"
+        size="lg"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Select controls that are related to this risk. These controls help mitigate the risk.
+          </p>
+          
+          <MultiSelect
+            options={controls.map(control => ({
+              value: control.mitigationID,
+              label: `${control.mitigationID} - ${control.mitigationDescription}`
+            }))}
+            value={selectedControlIds}
+            onChange={setSelectedControlIds}
+            placeholder="Select controls..."
+          />
+          
+          <div className="flex justify-end space-x-3 pt-4">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setSelectedControlIds(risk.relatedControlIds);
+                setShowEditModal(false);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSaveControls}
+            >
+              Save Changes
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
@@ -344,7 +410,7 @@ This ${risk.riskCategory.toLowerCase()} presents a ${risk.residualScoring.riskLe
 Given the risk category "${risk.riskCategory}", this should be evaluated against relevant compliance frameworks including GDPR, EU AI Act, and industry-specific regulations.
       `.trim());
       
-    } catch (err) {
+    } catch {
       setError('Failed to generate AI analysis. Please try again.');
     } finally {
       setLoading(false);

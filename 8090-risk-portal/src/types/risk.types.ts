@@ -129,7 +129,7 @@ export interface RiskValidationError {
 }
 
 // Helper type for risk creation/update
-export type CreateRiskInput = Omit<Risk, 'id' | 'relatedControlIds' | 'riskReduction' | 'mitigationEffectiveness' | 'lastUpdated' | 'createdAt'>;
+export type CreateRiskInput = Omit<Risk, 'id' | 'riskReduction' | 'mitigationEffectiveness' | 'lastUpdated' | 'createdAt'>;
 export type UpdateRiskInput = Partial<CreateRiskInput> & { id: string };
 
 // Risk export format
