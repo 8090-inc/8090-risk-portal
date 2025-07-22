@@ -275,3 +275,130 @@ cells.forEach(cell => {
 - Consider implementing a safety check in code that prevents writing to production file when in test mode
 
 **Key Learning**: Testing discipline is critical when dealing with production data sources. There are no acceptable shortcuts.
+
+---
+
+## Date: July 22, 2025 - Excel Parser Deep Dive
+
+### Excel Parsing Challenge: Only 7 of 33 Risks Being Parsed
+
+**Problem**: The Excel parser was only finding 7 risks instead of the expected 33 from the Google Drive file.
+
+**Root Causes Identified**:
+1. **Wrong Starting Row**: Parser started at row 1, but the Excel file had multiple header rows (0-3)
+2. **Early Termination**: Parser stopped at first empty row between risk categories
+3. **Header Row as Data**: First "risk" parsed was literally "Risk Category" | "Risk" (the header row)
+
+**Excel Structure Discovery**:
+```
+Row 0-3: Title, merged cells, section headers
+Row 4: Actual column headers
+Row 5+: Data starts
+[Empty rows between risk categories]
+```
+
+**Solution Implemented**:
+
+1. **Dynamic Header Detection**:
+```javascript
+const findDataStartRow = (sheet, range, columns) => {
+  for (let row = 0; row <= Math.min(20, range.e.r); row++) {
+    const likelihood = getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: columns.INITIAL_LIKELIHOOD })]);
+    const impact = getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: columns.INITIAL_IMPACT })]);
+    const riskName = getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: columns.RISK_NAME })]);
+    
+    // Check if this looks like a data row (has numeric scores 1-5)
+    if (typeof likelihood === 'number' && likelihood >= 1 && likelihood <= 5 &&
+        typeof impact === 'number' && impact >= 1 && impact <= 5 &&
+        riskName && !isHeaderValue(riskName)) {
+      return row;
+    }
+  }
+  return 5; // Fallback
+};
+```
+
+2. **Full Sheet Scanning**: Instead of stopping at empty rows, scan entire sheet (996 rows)
+3. **Category Inheritance**: Risks without explicit category inherit from last valid category
+4. **Header Validation**: Skip rows with header-like values
+
+**Results**:
+- ✅ Found data starts at row 4
+- ✅ Scanned 996 rows total
+- ✅ Skipped 963 empty rows
+- ✅ Successfully parsed all 33 risks
+- ✅ Successfully parsed all 13 controls
+
+### Data Validation Completeness
+
+**All 16 Excel columns successfully mapped**:
+1. Risk Category
+2. Risk Name  
+3. Risk Description
+4. Initial Likelihood (1-5)
+5. Initial Impact (1-5)
+6. Initial Risk Level (calculated)
+7. Initial Risk Level Category
+8. Example Mitigations
+9. Agreed Mitigation
+10. Proposed Oversight Ownership
+11. Proposed Support
+12. Notes
+13. Residual Likelihood (1-5)
+14. Residual Impact (1-5)
+15. Residual Risk Level (calculated)
+16. Residual Risk Level Category
+
+**Data Quality Findings**:
+- All 33 risks have complete required fields
+- 32/33 have Proposed Support (1 missing: "Hackers Abuse In-House GenAI Solutions")
+- 19/33 have Notes (14 empty - acceptable)
+- All risk level calculations verified (Likelihood × Impact)
+- All risk categories valid
+
+### Backend Architecture Consolidation
+
+**Problem**: Two different parsing implementations causing inconsistencies:
+- `server.cjs` had its own `parseExcelData` function
+- `excelParser.cjs` had separate parsing functions
+- Field naming mismatches (id vs mitigationID for controls)
+
+**Solution**: Consolidated all parsing logic into `excelParser.cjs`
+- Removed 180+ lines of duplicate parsing code
+- Fixed field naming consistency
+- All CRUD tests now passing
+- Single source of truth for Excel parsing
+
+### Key Learnings
+
+1. **Excel Structure Assumptions Are Dangerous**:
+   - Never assume data starts at row 1
+   - Always handle multiple header rows
+   - Expect empty rows between sections
+   - Use dynamic detection, not hardcoded positions
+
+2. **Parser Robustness Requirements**:
+   - Continue scanning after empty rows
+   - Validate data rows vs header rows
+   - Handle missing categories via inheritance
+   - Log what's found and skipped for debugging
+
+3. **Future-Proof Design**:
+   - Never hardcode expected counts (33 risks, 13 controls)
+   - Make parsers adaptive to structure changes
+   - Add warnings for unexpected low counts
+   - Comprehensive logging for troubleshooting
+
+4. **Testing with Production Data**:
+   - Parser must handle real-world Excel complexity
+   - Test with actual Google Drive file structure
+   - Verify all expected data is captured
+   - Check edge cases (empty fields, missing data)
+
+5. **Code Consolidation Benefits**:
+   - Single parsing implementation easier to maintain
+   - Consistent behavior across all operations
+   - Easier to debug issues
+   - Better test coverage
+
+**Critical Insight**: The Excel file structure in production is often more complex than test data. Always analyze the actual production file structure before implementing parsers.
