@@ -1,7 +1,41 @@
 # Claude AI Assistant Instructions
 
-## Project Context
+# Project Context
 This is the 8090 AI Risk Portal for Dompé farmaceutici S.p.A. - a React-based web application for managing AI risks and controls.
+
+
+# Onboard
+
+You are given the following context:
+$ARGUMENTS
+
+## Instructions
+
+"AI models are geniuses who start from scratch on every task." - Noam Brown
+
+Your job is to "onboard" yourself to the current task.
+
+Do this by:
+
+- Using ultrathink
+- Exploring the codebase
+- Asking me questions if needed
+
+The goal is to get you fully prepared to start working on the task.
+
+Take as long as you need to get yourself ready. Overdoing it is better than underdoing it.
+
+Record everything in a .claude/tasks/[TASK_ID]/onboarding.md file. This file will be used to onboard you to the task in a new session if needed, so make sure it's comprehensive.
+
+# GENERAL INSTRUCTIONS
+
+### DO NOT TAKE SHORTCUTS OR WORKAROUNDS FOR ISSUES
+### DO NOT TAKE WORKAROUNDS
+### ALWAYS Checkin with me after the completion of a phase, task feature or a decision point
+### ALWAYS STICK TO FACTS AND REPORT IN PRECISE TECHNICAL LANGUAGE
+### IF SOMETHING IS NOT CLEAR STOP AND ASK THE USER
+### DO NOT DELETE ANY SERVER LEVEL GOOGLE CLOUD RESOURCES BEFORE CHECKING IN WITH ME
+### YOU WILL ALWAYS PERSIST YOUR LEARNING FROM THE SESSION IN docs/devVALIDATED-LEARNINGS.md
 
 ## Important Build/Deploy Instructions
 
@@ -79,10 +113,28 @@ When the sidebar expands/collapses, matrix cells must maintain square proportion
 This ensures cells remain square regardless of container width changes.
 
 ## Git Commit Instructions
-When making commits, always include the proper author:
+
+### IMPORTANT: Always Include Proper Author
+When making commits, ALWAYS include the proper author:
 ```bash
 git commit --author="Rohit Kelapure <kelapure@gmail.com>" -m "your commit message"
 ```
+
+### Commit Format
+All commits must follow this format:
+```bash
+git add .
+git commit --author="Rohit Kelapure <kelapure@gmail.com>" -m "type: Description
+
+- Detail 1
+- Detail 2
+
+🤖 Generated with Claude Code
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+```
+
+**NEVER forget the --author flag!**
 
 ## Google Drive Integration
 The backend integrates with Google Drive to read/write the risk data Excel file.
@@ -105,3 +157,15 @@ The backend integrates with Google Drive to read/write the risk data Excel file.
 
 ### Parser Pattern Updates
 The Excel parser accepts control IDs matching: `(ACC|SEC|LOG|GOV|TEST)-\d{2}$`
+
+## Validated Learnings
+For detailed technical learnings, debugging solutions, and best practices discovered during development, see:
+📚 [/docs/dev/VALIDATED-LEARNINGS.md](/docs/dev/VALIDATED-LEARNINGS.md)
+
+Key topics covered:
+- Google Authentication and preventing "invalid_rapt" errors
+- Excel parser implementation details
+- Development environment setup
+- Deployment architecture
+- Visual alignment solutions
+- Testing safety rules

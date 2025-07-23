@@ -321,6 +321,50 @@ class ControlService {
     
     return report;
   }
+  
+  async cleanupDuplicates() {
+    console.log('[ControlService] Starting duplicate cleanup...');
+    
+    // Get current data from persistence provider
+    const currentData = await this.persistence.getData();
+    const { buffer } = currentData;
+    
+    // Use the cleanupDuplicateControls utility
+    const { cleanupDuplicateControls } = require('../utils/cleanupDuplicates.cjs');
+    const cleanupResult = await cleanupDuplicateControls(buffer);
+    
+    // Check if any changes were made
+    if (cleanupResult.removedCount === 0) {
+      console.log('[ControlService] No duplicates found to remove');
+      return {
+        success: true,
+        message: 'No duplicate controls found',
+        duplicatesRemoved: 0,
+        removedIds: []
+      };
+    }
+    
+    // Save the cleaned data back to Google Drive
+    console.log(`[ControlService] Saving cleaned data to Google Drive (removed ${cleanupResult.removedCount} duplicates)...`);
+    await this.persistence.uploadFile(cleanupResult.buffer);
+    
+    // Get updated data to verify
+    const updatedData = await this.persistence.getData();
+    const previousCount = currentData.controls.length;
+    const newCount = updatedData.controls.length;
+    
+    console.log(`[ControlService] Cleanup complete. Controls: ${previousCount} → ${newCount}`);
+    
+    return {
+      success: true,
+      message: 'Duplicate controls removed successfully',
+      duplicatesRemoved: cleanupResult.removedCount,
+      removedIds: cleanupResult.removedIds,
+      previousCount,
+      newCount,
+      controlIds: updatedData.controls.map(c => c.mitigationID).sort()
+    };
+  }
 }
 
 module.exports = ControlService;

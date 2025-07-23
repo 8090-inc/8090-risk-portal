@@ -212,6 +212,19 @@ router.put('/:id/risks', asyncHandler(async (req, res) => {
   });
 }));
 
+// POST /api/v1/controls/cleanup-duplicates
+router.post('/cleanup-duplicates', asyncHandler(async (req, res) => {
+  const result = await controlService.cleanupDuplicates();
+  
+  res.json({
+    success: true,
+    data: result,
+    meta: {
+      timestamp: new Date().toISOString()
+    }
+  });
+}));
+
 // Export service getter for other modules
 const getService = () => controlService;
 

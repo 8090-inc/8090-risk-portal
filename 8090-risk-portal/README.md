@@ -239,18 +239,18 @@ gcloud services enable \
 ### 3. Build and Deploy
 
 ```bash
-# Build Docker image
-docker build -t gcr.io/$PROJECT_ID/risk-portal:latest .
+# Build Docker image (MUST use --platform linux/amd64 for Cloud Run)
+docker build --platform linux/amd64 -t gcr.io/$PROJECT_ID/risk-portal:latest .
 
 # Push to Container Registry
 docker push gcr.io/$PROJECT_ID/risk-portal:latest
 
-# Deploy to Cloud Run
+# Deploy to Cloud Run (do NOT use --allow-unauthenticated)
 gcloud run deploy risk-portal \
   --image gcr.io/$PROJECT_ID/risk-portal:latest \
   --platform managed \
   --region us-central1 \
-  --allow-unauthenticated
+  --port 8080
 ```
 
 ### 4. Configure IAP

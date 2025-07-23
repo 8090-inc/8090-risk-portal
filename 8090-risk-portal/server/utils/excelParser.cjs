@@ -320,14 +320,25 @@ const parseControlsFromWorkbook = async (buffer) => {
   const controls = [];
   const range = XLSX.utils.decode_range(sheet['!ref']);
   
+  console.log(`[ExcelParser] Parsing controls from sheet: ${controlsSheetName}`);
+  console.log(`[ExcelParser] Sheet range: ${sheet['!ref']}, Last row: ${range.e.r}`);
+  
   // Start from row 1 (skip header row at row 0)
   for (let row = 1; row <= range.e.r; row++) {
     const mitigationId = getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.MITIGATION_ID })]);
     const mitigationDesc = getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.MITIGATION_DESCRIPTION })]);
     
     // Skip if no valid control ID
-    if (!mitigationId || !CONTROL_ID_PATTERN.test(mitigationId)) continue;
-    if (!mitigationDesc) continue;
+    if (!mitigationId || !CONTROL_ID_PATTERN.test(mitigationId)) {
+      if (mitigationId) {
+        console.log(`[ExcelParser] Row ${row}: Skipping invalid control ID: ${mitigationId}`);
+      }
+      continue;
+    }
+    if (!mitigationDesc) {
+      console.log(`[ExcelParser] Row ${row}: Skipping ${mitigationId} - no description`);
+      continue;
+    }
     
     // Read category from Risk Category column
     let category = getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: CONTROL_COLUMNS.RISK_CATEGORY })]);
@@ -374,6 +385,17 @@ const parseControlsFromWorkbook = async (buffer) => {
     
     controls.push(control);
   }
+  
+  console.log(`[ExcelParser] Total controls parsed: ${controls.length}`);
+  console.log(`[ExcelParser] Control IDs: ${controls.map(c => c.mitigationID).join(', ')}`);
+  
+  // Check for specific missing controls
+  const missingControls = ['ACC-04', 'LOG-04'];
+  missingControls.forEach(id => {
+    if (!controls.find(c => c.mitigationID === id)) {
+      console.log(`[ExcelParser] WARNING: Expected control ${id} not found in parsed data`);
+    }
+  });
   
   return controls;
 };

@@ -504,3 +504,158 @@ npm run dev
 - If "port already in use" error: Kill the process and try again
 - If authentication loops: Ensure backend is running and proxy is configured
 - If data doesn't load: Check server.log for Google Drive connection issues
+
+---
+
+## Date: July 23, 2025 - Google Authentication and Script Execution
+
+### The "invalid_rapt" Authentication Error
+
+**Problem**: Scripts attempting to access Google Drive directly fail with "invalid_rapt" (Invalid ReAuth Proof Token) errors.
+
+**Root Cause**: 
+- RAPT is part of Google's enhanced security for OAuth2 flows
+- User credentials expire based on Google Workspace session control policies (1-24 hours)
+- Scripts inadvertently use cached user credentials instead of service accounts
+- Service accounts are NOT affected by RAPT/session policies
+
+**How Google Auth Discovery Works**:
+Google auth libraries check for credentials in this order:
+1. `GOOGLE_APPLICATION_CREDENTIALS` environment variable
+2. User credentials at `~/.config/gcloud/application_default_credentials.json`
+3. Google Cloud metadata server (for GCE/Cloud Run)
+4. Other locations depending on the library
+
+**The Danger**: If user credentials exist on the system (from `gcloud auth application-default login`), scripts will use them and fail when sessions expire.
+
+### Preventing Scripts from Using User Credentials
+
+**Solution 1 - Explicit Service Account in Code**:
+```javascript
+// ✅ CORRECT: Forces service account usage
+const auth = new google.auth.GoogleAuth({
+  keyFile: './path/to/service-account-key.json',
+  scopes: ['https://www.googleapis.com/auth/drive']
+});
+
+// ❌ WRONG: May pick up user credentials
+const auth = new google.auth.GoogleAuth({
+  scopes: ['https://www.googleapis.com/auth/drive']
+});
+```
+
+**Solution 2 - Environment Variable**:
+```bash
+# Set before running script
+export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account-key.json"
+
+# Or in the script itself
+process.env.GOOGLE_APPLICATION_CREDENTIALS = './service-account-key.json';
+```
+
+**Solution 3 - Remove User Credentials**:
+```bash
+# Clear cached user credentials
+rm -rf ~/.config/gcloud/application_default_credentials.json
+
+# Never run this on servers or for scripts
+gcloud auth application-default login  # ❌ NEVER DO THIS
+```
+
+**Solution 4 - Wrapper Script Created**:
+A wrapper script was created at `scripts/run-with-service-account.cjs` that:
+- Forces `GOOGLE_APPLICATION_CREDENTIALS` environment variable
+- Clears user credential environment variables
+- Validates service account file exists
+- Usage: `node scripts/run-with-service-account.cjs ./scripts/any-script.cjs`
+
+### Best Practice: Use API Endpoints Instead
+
+**Recommended Approach**: Since the server already has working Google Drive authentication:
+1. Create API endpoints for maintenance operations
+2. Use the server's existing service account authentication
+3. Avoid direct Google Drive access in scripts
+
+Example:
+```javascript
+// Instead of direct Drive access in scripts
+// Create an API endpoint
+router.post('/api/v1/controls/cleanup-duplicates', async (req, res) => {
+  const result = await controlService.cleanupDuplicates();
+  res.json({ success: true, data: result });
+});
+```
+
+### Key Learnings
+
+1. **Service accounts are immune to RAPT** - Always use them for scripts
+2. **User credentials are dangerous for automation** - They expire unpredictably
+3. **Explicit is better than implicit** - Always specify service account paths
+4. **API endpoints are safer** - Leverage existing server authentication
+5. **Document authentication setup** - Prevent future developers from making the same mistakes
+
+**Full documentation**: See `/docs/guides/PREVENTING-USER-CREDENTIAL-USAGE.md` for comprehensive guidance.
+
+---
+
+## Date: July 23, 2025 - Production vs Local Data Synchronization
+
+### The Issue: Different Controls Data Between Environments
+
+**Problem**: `http://localhost:3000/controls` showed 21 controls while `https://dompe.airiskportal.com/controls` showed different data.
+
+**Investigation Findings**:
+1. **Local environment**: Shows 21 controls after cleanup of 8 duplicate entries
+2. **API pagination**: Default limit is 20, but frontend requests with `limit=1000`
+3. **Production deployment**: Was last deployed on July 22nd (before cleanup changes)
+4. **Both environments**: Use the same Google Drive file ID (1OzrkAUQTWY7VUNrX-_akCWIuU2ALR3sm)
+
+### Root Cause
+
+The difference was due to **deployment lag**:
+- Local changes (duplicate cleanup) were made on July 23rd
+- Production was running code from July 22nd deployment
+- Both read from the same Google Drive file, but production had older parsing logic
+
+### Solution Implemented
+
+1. **Built and deployed latest code to production**:
+   ```bash
+   docker build --platform linux/amd64 -t gcr.io/dompe-dev-439304/risk-portal:latest .
+   docker push gcr.io/dompe-dev-439304/risk-portal:latest
+   gcloud run deploy risk-portal --image gcr.io/dompe-dev-439304/risk-portal:latest --region us-central1
+   ```
+
+2. **Deployment details**:
+   - New revision: risk-portal-00026-x9t
+   - Deployed at: 2025-07-23T07:45:19Z
+   - Service URL: https://risk-portal-m55fnl6poa-uc.a.run.app (internal)
+   - Public URL: https://dompe.airiskportal.com (via IAP load balancer)
+
+### Key Learnings
+
+1. **Always deploy after data cleanup operations** - Changes to data structure or cleanup operations need immediate deployment
+2. **Production uses IAP load balancer** - Direct Cloud Run URLs return 404; access is through IAP
+3. **Check deployment timestamps** - Use `gcloud run revisions describe` to verify when code was last deployed
+4. **Both environments share data** - They use the same Google Drive file, so data changes are immediate
+5. **Code changes need deployment** - Parser logic changes require deployment to take effect
+
+### Verification Steps
+
+After deployment:
+1. Clear browser cache
+2. Log out and log back in to refresh session
+3. Verify control count matches between environments
+4. Check that all 21 controls appear with correct categories
+
+---
+
+## Critical Reminders
+
+### Git Commit Author
+**ALWAYS include the proper author when making commits:**
+```bash
+git commit --author="Rohit Kelapure <kelapure@gmail.com>" -m "commit message"
+```
+
+This is a mandatory requirement for all commits in this project. The --author flag must be included in every git commit command.

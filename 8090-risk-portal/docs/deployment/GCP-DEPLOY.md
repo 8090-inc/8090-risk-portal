@@ -33,20 +33,48 @@ gcloud run deploy risk-portal \
   --image gcr.io/dompe-dev-439304/risk-portal:latest \
   --region us-central1 \
   --port 8080 \
-  --allow-unauthenticated \
-  --set-env-vars "NODE_ENV=production,GOOGLE_DRIVE_FILE_ID=1OzrkAUQTWY7VUNrX-_akCWIuU2ALR3sm"
+  --memory 512Mi \
+  --platform managed
 ```
+**Note**: Do NOT use `--allow-unauthenticated` as IAP handles authentication
 
 ### Step 5: Verify Deployment
 - Check Cloud Run service: `risk-portal` (NOT `dompe-risk-portal`)
 - Verify IAP is protecting the service
 - Test at: https://dompe.airiskportal.com
+- Clear browser cache and re-login if needed
+
+### Step 6: Post-Deployment Verification
+```bash
+# Check deployment status
+gcloud run services describe risk-portal --region us-central1 --format="value(status.latestReadyRevisionName)"
+
+# View recent logs
+gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=risk-portal" --limit=20
+```
 
 ## Environment Variables
 The following are set in the deployment:
-- `NODE_ENV=production`
-- `GOOGLE_DRIVE_FILE_ID=1OzrkAUQTWY7VUNrX-_akCWIuU2ALR3sm`
+- `NODE_ENV=production` (set in Dockerfile)
+- `GOOGLE_DRIVE_FILE_ID=1OzrkAUQTWY7VUNrX-_akCWIuU2ALR3sm` (defaults in server.cjs)
 - `VITE_GEMINI_API_KEY` (hardcoded in Dockerfile)
+
+## Important Notes
+
+### Authentication
+- Production uses IAP (Identity-Aware Proxy) for authentication
+- Direct Cloud Run URLs (e.g., https://risk-portal-m55fnl6poa-uc.a.run.app) will return 404
+- Access must be through the IAP-protected domain: https://dompe.airiskportal.com
+
+### Data Synchronization
+- Both local and production environments use the same Google Drive file
+- Data changes are immediate, but code changes require deployment
+- After cleanup operations or parser changes, always deploy to production
+
+### Troubleshooting
+- If controls data differs between environments, check deployment timestamps
+- Use `gcloud run revisions list --service risk-portal --region us-central1` to see deployment history
+- Clear browser cache after deployments to see latest changes
 
 ## Architecture Reminder
 1. `dompe.airiskportal.com` → IAP-enabled Load Balancer
