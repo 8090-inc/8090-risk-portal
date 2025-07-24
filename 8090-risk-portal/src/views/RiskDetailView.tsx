@@ -8,7 +8,6 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
-import { MultiSelect } from '../components/ui/MultiSelect';
 import type { Risk, Control } from '../types';
 
 interface TabContentProps {
@@ -216,12 +215,14 @@ const ControlsTab: React.FC<TabContentProps> = ({ risk, relatedControls }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedControlIds, setSelectedControlIds] = useState<string[]>(risk.relatedControlIds);
   const { controls } = useControlStore();
-  const { updateRiskControls } = useRiskStore();
+  const { updateRiskControls, updatingRelationships } = useRiskStore();
+  const isUpdating = updatingRelationships.has(risk.id);
 
   const handleSaveControls = async () => {
     try {
       await updateRiskControls(risk.id, selectedControlIds);
       setShowEditModal(false);
+      // No need for full refresh - optimistic updates handle it
     } catch {
       alert('Failed to update controls. Please try again.');
     }
@@ -239,8 +240,9 @@ const ControlsTab: React.FC<TabContentProps> = ({ risk, relatedControls }) => {
           size="sm"
           icon={<Edit className="h-4 w-4" />}
           onClick={() => setShowEditModal(true)}
+          disabled={isUpdating}
         >
-          Edit Controls
+          {isUpdating ? 'Updating...' : 'Edit Controls'}
         </Button>
       </div>
 
@@ -333,24 +335,121 @@ const ControlsTab: React.FC<TabContentProps> = ({ risk, relatedControls }) => {
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
         title="Edit Related Controls"
-        size="lg"
+        size="xl"
       >
-        <div className="space-y-4">
-          <p className="text-sm text-gray-600">
-            Select controls that are related to this risk. These controls help mitigate the risk.
-          </p>
+        <div className="space-y-6">
+          <div className="border-b border-gray-200 pb-4">
+            <p className="text-sm text-gray-600 mb-2">
+              Select controls that help mitigate this risk. Changes will be saved to the Excel file.
+            </p>
+            <div className="flex items-center justify-between text-xs text-gray-500">
+              <span>{selectedControlIds.length} of {controls.length} controls selected</span>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setSelectedControlIds(controls.map(c => c.mitigationID))}
+                  className="text-8090-primary hover:text-8090-primary/80"
+                >
+                  Select All
+                </button>
+                <span>•</span>
+                <button
+                  onClick={() => setSelectedControlIds([])}
+                  className="text-8090-primary hover:text-8090-primary/80"
+                >
+                  Clear All
+                </button>
+              </div>
+            </div>
+          </div>
           
-          <MultiSelect
-            options={controls.map(control => ({
-              value: control.mitigationID,
-              label: `${control.mitigationID} - ${control.mitigationDescription}`
-            }))}
-            value={selectedControlIds}
-            onChange={setSelectedControlIds}
-            placeholder="Select controls..."
-          />
+          <div className="max-h-96 overflow-y-auto space-y-3">
+            {Object.entries(
+              controls
+                .sort((a, b) => a.category.localeCompare(b.category) || a.mitigationID.localeCompare(b.mitigationID))
+                .reduce((acc, control) => {
+                  const category = control.category;
+                  if (!acc[category]) acc[category] = [];
+                  acc[category].push(control);
+                  return acc;
+                }, {} as Record<string, typeof controls>)
+            ).map(([category, categoryControls]) => (
+                <div key={category} className="border rounded-lg p-4 bg-gray-50">
+                  <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                    <Shield className="h-4 w-4 mr-2 text-8090-primary" />
+                    {category}
+                    <span className="ml-2 text-xs text-gray-500">
+                      ({categoryControls.filter(c => selectedControlIds.includes(c.mitigationID)).length}/{categoryControls.length})
+                    </span>
+                  </h4>
+                  <div className="space-y-2">
+                    {categoryControls.map(control => {
+                      const isSelected = selectedControlIds.includes(control.mitigationID);
+                      return (
+                        <label
+                          key={control.mitigationID}
+                          className={`flex items-start p-3 rounded-md cursor-pointer transition-colors ${
+                            isSelected 
+                              ? 'bg-8090-primary/10 border border-8090-primary/20' 
+                              : 'bg-white border border-gray-200 hover:bg-gray-50'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedControlIds([...selectedControlIds, control.mitigationID]);
+                              } else {
+                                setSelectedControlIds(selectedControlIds.filter(id => id !== control.mitigationID));
+                              }
+                            }}
+                            className="mt-1 h-4 w-4 text-8090-primary border-gray-300 rounded focus:ring-8090-primary"
+                          />
+                          <div className="ml-3 flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-sm text-gray-900">{control.mitigationID}</span>
+                              {control.implementationStatus && (
+                                <Badge 
+                                  variant={
+                                    control.implementationStatus === 'Implemented' ? 'success' :
+                                    control.implementationStatus === 'In Progress' ? 'warning' : 'default'
+                                  }
+                                  className="text-xs"
+                                >
+                                  {control.implementationStatus}
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-700 mt-1 line-clamp-2">{control.mitigationDescription}</p>
+                            {(control.compliance.cfrPart11Annex11 || control.compliance.gdprArticle || control.compliance.hipaaSafeguard) && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {control.compliance.cfrPart11Annex11 && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                    CFR: {control.compliance.cfrPart11Annex11}
+                                  </span>
+                                )}
+                                {control.compliance.gdprArticle && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                    GDPR: {control.compliance.gdprArticle}
+                                  </span>
+                                )}
+                                {control.compliance.hipaaSafeguard && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                    HIPAA: {control.compliance.hipaaSafeguard}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+          </div>
           
-          <div className="flex justify-end space-x-3 pt-4">
+          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
             <Button
               variant="secondary"
               onClick={() => {
@@ -364,7 +463,7 @@ const ControlsTab: React.FC<TabContentProps> = ({ risk, relatedControls }) => {
               variant="primary"
               onClick={handleSaveControls}
             >
-              Save Changes
+              Save Changes ({selectedControlIds.length} selected)
             </Button>
           </div>
         </div>
@@ -535,7 +634,7 @@ export const RiskDetailView: React.FC = () => {
         
         <div className="flex-1">
           <div className="flex items-center space-x-3">
-            <h1 className="text-2xl font-bold text-gray-900">{risk.risk}</h1>
+            <h1 className="text-2xl font-semibold text-gray-900">{risk.risk}</h1>
             <RiskLevelBadge 
               level={risk.residualScoring.riskLevelCategory} 
               score={risk.residualScoring.riskLevel}

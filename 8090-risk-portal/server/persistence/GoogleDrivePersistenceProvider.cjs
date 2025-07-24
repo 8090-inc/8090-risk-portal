@@ -23,6 +23,8 @@ const {
   addRelationshipToWorkbook,
   removeRelationshipFromWorkbook,
   removeAllRelationshipsForRisk,
+  updateRiskControlRelationships,
+  updateControlRiskRelationships,
   removeAllRelationshipsForControl,
   removeAllRelationshipsForUseCase
 } = require('../utils/excelParser.cjs');
@@ -45,9 +47,10 @@ class GoogleDrivePersistenceProvider extends IPersistenceProvider {
    * Get data from cache or fetch from Google Drive
    */
   async getData(forceRefresh = false) {
-    if (!forceRefresh && this.cache && Date.now() - this.cache.timestamp < this.cacheExpiry) {
-      return this.cache.data;
-    }
+    // CACHING DISABLED - always fetch fresh data
+    // if (!forceRefresh && this.cache && Date.now() - this.cache.timestamp < this.cacheExpiry) {
+    //   return this.cache.data;
+    // }
     
     try {
       const buffer = await this.downloadFile();
@@ -59,12 +62,13 @@ class GoogleDrivePersistenceProvider extends IPersistenceProvider {
       // Build relationships
       const data = this.buildRelationships(risks, controls, useCases, relationships);
       
-      this.cache = {
-        data: { ...data, buffer },
-        timestamp: Date.now()
-      };
+      // CACHING DISABLED
+      // this.cache = {
+      //   data: { ...data, buffer },
+      //   timestamp: Date.now()
+      // };
       
-      return this.cache.data;
+      return { ...data, buffer };
     } catch (error) {
       throw new ApiError(500, ErrorCodes.EXCEL_PARSE_ERROR, { 
         details: error.message 
@@ -76,14 +80,18 @@ class GoogleDrivePersistenceProvider extends IPersistenceProvider {
    * Build bidirectional relationships between risks, controls, and use cases
    */
   buildRelationships(risks, controls, useCases, relationships) {
+    console.log('[buildRelationships] Starting with', relationships.length, 'relationships');
+    
     // Build maps from relationships data
     const riskControlMap = new Map();
     const controlRiskMap = new Map();
     const useCaseRiskMap = new Map();
     const riskUseCaseMap = new Map();
     
-    // Process relationships from dedicated sheet
+    // Process all relationships from the Relationships sheet
     relationships.forEach(rel => {
+      console.log('[buildRelationships] Processing:', rel);
+      
       if (rel.linkType === 'UseCase-Risk') {
         // Handle use case-risk relationships
         const useCaseId = rel.controlId; // In this case, controlId is actually the use case ID
@@ -104,8 +112,8 @@ class GoogleDrivePersistenceProvider extends IPersistenceProvider {
         if (!riskUseCaseMap.get(riskId).includes(useCaseId)) {
           riskUseCaseMap.get(riskId).push(useCaseId);
         }
-      } else {
-        // Handle control-risk relationships (existing logic)
+      } else if (rel.linkType === 'Mitigates' || rel.linkType === 'mitigates' || rel.linkType === 'ADDED') {
+        // Handle control-risk relationships (including manually added ones)
         // Add to risk → controls map
         if (!riskControlMap.has(rel.riskId)) {
           riskControlMap.set(rel.riskId, []);
@@ -124,15 +132,24 @@ class GoogleDrivePersistenceProvider extends IPersistenceProvider {
       }
     });
     
+    console.log('[buildRelationships] Risk->Control map:', Array.from(riskControlMap.entries()));
+    console.log('[buildRelationships] Control->Risk map:', Array.from(controlRiskMap.entries()));
+    
     // Apply relationships to risks
     risks.forEach(risk => {
       risk.relatedControlIds = riskControlMap.get(risk.id) || [];
       risk.relatedUseCaseIds = riskUseCaseMap.get(risk.id) || [];
+      if (risk.relatedControlIds.length > 0) {
+        console.log(`[buildRelationships] Risk ${risk.id} has controls:`, risk.relatedControlIds);
+      }
     });
     
     // Apply relationships to controls
     controls.forEach(control => {
       control.relatedRiskIds = controlRiskMap.get(control.mitigationID) || [];
+      if (control.relatedRiskIds.length > 0) {
+        console.log(`[buildRelationships] Control ${control.mitigationID} has risks:`, control.relatedRiskIds);
+      }
     });
     
     // Apply relationships to use cases
@@ -202,11 +219,19 @@ class GoogleDrivePersistenceProvider extends IPersistenceProvider {
       };
       
       console.log('[GoogleDrivePersistenceProvider] Calling Google Drive API files.update...');
-      const result = await this.driveService.files.update({
+      
+      // Add timeout to detect hangs
+      const uploadPromise = this.driveService.files.update({
         fileId: this.fileId,
         media: media,
         supportsAllDrives: true
       });
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Upload timeout after 10 seconds')), 10000)
+      );
+      
+      const result = await Promise.race([uploadPromise, timeoutPromise]);
       console.log('[GoogleDrivePersistenceProvider] Google Drive API response:', result.status);
       
       // Invalidate cache after upload
@@ -306,16 +331,36 @@ class GoogleDrivePersistenceProvider extends IPersistenceProvider {
       };
     }
     
-    const buffer = this.inTransaction ? this.transactionBuffer : data.buffer;
-    const updatedBuffer = await updateRiskInWorkbook(buffer, id, updatedRisk);
+    let buffer = this.inTransaction ? this.transactionBuffer : data.buffer;
+    let updatedBuffer = await updateRiskInWorkbook(buffer, id, updatedRisk);
+    
+    // Handle relationship updates if relatedControlIds is provided
+    if (riskUpdates.relatedControlIds !== undefined) {
+      updatedBuffer = await updateRiskControlRelationships(
+        updatedBuffer, 
+        id, 
+        riskUpdates.relatedControlIds,
+        'user' // TODO: Get actual user from request context
+      );
+      
+      // Force complete cache invalidation for relationship changes
+      this.cache = null;
+    }
     
     if (this.inTransaction) {
       this.transactionBuffer = updatedBuffer;
     } else {
       await this.uploadFile(updatedBuffer);
-      // Update cache
-      data.risks[existingIndex] = updatedRisk;
-      data.buffer = updatedBuffer;
+      
+      // If relationships were updated, return fresh data to ensure bidirectional sync
+      if (riskUpdates.relatedControlIds !== undefined) {
+        const freshData = await this.getData(true);
+        return freshData.risks.find(r => r.id === id);
+      } else {
+        // Update cache for non-relationship updates
+        data.risks[existingIndex] = updatedRisk;
+        data.buffer = updatedBuffer;
+      }
     }
     
     return updatedRisk;
@@ -420,15 +465,35 @@ class GoogleDrivePersistenceProvider extends IPersistenceProvider {
     }
     
     const buffer = this.inTransaction ? this.transactionBuffer : data.buffer;
-    const updatedBuffer = await updateControlInWorkbook(buffer, id, updatedControl);
+    let updatedBuffer = await updateControlInWorkbook(buffer, id, updatedControl);
+    
+    // Handle relationship updates if relatedRiskIds is provided
+    if (controlUpdates.relatedRiskIds !== undefined) {
+      updatedBuffer = await updateControlRiskRelationships(
+        updatedBuffer, 
+        id, 
+        controlUpdates.relatedRiskIds,
+        'user' // TODO: Get actual user from request context
+      );
+      
+      // Force complete cache invalidation for relationship changes
+      this.cache = null;
+    }
     
     if (this.inTransaction) {
       this.transactionBuffer = updatedBuffer;
     } else {
       await this.uploadFile(updatedBuffer);
-      // Update cache
-      data.controls[existingIndex] = updatedControl;
-      data.buffer = updatedBuffer;
+      
+      // If relationships were updated, return fresh data to ensure bidirectional sync
+      if (controlUpdates.relatedRiskIds !== undefined) {
+        const freshData = await this.getData(true);
+        return freshData.controls.find(c => c.mitigationID === id);
+      } else {
+        // Update cache for non-relationship updates
+        data.controls[existingIndex] = updatedControl;
+        data.buffer = updatedBuffer;
+      }
     }
     
     return updatedControl;

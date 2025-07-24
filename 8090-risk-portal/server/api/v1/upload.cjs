@@ -33,11 +33,12 @@ const upload = multer({
 });
 
 // Service instances will be injected
-let riskService, controlService;
+let riskService, controlService, persistenceProvider;
 
-const initializeServices = (riskSvc, controlSvc) => {
+const initializeServices = (riskSvc, controlSvc, persistence) => {
   riskService = riskSvc;
   controlService = controlSvc;
+  persistenceProvider = persistence;
 };
 
 // POST /api/v1/upload/excel
@@ -50,6 +51,8 @@ router.post('/excel', upload.single('file'), asyncHandler(async (req, res) => {
     });
   }
 
+  let transactionStarted = false;
+  
   try {
     // Parse the Excel file
     const buffer = req.file.buffer;
@@ -67,6 +70,21 @@ router.post('/excel', upload.single('file'), asyncHandler(async (req, res) => {
       errors: []
     };
 
+    // Validate data before import
+    if (risks.length === 0 && controls.length === 0) {
+      throw new ApiError(400, {
+        code: 'NO_DATA_FOUND',
+        message: 'No risks or controls found in the uploaded file',
+        suggestion: 'Please ensure the Excel file contains valid data in the expected format'
+      });
+    }
+
+    // Start transaction if persistence provider supports it
+    if (persistenceProvider && persistenceProvider.beginTransaction) {
+      await persistenceProvider.beginTransaction();
+      transactionStarted = true;
+    }
+
     // Import risks
     for (const risk of risks) {
       try {
@@ -75,13 +93,13 @@ router.post('/excel', upload.single('file'), asyncHandler(async (req, res) => {
         
         if (existingRisk) {
           stats.risksSkipped++;
-          stats.errors.push(`Risk ${risk.id} already exists`);
+          // Don't add to errors for skipped items - it's expected behavior
         } else {
           await riskService.createRisk(risk);
           stats.risksImported++;
         }
       } catch (error) {
-        stats.errors.push(`Failed to import risk ${risk.id}: ${error.message}`);
+        stats.errors.push(`Failed to import risk "${risk.risk}": ${error.message}`);
       }
     }
 
@@ -93,7 +111,7 @@ router.post('/excel', upload.single('file'), asyncHandler(async (req, res) => {
         
         if (existingControl) {
           stats.controlsSkipped++;
-          stats.errors.push(`Control ${control.mitigationID} already exists`);
+          // Don't add to errors for skipped items - it's expected behavior
         } else {
           await controlService.createControl(control);
           stats.controlsImported++;
@@ -103,15 +121,37 @@ router.post('/excel', upload.single('file'), asyncHandler(async (req, res) => {
       }
     }
 
+    // Commit transaction if we started one
+    if (transactionStarted && persistenceProvider.commitTransaction) {
+      await persistenceProvider.commitTransaction();
+    }
+
+    // Prepare success message
+    let message = 'File processed successfully';
+    if (stats.risksImported > 0 || stats.controlsImported > 0) {
+      message = `Successfully imported ${stats.risksImported} risks and ${stats.controlsImported} controls`;
+    } else if (stats.risksSkipped > 0 || stats.controlsSkipped > 0) {
+      message = 'No new data imported - all records already exist';
+    }
+
     res.json({
       success: true,
       data: {
-        message: 'File processed successfully',
+        message,
         fileName: req.file.originalname,
         ...stats
       }
     });
   } catch (error) {
+    // Rollback transaction if we started one
+    if (transactionStarted && persistenceProvider && persistenceProvider.rollbackTransaction) {
+      await persistenceProvider.rollbackTransaction();
+    }
+    
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    
     throw new ApiError(500, ErrorCodes.EXCEL_PARSE_ERROR, {
       details: error.message
     });

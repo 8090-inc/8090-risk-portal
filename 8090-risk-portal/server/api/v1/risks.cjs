@@ -203,5 +203,6 @@ router.put('/:id/controls', asyncHandler(async (req, res) => {
 
 // Export service getter for other modules
 const getService = () => riskService;
+const getPersistenceProvider = () => riskService?.persistence;
 
-module.exports = { router, initializeService, getService };
+module.exports = { router, initializeService, getService, getPersistenceProvider };

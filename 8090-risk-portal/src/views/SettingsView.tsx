@@ -25,8 +25,6 @@ import { useRiskStore, useControlStore, useCurrentUser } from '../store';
 import { exportRisksToExcel, exportRisksToCSV } from '../utils/exportUtils';
 import { exportRisksToPDF } from '../utils/pdfExport';
 import { getUserPermissions } from '../types/auth.types';
-import { Risk } from '../types/risk.types';
-import { Control } from '../types/control.types';
 
 export const SettingsView: React.FC = () => {
   const [showUpload, setShowUpload] = useState(false);
@@ -62,24 +60,40 @@ export const SettingsView: React.FC = () => {
     }
   };
 
-  const handleDataImport = async (data: { risks: Risk[], controls: Control[] }) => {
+  const handleDataImport = async (stats: {
+    risksImported: number;
+    controlsImported: number;
+    risksSkipped: number;
+    controlsSkipped: number;
+    errors: string[];
+  }) => {
     try {
-      console.log('Importing data:', { risksCount: data.risks.length, controlsCount: data.controls.length });
+      console.log('Import completed:', stats);
       
-      // Save to localStorage
-      localStorage.setItem('importedRisks', JSON.stringify(data.risks));
-      localStorage.setItem('importedControls', JSON.stringify(data.controls));
+      // Update last updated timestamp
       localStorage.setItem('dataLastUpdated', new Date().toISOString());
       
-      // Reload stores
-      await loadRisks();
-      await loadControls();
+      // Reload stores to get the newly imported data
+      await Promise.all([loadRisks(), loadControls()]);
       
       setShowUpload(false);
-      console.log('Data import successful');
+      
+      // Show success message
+      const totalImported = stats.risksImported + stats.controlsImported;
+      const totalSkipped = stats.risksSkipped + stats.controlsSkipped;
+      
+      let message = `Successfully imported ${totalImported} records`;
+      if (totalSkipped > 0) {
+        message += ` (${totalSkipped} skipped as duplicates)`;
+      }
+      
+      // TODO: Replace with proper toast notification
+      alert(message);
+      
+      console.log('Data import successful, stores refreshed');
     } catch (error) {
-      console.error('Failed to import data:', error);
-      alert('Failed to import data. Please check the console for details.');
+      console.error('Failed to refresh data after import:', error);
+      alert('Import succeeded but failed to refresh data. Please refresh the page.');
     }
   };
 
@@ -186,15 +200,15 @@ export const SettingsView: React.FC = () => {
                 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-slate-900">12</div>
+                    <div className="text-2xl font-semibold text-slate-900">12</div>
                     <div className="text-sm text-slate-600">Total Users</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">8</div>
+                    <div className="text-2xl font-semibold text-green-600">8</div>
                     <div className="text-sm text-slate-600">Active</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-slate-600">3</div>
+                    <div className="text-2xl font-semibold text-slate-600">3</div>
                     <div className="text-sm text-slate-600">Admins</div>
                   </div>
                 </div>
@@ -431,7 +445,7 @@ export const SettingsView: React.FC = () => {
       {/* Upload Modal */}
       {showUpload && (
         <DataUpload
-          onDataImport={handleDataImport}
+          onImportSuccess={handleDataImport}
           onClose={() => setShowUpload(false)}
         />
       )}

@@ -11,7 +11,6 @@ import {
   Calendar, 
   Users, 
   Target,
-  Building,
   Brain,
   CheckCircle,
   Shield,
@@ -193,8 +192,8 @@ export function UseCaseDetailView() {
   ];
   
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      <div className="mb-4">
+    <div className="container mx-auto p-6 max-w-6xl">
+      <div className="mb-2">
         <Breadcrumb items={breadcrumbItems} />
       </div>
       
@@ -226,27 +225,30 @@ export function UseCaseDetailView() {
         }
       />
       
-      {/* Status and Metadata */}
-      <div className="mb-6 flex items-center gap-4 flex-wrap">
-        {selectedUseCase.status && (
-          <Badge variant={getStatusVariant(selectedUseCase.status)}>
-            {selectedUseCase.status}
-          </Badge>
-        )}
-        {selectedUseCase.businessArea && (
-          <Badge variant="secondary">
-            <Building className="mr-1 h-3 w-3" />
-            {selectedUseCase.businessArea}
-          </Badge>
-        )}
-        <span className="text-sm text-muted-foreground">
-          ID: {selectedUseCase.id}
-        </span>
-        {selectedUseCase.lastUpdated && (
-          <span className="text-sm text-muted-foreground">
-            Last updated: {new Date(selectedUseCase.lastUpdated).toLocaleDateString()}
-          </span>
-        )}
+      {/* Subtle Metadata Line */}
+      <div className="mt-8 mb-8 flex items-center justify-between text-xs text-slate-400">
+        <div className="flex items-center gap-3">
+          {selectedUseCase.status && (
+            <span className="font-medium text-slate-500">
+              {selectedUseCase.status}
+            </span>
+          )}
+          {selectedUseCase.businessArea && (
+            <>
+              {selectedUseCase.status && <span>•</span>}
+              <span>{selectedUseCase.businessArea}</span>
+            </>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="font-mono">{selectedUseCase.id}</span>
+          {selectedUseCase.lastUpdated && (
+            <>
+              <span>•</span>
+              <span>{new Date(selectedUseCase.lastUpdated).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
+            </>
+          )}
+        </div>
       </div>
       
       <div className="grid gap-6 md:grid-cols-2">
@@ -254,14 +256,14 @@ export function UseCaseDetailView() {
         <div className="space-y-6">
           {/* AI Categories */}
           {selectedUseCase.aiCategories && selectedUseCase.aiCategories.length > 0 && (
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-3 flex items-center">
-                <Brain className="mr-2 h-5 w-5" />
+            <Card className="p-4 border-slate-200">
+              <h3 className="text-lg font-semibold mb-3 flex items-center text-slate-900">
+                <Brain className="mr-2 h-4 w-4 text-slate-600" />
                 AI Technologies
               </h3>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {selectedUseCase.aiCategories.map((category, index) => (
-                  <Badge key={index} variant="secondary">
+                  <Badge key={index} variant="secondary" size="sm" className="font-medium">
                     {category}
                   </Badge>
                 ))}
@@ -271,9 +273,9 @@ export function UseCaseDetailView() {
           
           {/* Objective */}
           {selectedUseCase.objective && (
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Objective & Solution</h3>
-              <div className="space-y-4">
+            <Card className="p-4 border-slate-200">
+              <h3 className="text-lg font-semibold mb-3 text-slate-900">Objective & Solution</h3>
+              <div className="space-y-3">
                 {selectedUseCase.objective.currentState && (
                   <div>
                     <h4 className="font-medium text-sm text-muted-foreground mb-1">Current State</h4>
@@ -304,9 +306,9 @@ export function UseCaseDetailView() {
           
           {/* Execution Details */}
           {selectedUseCase.execution && (
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Execution Details</h3>
-              <div className="space-y-4">
+            <Card className="p-4 border-slate-200">
+              <h3 className="text-lg font-semibold mb-3 text-slate-900">Execution Details</h3>
+              <div className="space-y-3">
                 {selectedUseCase.execution.functionsImpacted && selectedUseCase.execution.functionsImpacted.length > 0 && (
                   <div>
                     <h4 className="font-medium text-sm text-muted-foreground mb-2">Functions Impacted</h4>
@@ -327,37 +329,37 @@ export function UseCaseDetailView() {
                   </div>
                 )}
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   {selectedUseCase.execution.aiComplexity && (
-                    <div>
-                      <h4 className="font-medium text-sm text-muted-foreground mb-1">AI Complexity</h4>
-                      <p className={`text-sm font-medium ${getLevelColor(selectedUseCase.execution.aiComplexity)}`}>
+                    <div className="flex items-center justify-between p-2 bg-slate-50 rounded-md">
+                      <span className="text-xs text-muted-foreground">AI Complexity</span>
+                      <span className={`text-xs font-semibold ${getLevelColor(selectedUseCase.execution.aiComplexity)}`}>
                         {selectedUseCase.execution.aiComplexity}
-                      </p>
+                      </span>
                     </div>
                   )}
                   {selectedUseCase.execution.feasibility && (
-                    <div>
-                      <h4 className="font-medium text-sm text-muted-foreground mb-1">Feasibility</h4>
-                      <p className={`text-sm font-medium ${getLevelColor(selectedUseCase.execution.feasibility)}`}>
+                    <div className="flex items-center justify-between p-2 bg-slate-50 rounded-md">
+                      <span className="text-xs text-muted-foreground">Feasibility</span>
+                      <span className={`text-xs font-semibold ${getLevelColor(selectedUseCase.execution.feasibility)}`}>
                         {selectedUseCase.execution.feasibility}
-                      </p>
+                      </span>
                     </div>
                   )}
                   {selectedUseCase.execution.value && (
-                    <div>
-                      <h4 className="font-medium text-sm text-muted-foreground mb-1">Business Value</h4>
-                      <p className={`text-sm font-medium ${getLevelColor(selectedUseCase.execution.value)}`}>
+                    <div className="flex items-center justify-between p-2 bg-slate-50 rounded-md">
+                      <span className="text-xs text-muted-foreground">Business Value</span>
+                      <span className={`text-xs font-semibold ${getLevelColor(selectedUseCase.execution.value)}`}>
                         {selectedUseCase.execution.value}
-                      </p>
+                      </span>
                     </div>
                   )}
                   {selectedUseCase.execution.risk && (
-                    <div>
-                      <h4 className="font-medium text-sm text-muted-foreground mb-1">Risk Level</h4>
-                      <p className={`text-sm font-medium ${getLevelColor(selectedUseCase.execution.risk)}`}>
+                    <div className="flex items-center justify-between p-2 bg-slate-50 rounded-md">
+                      <span className="text-xs text-muted-foreground">Risk Level</span>
+                      <span className={`text-xs font-semibold ${getLevelColor(selectedUseCase.execution.risk)}`}>
                         {selectedUseCase.execution.risk}
-                      </p>
+                      </span>
                     </div>
                   )}
                 </div>
@@ -370,24 +372,28 @@ export function UseCaseDetailView() {
         <div className="space-y-6">
           {/* Impact & Metrics */}
           {selectedUseCase.impact && (
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Impact & Metrics</h3>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center gap-3">
-                    <DollarSign className="h-8 w-8 text-green-600" />
+            <Card className="p-4 border-slate-200">
+              <h3 className="text-lg font-semibold mb-3 text-slate-900">Impact & Metrics</h3>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex items-start gap-2.5">
+                    <div className="p-2 bg-green-50 rounded-md">
+                      <DollarSign className="h-5 w-5 text-green-600" />
+                    </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Cost Saving</p>
-                      <p className="text-xl font-semibold">
+                      <p className="text-xs text-muted-foreground">Cost Saving</p>
+                      <p className="text-lg font-semibold text-slate-900">
                         {formatCurrency(selectedUseCase.impact.costSaving)}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Calendar className="h-8 w-8 text-blue-600" />
+                  <div className="flex items-start gap-2.5">
+                    <div className="p-2 bg-blue-50 rounded-md">
+                      <Calendar className="h-5 w-5 text-blue-600" />
+                    </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Effort</p>
-                      <p className="text-xl font-semibold">
+                      <p className="text-xs text-muted-foreground">Effort</p>
+                      <p className="text-lg font-semibold text-slate-900">
                         {selectedUseCase.impact.effortMonths || 'N/A'} months
                       </p>
                     </div>
@@ -396,12 +402,12 @@ export function UseCaseDetailView() {
                 
                 {selectedUseCase.impact.impactPoints && selectedUseCase.impact.impactPoints.length > 0 && (
                   <div>
-                    <h4 className="font-medium text-sm text-muted-foreground mb-2">Key Impact Areas</h4>
+                    <h4 className="font-medium text-xs text-muted-foreground mb-2 uppercase tracking-wide">Key Impact Areas</h4>
                     <ul className="space-y-1">
                       {selectedUseCase.impact.impactPoints.map((point, index) => (
                         <li key={index} className="flex items-start gap-2 text-sm">
-                          <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                          <span>{point}</span>
+                          <CheckCircle className="h-3.5 w-3.5 text-green-600 mt-0.5 flex-shrink-0" />
+                          <span className="text-slate-700">{point}</span>
                         </li>
                       ))}
                     </ul>
@@ -412,12 +418,12 @@ export function UseCaseDetailView() {
           )}
           
           {/* Ownership & Stakeholders */}
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4 flex items-center">
-              <Users className="mr-2 h-5 w-5" />
+          <Card className="p-4 border-slate-200">
+            <h3 className="text-lg font-semibold mb-3 flex items-center text-slate-900">
+              <Users className="mr-2 h-4 w-4 text-slate-600" />
               Ownership & Stakeholders
             </h3>
-            <div className="space-y-4">
+            <div className="space-y-3">
               {selectedUseCase.owner && (
                 <div>
                   <h4 className="font-medium text-sm text-muted-foreground mb-1">Owner</h4>
@@ -444,17 +450,17 @@ export function UseCaseDetailView() {
           
           {/* Notes */}
           {selectedUseCase.notes && (
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-3">Notes</h3>
-              <p className="text-sm whitespace-pre-wrap">{selectedUseCase.notes}</p>
+            <Card className="p-4 border-slate-200">
+              <h3 className="text-lg font-semibold mb-2 text-slate-900">Notes</h3>
+              <p className="text-sm whitespace-pre-wrap text-slate-700">{selectedUseCase.notes}</p>
             </Card>
           )}
           
           {/* Timeline */}
           {(selectedUseCase.implementationStart || selectedUseCase.implementationEnd) && (
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-3">Timeline</h3>
-              <div className="space-y-2">
+            <Card className="p-4 border-slate-200">
+              <h3 className="text-lg font-semibold mb-2 text-slate-900">Timeline</h3>
+              <div className="space-y-1.5">
                 {selectedUseCase.implementationStart && (
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Start Date</span>
@@ -478,17 +484,17 @@ export function UseCaseDetailView() {
       </div>
       
       {/* Prominent Risk Section */}
-      <div className="mt-8">
-        <Card className="overflow-hidden">
-          <div className="bg-gradient-to-r from-orange-50 to-red-50 p-6 border-b">
+      <div className="mt-6">
+        <Card className="overflow-hidden border-slate-200">
+          <div className="bg-gradient-to-r from-orange-50 to-red-50 p-4 border-b border-orange-100">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-white rounded-lg shadow-sm">
-                  <Shield className="h-6 w-6 text-orange-600" />
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-white rounded-md shadow-sm">
+                  <Shield className="h-5 w-5 text-orange-600" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-semibold">Associated Risks</h2>
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <h2 className="text-lg font-semibold text-slate-900">Associated Risks</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {associatedRisks.length === 0 
                       ? 'No risks have been associated with this use case'
                       : `${associatedRisks.length} risk${associatedRisks.length !== 1 ? 's' : ''} identified across ${Object.keys(riskCounts).length} severity level${Object.keys(riskCounts).length !== 1 ? 's' : ''}`
@@ -506,50 +512,53 @@ export function UseCaseDetailView() {
             {associatedRisks.length > 0 && (
               <div className="flex gap-4 mt-4">
                 {Object.entries(riskCounts).map(([level, count]) => (
-                  <div key={level} className="flex items-center gap-2">
-                    <Badge variant={getRiskLevelColor(level)} className="font-semibold">
+                  <div key={level} className="flex items-center gap-1.5">
+                    <Badge variant={getRiskLevelColor(level)} size="sm" className="font-semibold">
                       {level}
                     </Badge>
-                    <span className="text-sm font-medium">{count}</span>
+                    <span className="text-sm font-semibold text-slate-700">{count}</span>
                   </div>
                 ))}
               </div>
             )}
           </div>
           
-          <div className="p-6">
+          <div className="p-4">
             {risksLoading ? (
-              <div className="flex items-center justify-center py-8">
+              <div className="flex items-center justify-center py-6">
                 <Spinner size="lg" />
               </div>
             ) : associatedRisks.length === 0 ? (
-              <div className="text-center py-8">
-                <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                <p className="text-muted-foreground mb-4">No risks have been identified for this use case yet.</p>
-                <Button onClick={handleManageRisks} variant="outline">
+              <div className="text-center py-6">
+                <AlertTriangle className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground mb-3">No risks have been identified for this use case yet.</p>
+                <Button onClick={handleManageRisks} variant="outline" size="sm">
                   Associate Risks
                 </Button>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {sortedRisks.map((risk) => (
-                  <Card key={risk.id} className="p-4 hover:shadow-md transition-shadow">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <Badge variant={getRiskLevelColor(risk.initialScoring.riskLevelCategory)} className="font-semibold">
+                  <Card key={risk.id} className="p-3 hover:shadow-sm transition-all border-slate-200 hover:border-slate-300">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                          <Badge variant={getRiskLevelColor(risk.initialScoring.riskLevelCategory)} size="sm" className="font-semibold">
                             {risk.initialScoring.riskLevelCategory}
                           </Badge>
-                          <span className="text-sm font-semibold text-gray-700">ID: {risk.id}</span>
-                          <span className="text-sm text-muted-foreground">• {risk.riskCategory}</span>
+                          <span className="text-xs font-medium text-slate-600 flex items-center gap-1">
+                            <span className="text-slate-400">#</span>{risk.id.toUpperCase()}
+                          </span>
+                          <span className="text-xs text-muted-foreground">• {risk.riskCategory}</span>
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span>Impact: <span className="font-medium text-gray-700">{risk.initialScoring.impact}</span></span>
-                          <span>Likelihood: <span className="font-medium text-gray-700">{risk.initialScoring.likelihood}</span></span>
+                        <h4 className="text-sm font-medium text-slate-900 line-clamp-1 mb-1">{risk.risk}</h4>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span>Impact: <span className="font-medium text-slate-700">{risk.initialScoring.impact}</span></span>
+                          <span>Likelihood: <span className="font-medium text-slate-700">{risk.initialScoring.likelihood}</span></span>
                           {risk.relatedControlIds.length > 0 && (
                             <span className="flex items-center gap-1">
                               <Shield className="h-3 w-3" />
-                              {risk.relatedControlIds.length} control{risk.relatedControlIds.length !== 1 ? 's' : ''}
+                              <span className="font-medium text-slate-700">{risk.relatedControlIds.length}</span>
                             </span>
                           )}
                         </div>
@@ -558,9 +567,9 @@ export function UseCaseDetailView() {
                         variant="ghost" 
                         size="sm"
                         onClick={() => navigate(`/risks/${risk.id}`)}
-                        className="ml-4"
+                        className="text-xs"
                       >
-                        View Details
+                        View
                       </Button>
                     </div>
                   </Card>

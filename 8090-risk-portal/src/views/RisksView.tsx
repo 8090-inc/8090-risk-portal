@@ -148,9 +148,9 @@ export const RisksView: React.FC = () => {
   const stats = getStatistics();
 
   return (
-    <div className="h-full">
+    <div className="h-full flex flex-col overflow-hidden">
       {/* Main Content - Full Width */}
-      <div className="space-y-6 p-6 overflow-y-auto">
+      <div className="flex-1 space-y-6 p-6 overflow-auto min-w-0">
         <PageHeader
           title={
             <span>

@@ -1,0 +1,120 @@
+/* AG-Grid Custom Overrides for Risk Matrix View */
+
+/* Fix header alignment and spacing */
+.ag-theme-alpine .ag-header-cell-label {
+  justify-content: flex-start;
+  padding: 8px 12px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+/* Ensure header text is properly visible and wraps */
+.ag-theme-alpine .ag-header-cell-text {
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+  line-height: 1.4;
+  word-break: break-word;
+  font-weight: 600;
+  font-size: 13px;
+  color: #334155;
+}
+
+/* Fix header cell padding and height */
+.ag-theme-alpine .ag-header-cell {
+  padding: 0;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+}
+
+/* Ensure proper header height for wrapped text */
+.ag-theme-alpine .ag-header-row {
+  min-height: 60px;
+}
+
+/* Fix column header menu button positioning */
+.ag-theme-alpine .ag-header-cell-menu-button {
+  margin-left: 4px;
+}
+
+/* Ensure floating filters have proper spacing */
+.ag-theme-alpine .ag-floating-filter {
+  padding: 4px 8px;
+}
+
+/* Fix row height for better readability */
+.ag-theme-alpine .ag-row {
+  min-height: 60px;
+}
+
+/* Center align numeric columns headers */
+.ag-theme-alpine .ag-header-cell.ag-numeric-header .ag-header-cell-label {
+  justify-content: center;
+}
+
+/* Improve header contrast */
+.ag-theme-alpine .ag-header {
+  background-color: #f8fafc;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+/* Additional header styling improvements */
+.ag-theme-alpine .ag-header-cell-resize {
+  color: #64748b;
+}
+
+/* Fix sort icon alignment */
+.ag-theme-alpine .ag-header-cell-sortable .ag-sort-indicator-container {
+  margin-left: 6px;
+}
+
+/* Improve header menu button visibility */
+.ag-theme-alpine .ag-header-cell-menu-button {
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.ag-theme-alpine .ag-header-cell:hover .ag-header-cell-menu-button {
+  opacity: 1;
+}
+
+/* Better header border styling */
+.ag-theme-alpine .ag-header {
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.ag-theme-alpine .ag-header-cell {
+  border-right: 1px solid #e2e8f0;
+}
+
+/* Fix pinned column header styling */
+.ag-theme-alpine .ag-pinned-left-header .ag-header-cell {
+  background-color: #f8fafc;
+  border-right: 2px solid #cbd5e1;
+}
+
+/* Prevent duplicate scrollbars */
+.ag-theme-alpine .ag-body-viewport {
+  overflow: auto !important;
+}
+
+.ag-theme-alpine .ag-body-horizontal-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.ag-theme-alpine .ag-body-vertical-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Ensure single scrollbar behavior */
+.ag-theme-alpine .ag-root-wrapper {
+  overflow: hidden;
+}
+
+.ag-theme-alpine .ag-root {
+  overflow: hidden;
+}

@@ -9,6 +9,7 @@ import riskMapData from '../data/extracted-excel-data.json';
 
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
+import '../styles/ag-grid-overrides.css';
 
 // Risk level color mapping
 const getRiskLevelColor = (level: string) => {
@@ -110,68 +111,88 @@ export const RiskMatrixView: React.FC = () => {
     {
       headerName: 'Initial Likelihood',
       field: 'initialLikelihood',
-      width: 130,
+      width: 160,
+      minWidth: 140,
       type: 'numericColumn',
-      cellRenderer: RiskScoreRenderer
+      cellRenderer: RiskScoreRenderer,
+      headerTooltip: 'Initial likelihood score before mitigation'
     },
     {
       headerName: 'Initial Impact',
       field: 'initialImpact',
-      width: 120,
+      width: 150,
+      minWidth: 130,
       type: 'numericColumn',
-      cellRenderer: RiskScoreRenderer
+      cellRenderer: RiskScoreRenderer,
+      headerTooltip: 'Initial impact score before mitigation'
     },
     {
       headerName: 'Initial Risk Level',
       field: 'initialRiskLevel',
-      width: 140,
+      width: 170,
+      minWidth: 150,
       type: 'numericColumn',
-      cellRenderer: RiskScoreRenderer
+      cellRenderer: RiskScoreRenderer,
+      headerTooltip: 'Calculated initial risk score (likelihood × impact)'
     },
     {
       headerName: 'Risk Level Category',
       field: 'riskLevelCategory',
-      width: 150,
-      cellRenderer: RiskLevelRenderer
+      width: 180,
+      minWidth: 160,
+      cellRenderer: RiskLevelRenderer,
+      headerTooltip: 'Risk classification based on initial risk level'
     },
     {
       headerName: 'Residual Likelihood',
       field: 'residualLikelihood',
-      width: 150,
+      width: 180,
+      minWidth: 160,
       type: 'numericColumn',
-      cellRenderer: RiskScoreRenderer
+      cellRenderer: RiskScoreRenderer,
+      headerTooltip: 'Likelihood score after mitigation controls'
     },
     {
       headerName: 'Residual Impact',
       field: 'residualImpact',
-      width: 130,
+      width: 160,
+      minWidth: 140,
       type: 'numericColumn',
-      cellRenderer: RiskScoreRenderer
+      cellRenderer: RiskScoreRenderer,
+      headerTooltip: 'Impact score after mitigation controls'
     },
     {
       headerName: 'Residual Risk Level',
       field: 'residualRiskLevel',
-      width: 150,
+      width: 180,
+      minWidth: 160,
       type: 'numericColumn',
-      cellRenderer: RiskScoreRenderer
+      cellRenderer: RiskScoreRenderer,
+      headerTooltip: 'Final risk score after mitigation (residual likelihood × residual impact)'
     },
     {
       headerName: 'Agreed Mitigation',
       field: 'agreedMitigation',
-      width: 300,
-      cellRenderer: TextRenderer
+      width: 350,
+      minWidth: 300,
+      cellRenderer: TextRenderer,
+      headerTooltip: 'Approved mitigation strategy and controls'
     },
     {
       headerName: 'Proposed Ownership',
       field: 'proposedOversightOwnership',
-      width: 200,
-      cellRenderer: TextRenderer
+      width: 220,
+      minWidth: 180,
+      cellRenderer: TextRenderer,
+      headerTooltip: 'Proposed teams/roles for risk oversight'
     },
     {
       headerName: 'Notes',
       field: 'notes',
-      width: 200,
-      cellRenderer: TextRenderer
+      width: 220,
+      minWidth: 180,
+      cellRenderer: TextRenderer,
+      headerTooltip: 'Additional notes and observations'
     }
   ], []);
 
@@ -179,7 +200,11 @@ export const RiskMatrixView: React.FC = () => {
     sortable: true,
     filter: true,
     resizable: true,
-    floatingFilter: true
+    floatingFilter: true,
+    wrapHeaderText: true,
+    autoHeaderHeight: true,
+    suppressSizeToFit: false,
+    suppressAutoSize: false
   }), []);
 
   const gridOptions = useMemo(() => ({
@@ -189,11 +214,14 @@ export const RiskMatrixView: React.FC = () => {
     suppressRowClickSelection: true,
     rowSelection: 'multiple' as const,
     animateRows: true,
-    suppressColumnVirtualisation: true,
+    suppressColumnVirtualisation: false,
     suppressRowVirtualisation: false,
-    rowHeight: 80,
-    headerHeight: 50,
-    groupHeaderHeight: 35
+    rowHeight: 60,
+    headerHeight: 70,
+    groupHeaderHeight: 40,
+    suppressHorizontalScroll: false,
+    alwaysShowHorizontalScroll: false,
+    alwaysShowVerticalScroll: false
   }), []);
 
   const handleExport = () => {
@@ -216,9 +244,9 @@ export const RiskMatrixView: React.FC = () => {
   };
 
   return (
-    <div className="h-full">
+    <div className="h-full flex flex-col">
       {/* Main Content - Full Width */}
-      <div className="space-y-6 p-6 overflow-y-auto">
+      <div className="flex-1 flex flex-col space-y-6 p-6 min-h-0">
         <PageHeader
           title="Risk Matrix"
           description="Comprehensive view of all AI risks with initial and residual assessments"
@@ -268,7 +296,7 @@ export const RiskMatrixView: React.FC = () => {
 
 
         {/* AG-Grid Container */}
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200" style={{ height: '600px' }}>
+        <div className="flex-1 bg-white rounded-lg shadow-sm border border-slate-200 min-h-0">
           <div className="ag-theme-alpine w-full h-full" style={{ 
             '--ag-header-background-color': '#f8fafc',
             '--ag-header-foreground-color': '#334155',

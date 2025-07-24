@@ -4,7 +4,13 @@ import { Button } from '../ui/Button';
 import { cn } from '../../utils/cn';
 
 interface DataUploadProps {
-  onDataImport: (data: { message: string }) => void;
+  onImportSuccess: (stats: {
+    risksImported: number;
+    controlsImported: number;
+    risksSkipped: number;
+    controlsSkipped: number;
+    errors: string[];
+  }) => void;
   onClose: () => void;
 }
 
@@ -14,11 +20,15 @@ interface UploadResult {
   details?: {
     risksImported?: number;
     controlsImported?: number;
+    risksSkipped?: number;
+    controlsSkipped?: number;
+    risksFound?: number;
+    controlsFound?: number;
     errors?: string[];
   };
 }
 
-export const DataUpload: React.FC<DataUploadProps> = ({ onDataImport, onClose }) => {
+export const DataUpload: React.FC<DataUploadProps> = ({ onImportSuccess, onClose }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
@@ -94,8 +104,14 @@ export const DataUpload: React.FC<DataUploadProps> = ({ onDataImport, onClose })
   }, []);
 
   const handleImport = () => {
-    if (uploadResult?.success) {
-      onDataImport({ message: uploadResult.message });
+    if (uploadResult?.success && uploadResult.details) {
+      onImportSuccess({
+        risksImported: uploadResult.details.risksImported || 0,
+        controlsImported: uploadResult.details.controlsImported || 0,
+        risksSkipped: uploadResult.details.risksSkipped || 0,
+        controlsSkipped: uploadResult.details.controlsSkipped || 0,
+        errors: uploadResult.details.errors || []
+      });
       onClose();
     }
   };
@@ -185,11 +201,23 @@ export const DataUpload: React.FC<DataUploadProps> = ({ onDataImport, onClose })
                   </p>
                   {uploadResult.details && (
                     <div className="mt-2 text-sm text-slate-600">
-                      {uploadResult.details.risksImported && (
-                        <p>Risks imported: {uploadResult.details.risksImported}</p>
+                      {uploadResult.details.risksFound !== undefined && (
+                        <p>Risks found in file: {uploadResult.details.risksFound}</p>
                       )}
-                      {uploadResult.details.controlsImported && (
-                        <p>Controls imported: {uploadResult.details.controlsImported}</p>
+                      {uploadResult.details.risksImported !== undefined && (
+                        <p className="text-green-700">✓ Risks imported: {uploadResult.details.risksImported}</p>
+                      )}
+                      {uploadResult.details.risksSkipped !== undefined && uploadResult.details.risksSkipped > 0 && (
+                        <p className="text-amber-700">⚠ Risks skipped (already exist): {uploadResult.details.risksSkipped}</p>
+                      )}
+                      {uploadResult.details.controlsFound !== undefined && (
+                        <p className="mt-2">Controls found in file: {uploadResult.details.controlsFound}</p>
+                      )}
+                      {uploadResult.details.controlsImported !== undefined && (
+                        <p className="text-green-700">✓ Controls imported: {uploadResult.details.controlsImported}</p>
+                      )}
+                      {uploadResult.details.controlsSkipped !== undefined && uploadResult.details.controlsSkipped > 0 && (
+                        <p className="text-amber-700">⚠ Controls skipped (already exist): {uploadResult.details.controlsSkipped}</p>
                       )}
                       {uploadResult.details.errors && uploadResult.details.errors.length > 0 && (
                         <div className="mt-2">

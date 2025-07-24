@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Shield, FileWarning, CheckCircle, Clock, XCircle, AlertCircle, ExternalLink, Edit } from 'lucide-react';
+import { ArrowLeft, Shield, FileWarning, CheckCircle, Clock, XCircle, AlertCircle, ExternalLink, Edit, AlertTriangle } from 'lucide-react';
 import { useControlStore, useRiskStore } from '../store';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
-import { MultiSelect } from '../components/ui/MultiSelect';
 import { EditControlModal } from '../components/controls/EditControlModal';
+import { RiskLevelBadge } from '../components/risks/RiskLevelBadge';
 import type { Control, Risk, UpdateControlInput } from '../types';
 import { cn } from '../utils/cn';
 
@@ -275,12 +275,14 @@ const RelatedRisksTab: React.FC<TabContentProps> = ({ control, relatedRisks }) =
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedRiskIds, setSelectedRiskIds] = useState<string[]>(control.relatedRiskIds);
   const { risks } = useRiskStore();
-  const { updateControlRisks } = useControlStore();
+  const { updateControlRisks, updatingRelationships } = useControlStore();
+  const isUpdating = updatingRelationships.has(control.mitigationID);
 
   const handleSaveRisks = async () => {
     try {
       await updateControlRisks(control.mitigationID, selectedRiskIds);
       setShowEditModal(false);
+      // No need for full refresh - optimistic updates handle it
     } catch {
       alert('Failed to update risks. Please try again.');
     }
@@ -298,8 +300,9 @@ const RelatedRisksTab: React.FC<TabContentProps> = ({ control, relatedRisks }) =
           size="sm"
           icon={<Edit className="h-4 w-4" />}
           onClick={() => setShowEditModal(true)}
+          disabled={isUpdating}
         >
-          Edit Risks
+          {isUpdating ? 'Updating...' : 'Edit Risks'}
         </Button>
       </div>
 
@@ -373,24 +376,112 @@ const RelatedRisksTab: React.FC<TabContentProps> = ({ control, relatedRisks }) =
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
         title="Edit Related Risks"
-        size="lg"
+        size="xl"
       >
-        <div className="space-y-4">
-          <p className="text-sm text-gray-600">
-            Select risks that are mitigated by this control.
-          </p>
+        <div className="space-y-6">
+          <div className="border-b border-gray-200 pb-4">
+            <p className="text-sm text-gray-600 mb-2">
+              Select risks that are mitigated by this control. Changes will be saved to the Excel file.
+            </p>
+            <div className="flex items-center justify-between text-xs text-gray-500">
+              <span>{selectedRiskIds.length} of {risks.length} risks selected</span>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setSelectedRiskIds(risks.map(r => r.id))}
+                  className="text-8090-primary hover:text-8090-primary/80"
+                >
+                  Select All
+                </button>
+                <span>•</span>
+                <button
+                  onClick={() => setSelectedRiskIds([])}
+                  className="text-8090-primary hover:text-8090-primary/80"
+                >
+                  Clear All
+                </button>
+              </div>
+            </div>
+          </div>
           
-          <MultiSelect
-            options={risks.map(risk => ({
-              value: risk.id,
-              label: `${risk.id.toUpperCase()} - ${risk.risk}`
-            }))}
-            value={selectedRiskIds}
-            onChange={setSelectedRiskIds}
-            placeholder="Select risks..."
-          />
+          <div className="max-h-96 overflow-y-auto space-y-3">
+            {Object.entries(
+              risks
+                .sort((a, b) => a.riskCategory.localeCompare(b.riskCategory) || a.risk.localeCompare(b.risk))
+                .reduce((acc, risk) => {
+                  const category = risk.riskCategory;
+                  if (!acc[category]) acc[category] = [];
+                  acc[category].push(risk);
+                  return acc;
+                }, {} as Record<string, typeof risks>)
+            ).map(([category, categoryRisks]) => (
+              <div key={category} className="border rounded-lg p-4 bg-gray-50">
+                <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                  <AlertTriangle className="h-4 w-4 mr-2 text-8090-primary" />
+                  {category}
+                  <span className="ml-2 text-xs text-gray-500">
+                    ({categoryRisks.filter(r => selectedRiskIds.includes(r.id)).length}/{categoryRisks.length})
+                  </span>
+                </h4>
+                <div className="space-y-2">
+                  {categoryRisks.map(risk => {
+                    const isSelected = selectedRiskIds.includes(risk.id);
+                    return (
+                      <label
+                        key={risk.id}
+                        className={`flex items-start p-3 rounded-md cursor-pointer transition-colors ${
+                          isSelected 
+                            ? 'bg-8090-primary/10 border border-8090-primary/20' 
+                            : 'bg-white border border-gray-200 hover:bg-gray-50'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedRiskIds([...selectedRiskIds, risk.id]);
+                            } else {
+                              setSelectedRiskIds(selectedRiskIds.filter(id => id !== risk.id));
+                            }
+                          }}
+                          className="mt-1 h-4 w-4 text-8090-primary border-gray-300 rounded focus:ring-8090-primary"
+                        />
+                        <div className="ml-3 flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-medium text-sm text-gray-900">{risk.id.toUpperCase()}</span>
+                            <div className="flex items-center space-x-2">
+                              <RiskLevelBadge 
+                                level={risk.initialRiskLevel} 
+                                category={risk.initialRiskLevelCategory as 'Low' | 'Medium' | 'High' | 'Critical'} 
+                                size="sm"
+                              />
+                            </div>
+                          </div>
+                          <p className="font-medium text-sm text-gray-900 mb-1">{risk.risk}</p>
+                          <p className="text-sm text-gray-600 line-clamp-2 mb-2">{risk.riskDescription}</p>
+                          <div className="flex items-center space-x-4 text-xs text-gray-500">
+                            <span>Impact: {risk.initialImpact}</span>
+                            <span>•</span>
+                            <span>Likelihood: {risk.initialLikelihood}</span>
+                            <span>•</span>
+                            <span>Level: {risk.initialRiskLevel}</span>
+                          </div>
+                          {risk.proposedOversightOwnership && (
+                            <div className="mt-2">
+                              <span className="text-xs text-gray-500">Owner: </span>
+                              <span className="text-xs text-gray-700">{risk.proposedOversightOwnership}</span>
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
           
-          <div className="flex justify-end space-x-3 pt-4">
+          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
             <Button
               variant="secondary"
               onClick={() => {
@@ -404,7 +495,7 @@ const RelatedRisksTab: React.FC<TabContentProps> = ({ control, relatedRisks }) =
               variant="primary"
               onClick={handleSaveRisks}
             >
-              Save Changes
+              Save Changes ({selectedRiskIds.length} selected)
             </Button>
           </div>
         </div>
@@ -483,7 +574,7 @@ export const ControlDetailView: React.FC = () => {
         </Button>
         
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900">{control.mitigationDescription}</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">{control.mitigationDescription}</h1>
           <p className="text-sm text-gray-600 mt-1">Control ID: {control.mitigationID.toUpperCase()}</p>
         </div>
         

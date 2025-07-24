@@ -56,24 +56,25 @@ export const Sidebar: React.FC = () => {
     { to: '/risks', icon: <FileWarning className={iconSize} />, label: 'Risk Register' },
     { to: '/usecases', icon: <Lightbulb className={iconSize} />, label: 'Use Cases' },
     { to: '/matrix', icon: <Grid3X3 className={iconSize} />, label: 'Risk Matrix' },
+
     { to: '/reports', icon: <FileText className={iconSize} />, label: 'Reports' },
   ];
 
   return (
     <aside className={cn(
-      "fixed left-0 top-0 h-full bg-white border-r border-slate-200 transition-all duration-300 z-10 flex flex-col",
-      sidebarCollapsed ? "w-20" : "w-64"
+      "h-full bg-white border-r border-slate-200 transition-all duration-300 flex flex-col flex-shrink-0",
+      sidebarCollapsed ? "w-20" : "w-56"
     )}>
       {/* Logo */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200 flex-shrink-0">
         {!sidebarCollapsed ? (
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2">
             <img 
               src="/8090-logo.png" 
               alt="8090" 
-              className="h-8 w-auto object-contain"
+              className="h-7 w-auto object-contain"
             />
-            <span className="text-slate-400 text-lg">×</span>
+            <span className="text-slate-400 text-base">×</span>
             <div className="flex flex-col">
               <span className="text-sm font-semibold text-slate-900">Dompé</span>
               <span className="text-xs text-slate-500">Risk Portal</span>

@@ -9,20 +9,18 @@ export const AppLayout: React.FC = () => {
   const { sidebarCollapsed } = useUIStore();
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
       {/* Sidebar */}
       <Sidebar />
 
       {/* Main Content */}
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${
-        sidebarCollapsed ? 'ml-20' : 'ml-64'
-      }`}>
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
         <Header />
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto bg-slate-50">
-          <div className="h-full">
+        <main className="flex-1 overflow-hidden bg-slate-50">
+          <div className="h-full overflow-auto">
             <Outlet />
           </div>
         </main>

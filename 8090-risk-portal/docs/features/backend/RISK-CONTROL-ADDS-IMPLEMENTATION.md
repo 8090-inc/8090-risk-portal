@@ -3,7 +3,7 @@
 ## Feature: FEATURE-006
 ## Start Date: 2025-07-21
 ## Status: CORE FEATURES WORKING - UI FEATURES PENDING
-## Last Updated: 2025-07-21 (Updated with current status)
+## Last Updated: 2025-07-24 (Updated with risk-control associations)
 
 ## Current Implementation Status
 
@@ -28,12 +28,34 @@
    - Export button uses exportRisksToCSV utility
    - Exports all risk data to CSV file
 
-### ✅ NEWLY COMPLETED Features:
+### ✅ NEWLY COMPLETED Features (2025-07-21):
 1. **PUT /api/risks/:id** - Update existing risks
 2. **DELETE /api/risks/:id** - Delete risks
 3. **Delete Selected Risks** - Checkbox column and bulk delete
 4. **Table Expansion** - Full viewport width usage
 5. **Column Width Optimization** - Expanded Description and Agreed Mitigation columns
+
+### ✅ RISK-CONTROL ASSOCIATIONS (2025-07-24):
+1. **Excel-Based Relationship Building** - Complete overhaul
+   - Removed standalone RiskControlAssociationsView component
+   - Removed separate association data files (riskControlAssociations.ts, riskControlMapping.ts)
+   - Excel file is now the single source of truth for all relationships
+   
+2. **Smart Relationship Matching** - AI-powered association building
+   - Direct control ID mentions in risk mitigation text
+   - Keyword matching from control descriptions
+   - Compliance reference matching (e.g., "21 CFR 11.10(a)" matches controls with "11.10(a)")
+   - Category-based fallback matching (Behavioral Risks ↔ Accuracy & Judgment controls)
+   
+3. **Bi-Directional Relationships** - Working in detail views
+   - Risk Detail View → Controls tab shows associated controls
+   - Control Detail View → Related Risks tab shows associated risks
+   - Real-time relationship building from Excel data
+   
+4. **Backend Relationship Engine** - Implemented in GoogleDrivePersistenceProvider.cjs
+   - Processes risk mitigation text to identify related controls
+   - Updates both risk→controls and control→risks mappings
+   - No separate relationship sheet required - builds from existing Excel data
 
 ### ⚠️ PARTIALLY IMPLEMENTED:
 1. **Add Risk Button** - Button exists but modal needs work
@@ -235,14 +257,24 @@ If critical issues arise:
 ### What's Missing (UI Features):
 - ❌ Add Risk button and modal
 - ❌ Add Control button and modal  
-- ❌ Risk-Control relationship management in UI
 - ❌ Title still says "(Simple View)"
 
 ### Overall Status:
-The backend is now feature-complete with full CRUD operations. All edits, adds, and deletes sync with Google Drive. The Risk Matrix view includes:
+The backend is now feature-complete with full CRUD operations and intelligent risk-control associations. All changes sync with Google Drive as the single source of truth. Key features include:
+
+**Core Functionality:**
+- Full CRUD operations for risks and controls
+- Real-time Excel synchronization with Google Drive
+- Intelligent risk-control relationship building
 - Checkbox selection for bulk operations
 - Delete selected risks with confirmation
 - Full viewport table expansion
 - Optimized column widths for better readability
 
-The UI modals for adding risks/controls exist but need refinement. The system is production-ready for risk management with complete data persistence.
+**Risk-Control Associations (NEW 2025-07-24):**
+- Excel-based relationship engine that analyzes mitigation text
+- Smart matching using control IDs, keywords, and compliance references
+- Bi-directional relationships visible in detail views
+- No separate association management needed - all derived from Excel data
+
+The UI modals for adding risks/controls exist but need refinement. The system is production-ready for comprehensive risk management with complete data persistence and intelligent relationship mapping.

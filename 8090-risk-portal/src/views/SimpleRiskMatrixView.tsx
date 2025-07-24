@@ -99,7 +99,7 @@ const RiskReductionBar: React.FC<{ percentage: number }> = ({ percentage }) => {
           style={{ width: `${Math.max(0, Math.min(100, percentage))}%` }}
         />
       </div>
-      <span className="text-xs font-mono font-medium">{percentage}%</span>
+      <span className="text-xs font-mono font-bold">{percentage}%</span>
     </div>
   );
 };
@@ -126,7 +126,7 @@ const CompactNumberInput: React.FC<{
           onChange(newValue);
         }
       }}
-      className="w-10 h-7 px-1 text-sm font-semibold text-center text-slate-900 bg-white border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      className="w-10 h-7 px-1 text-sm font-bold text-center text-slate-900 bg-white border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
       placeholder="-"
     />
   );
@@ -502,7 +502,7 @@ export const SimpleRiskMatrixView: React.FC = () => {
       <div className="flex-shrink-0 px-4 py-2 border-b border-slate-200 bg-white">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Risk Matrix</h1>
+            <h1 className="text-2xl font-semibold text-slate-900">Risk Matrix</h1>
             <p className="mt-1 text-sm text-slate-600">
               Professional risk assessment and management - {risks.length} risks across {Object.keys(risksByCategory).length} categories
             </p>
@@ -675,7 +675,7 @@ export const SimpleRiskMatrixView: React.FC = () => {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             {isCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                            <span className="font-semibold flex items-center gap-1">
+                            <span className="font-bold flex items-center gap-1">
                               {getCategoryIcon(category)}
                               {category}
                             </span>
@@ -820,7 +820,7 @@ export const SimpleRiskMatrixView: React.FC = () => {
                           </td>
                           
                           <td className={`bg-green-50/50 ${cellPadding} text-center`}>
-                            <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${getRiskLevelColor(getRiskLevelCategory(residualLevel))}`}>
+                            <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${getRiskLevelCategory(residualLevel)}`}>
                               <span className="font-mono">{residualLevel}</span>
                               {residualLevel <= 4 && <Check className="h-3 w-3" />}
                             </div>

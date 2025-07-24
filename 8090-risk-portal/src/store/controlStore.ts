@@ -11,6 +11,7 @@ import {
 } from '../types';
 import { ControlValidationError } from '../types/error.types';
 import { validateControl } from '../utils/dataTransformers';
+import { relationshipQueue } from '../utils/updateQueue';
 import axios from 'axios';
 
 interface ControlState {
@@ -25,6 +26,7 @@ interface ControlState {
   searchTerm: string;
   isLoading: boolean;
   error: Error | null;
+  updatingRelationships: Set<string>; // Track which controls are updating
   
   // Statistics
   statistics: ControlStatistics | null;
@@ -200,6 +202,7 @@ export const useControlStore = create<ControlState>()(
         searchTerm: '',
         isLoading: false,
         error: null,
+        updatingRelationships: new Set(),
         statistics: null,
         
         // Load controls from API
@@ -368,38 +371,64 @@ export const useControlStore = create<ControlState>()(
           }
         },
         
-        // Update control risks (relationship management)
+        // Update control risks (relationship management) with optimistic updates and queue
         updateControlRisks: async (controlId, riskIds) => {
-          set({ isLoading: true, error: null });
+          // Add to updating set
+          const updating = new Set(get().updatingRelationships);
+          updating.add(controlId);
+          set({ updatingRelationships: updating });
           
           try {
-            // Update risks for this control
-            await axios.put(`/api/v1/controls/${controlId}/risks`, {
-              riskIds
+            return await relationshipQueue.enqueue(`control-${controlId}`, async () => {
+              // Store original state for rollback
+              const originalControls = get().controls;
+              const originalFilteredControls = get().filteredControls;
+              const originalStatistics = get().statistics;
+              
+              // Optimistic update - immediate UI response
+              const optimisticControls = originalControls.map(control => 
+                control.mitigationID === controlId 
+                  ? { ...control, relatedRiskIds: riskIds }
+                  : control
+              );
+              
+              const filtered = applyFilters(optimisticControls, get().filters, get().searchTerm);
+              const sorted = applySort(filtered, get().sort);
+              const statistics = calculateStatistics(optimisticControls);
+              
+              set({ 
+                controls: optimisticControls,
+                filteredControls: sorted,
+                statistics
+              });
+              
+              try {
+                // Then sync with backend
+                await axios.put(`/api/v1/controls/${controlId}/risks`, {
+                  riskIds
+                });
+                
+                // Success - optimistic update stands
+                console.log(`Successfully updated risks for control ${controlId}`);
+              } catch (error) {
+                console.error('Failed to update control risks:', error);
+                
+                // Rollback to original state
+                set({ 
+                  controls: originalControls,
+                  filteredControls: originalFilteredControls,
+                  statistics: originalStatistics,
+                  error: error instanceof Error ? error : new Error('Failed to update control risks')
+                });
+                
+                throw error; // Re-throw for UI handling
+              }
             });
-            
-            // Update local state
-            const controls = get().controls.map(control => 
-              control.mitigationID === controlId 
-                ? { ...control, relatedRiskIds: riskIds }
-                : control
-            );
-            
-            const filtered = applyFilters(controls, get().filters, get().searchTerm);
-            const sorted = applySort(filtered, get().sort);
-            const statistics = calculateStatistics(controls);
-            
-            set({ 
-              controls, 
-              filteredControls: sorted,
-              statistics,
-              isLoading: false 
-            });
-          } catch (error) {
-            set({ 
-              error: error instanceof Error ? error : new Error('Failed to update control risks'),
-              isLoading: false 
-            });
+          } finally {
+            // Remove from updating set
+            const updating = new Set(get().updatingRelationships);
+            updating.delete(controlId);
+            set({ updatingRelationships: updating });
           }
         },
         

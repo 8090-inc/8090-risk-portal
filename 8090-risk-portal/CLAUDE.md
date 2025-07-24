@@ -47,6 +47,8 @@
 - **ASK WHEN UNCLEAR**: Stop and ask questions rather than assume
 - **PRESERVE RESOURCES**: Never delete Google Cloud resources without approval
 - **DOCUMENT LEARNINGS**: Always update `docs/dev/VALIDATED-LEARNINGS.md`
+- **CODE CHANGES**: Only make changes that are absolutely necessary. 
+- **Think**: Ultrathink and Think Hard
 
 ### Development Workflow
 1. **Analyze requirements** thoroughly before coding
@@ -58,16 +60,34 @@
 ## 🚀 Deployment & Development
 
 ### Local Development Commands
+
+**IMPORTANT: Start both servers for local development**
+
 ```bash
-# Start development servers
-npm run dev        # Frontend (http://localhost:3000)
-npm run dev:server # Backend (http://localhost:8080)
+# Terminal 1 - Start backend server FIRST
+cd /Users/rohitkelapure/projects/8090DompeAIRiskPortal/8090-risk-portal
+npm run dev:server  # Backend on http://localhost:8080
+
+# Terminal 2 - Start frontend server
+cd /Users/rohitkelapure/projects/8090DompeAIRiskPortal/8090-risk-portal
+npm run dev         # Frontend on http://localhost:3000
+
+# Alternative: Run backend in background
+npm run dev:server > server.log 2>&1 &
+npm run dev
 
 # Quality checks
 npm run lint       # ESLint + TypeScript
 npm run build      # Production build
 npm test          # Jest tests
+
+# Troubleshooting
+ps aux | grep -E "(vite|node.*server)" | grep -v grep  # Check running servers
+pkill -f "node server.cjs"                              # Kill backend
+lsof -ti:3000 | xargs kill -9                          # Kill frontend
 ```
+
+**Note**: Both servers must be running. Frontend won't work without backend!
 
 ### Current Production Deployment (Updated July 24, 2025)
 ```bash

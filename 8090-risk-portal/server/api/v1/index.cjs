@@ -17,7 +17,8 @@ const initializeServices = (driveService, fileId) => {
   // Get services to pass to upload
   const riskService = risksApi.getService();
   const controlService = controlsApi.getService();
-  uploadApi.initializeServices(riskService, controlService);
+  const persistenceProvider = risksApi.getPersistenceProvider();
+  uploadApi.initializeServices(riskService, controlService, persistenceProvider);
 };
 
 // Apply authentication to all routes

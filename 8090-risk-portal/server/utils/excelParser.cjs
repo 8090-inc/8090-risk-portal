@@ -55,7 +55,7 @@ const CONTROL_COLUMNS = {
   RISK_CATEGORY: 8                    // "Risk Category"
 };
 
-// Column mappings for relationships
+// Column mappings for relationships (legacy - for existing relationship sheet)
 const RELATIONSHIP_COLUMNS = {
   CONTROL_ID: 0,                      // "Control ID"
   RISK_ID: 1,                         // "Risk ID"
@@ -64,6 +64,15 @@ const RELATIONSHIP_COLUMNS = {
   NOTES: 4,                           // "Notes"
   CREATED_DATE: 5,                    // "Created"
   LAST_UPDATED: 6                     // "Updated"
+};
+
+// Column mappings for manual relationship overrides sheet
+const MANUAL_RELATIONSHIP_COLUMNS = {
+  RISK_ID: 0,                         // "Risk ID" (e.g., RISK-ACCURACY)
+  CONTROL_ID: 1,                      // "Control ID" (e.g., ACC-01)
+  RELATIONSHIP_TYPE: 2,               // "Relationship Type" ("ADDED" or "REMOVED")
+  CREATED_DATE: 3,                    // "Created Date"
+  CREATED_BY: 4                       // "Created By"
 };
 
 // Column mappings for use cases
@@ -300,18 +309,27 @@ const parseRisksFromWorkbook = async (buffer) => {
 const parseRelationshipsFromWorkbook = async (buffer) => {
   const workbook = XLSX.read(buffer, { type: 'buffer' });
   
+  console.log('[ExcelParser] Looking for Relationships sheet...');
+  console.log('[ExcelParser] Available sheets:', workbook.SheetNames);
+  
   // Look for Relationships sheet
   const relationshipsSheetName = workbook.SheetNames.find(name => 
     name.toLowerCase() === 'relationships'
   );
   
   if (!relationshipsSheetName) {
+    console.log('[ExcelParser] No Relationships sheet found');
     return [];
   }
+  
+  console.log(`[ExcelParser] Found Relationships sheet: ${relationshipsSheetName}`);
   
   const sheet = workbook.Sheets[relationshipsSheetName];
   const relationships = [];
   const range = XLSX.utils.decode_range(sheet['!ref']);
+  
+  console.log(`[ExcelParser] Relationships sheet range: ${sheet['!ref']}, Last row: ${range.e.r}`);
+  console.log(`[ExcelParser] Column mapping:`, RELATIONSHIP_COLUMNS);
   
   // Start from row 1 (skip header row)
   for (let row = 1; row <= range.e.r; row++) {
@@ -331,6 +349,11 @@ const parseRelationshipsFromWorkbook = async (buffer) => {
     };
     
     relationships.push(relationship);
+  }
+  
+  console.log(`[ExcelParser] Total relationships parsed: ${relationships.length}`);
+  if (relationships.length > 0) {
+    console.log(`[ExcelParser] Sample relationship:`, relationships[0]);
   }
   
   return relationships;
@@ -536,7 +559,7 @@ const addRiskToWorkbook = async (buffer, newRisk) => {
   const hasIdColumn = firstRowFirstCell && (firstRowFirstCell.toLowerCase() === 'id' || firstRowFirstCell.toLowerCase().includes('risk id'));
   
   const range = XLSX.utils.decode_range(sheet['!ref']);
-  const newRow = range.e.r + 1;
+  const newRow = findNextEmptyRow(sheet);
   
   // Add new risk data - ALWAYS include ID for new format
   const rowData = hasIdColumn ? [
@@ -768,7 +791,7 @@ const addControlToWorkbook = async (buffer, newControl) => {
   
   const sheet = workbook.Sheets[controlsSheetName];
   const range = XLSX.utils.decode_range(sheet['!ref']);
-  const newRow = range.e.r + 1;
+  const newRow = findNextEmptyRow(sheet);
   
   // Add new control data - matching the actual Excel format
   const rowData = [
@@ -901,6 +924,51 @@ const deleteControlFromWorkbook = async (buffer, controlId) => {
 };
 
 // Add relationship to workbook
+// Helper function to find actual last row with data
+const findLastRowWithData = (sheet) => {
+  if (!sheet['!ref']) return 0;
+  
+  const range = XLSX.utils.decode_range(sheet['!ref']);
+  
+  // Scan backwards from the declared end to find actual data
+  for (let row = range.e.r; row >= 0; row--) {
+    for (let col = range.s.c; col <= range.e.c; col++) {
+      const cell = sheet[XLSX.utils.encode_cell({ r: row, c: col })];
+      if (cell && cell.v !== undefined && cell.v !== null && cell.v !== '') {
+        return row;
+      }
+    }
+  }
+  return 0; // Only header row or empty sheet
+};
+
+// Helper function to find the next empty row
+const findNextEmptyRow = (sheet) => {
+  if (!sheet['!ref']) return 1; // Start after header
+  
+  const range = XLSX.utils.decode_range(sheet['!ref']);
+  
+  // Start from row 1 (after header) and find first completely empty row
+  for (let row = 1; row <= range.e.r; row++) {
+    let isEmptyRow = true;
+    
+    for (let col = range.s.c; col <= range.e.c; col++) {
+      const cell = sheet[XLSX.utils.encode_cell({ r: row, c: col })];
+      if (cell && cell.v !== undefined && cell.v !== null && cell.v !== '') {
+        isEmptyRow = false;
+        break;
+      }
+    }
+    
+    if (isEmptyRow) {
+      return row;
+    }
+  }
+  
+  // If no empty rows found, return the row after the last row with data
+  return findLastRowWithData(sheet) + 1;
+};
+
 const addRelationshipToWorkbook = async (buffer, controlId, riskId, linkType = 'Mitigates', effectiveness = 'Medium', notes = '') => {
   const workbook = XLSX.read(buffer, { type: 'buffer' });
   
@@ -920,8 +988,12 @@ const addRelationshipToWorkbook = async (buffer, controlId, riskId, linkType = '
   }
   
   const sheet = workbook.Sheets[relationshipsSheetName];
-  const range = XLSX.utils.decode_range(sheet['!ref']);
-  const newRow = range.e.r + 1;
+  
+  // Find actual last row with data instead of using declared range
+  const lastRowWithData = findLastRowWithData(sheet);
+  const newRow = lastRowWithData + 1;
+  
+  console.log(`Adding relationship to row ${newRow} (last data row was ${lastRowWithData})`);
   
   // Add new relationship data
   const now = new Date().toISOString();
@@ -941,6 +1013,7 @@ const addRelationshipToWorkbook = async (buffer, controlId, riskId, linkType = '
   });
   
   // Update range
+  const range = sheet['!ref'] ? XLSX.utils.decode_range(sheet['!ref']) : { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } };
   range.e.r = newRow;
   sheet['!ref'] = XLSX.utils.encode_range(range);
   
@@ -1006,30 +1079,42 @@ const removeRelationshipFromWorkbook = async (buffer, controlId, riskId) => {
 
 // Remove all relationships for a risk
 const removeAllRelationshipsForRisk = async (buffer, riskId) => {
-  const relationships = await parseRelationshipsFromWorkbook(buffer);
-  let currentBuffer = buffer;
-  
-  for (const rel of relationships) {
-    if (rel.riskId === riskId) {
-      currentBuffer = await removeRelationshipFromWorkbook(currentBuffer, rel.controlId, riskId);
+  try {
+    const relationships = await parseRelationshipsFromWorkbook(buffer);
+    let currentBuffer = buffer;
+    
+    for (const rel of relationships) {
+      if (rel.riskId === riskId) {
+        currentBuffer = await removeRelationshipFromWorkbook(currentBuffer, rel.controlId, riskId);
+      }
     }
+    
+    return currentBuffer;
+  } catch (error) {
+    console.log(`Note: Could not remove existing relationships for risk ${riskId}:`, error.message);
+    // Return original buffer if relationships can't be removed
+    return buffer;
   }
-  
-  return currentBuffer;
 };
 
 // Remove all relationships for a control
 const removeAllRelationshipsForControl = async (buffer, controlId) => {
-  const relationships = await parseRelationshipsFromWorkbook(buffer);
-  let currentBuffer = buffer;
-  
-  for (const rel of relationships) {
-    if (rel.controlId === controlId) {
-      currentBuffer = await removeRelationshipFromWorkbook(currentBuffer, controlId, rel.riskId);
+  try {
+    const relationships = await parseRelationshipsFromWorkbook(buffer);
+    let currentBuffer = buffer;
+    
+    for (const rel of relationships) {
+      if (rel.controlId === controlId) {
+        currentBuffer = await removeRelationshipFromWorkbook(currentBuffer, controlId, rel.riskId);
+      }
     }
+    
+    return currentBuffer;
+  } catch (error) {
+    console.log(`Note: Could not remove existing relationships for control ${controlId}:`, error.message);
+    // Return original buffer if relationships can't be removed
+    return buffer;
   }
-  
-  return currentBuffer;
 };
 
 // Get next use case ID
@@ -1078,7 +1163,7 @@ const addUseCaseToWorkbook = async (buffer, newUseCase) => {
   
   const sheet = workbook.Sheets[useCasesSheetName];
   const range = XLSX.utils.decode_range(sheet['!ref']);
-  const newRow = range.e.r + 1;
+  const newRow = findNextEmptyRow(sheet);
   
   // Generate ID if not provided
   if (!newUseCase.id) {
@@ -1263,6 +1348,70 @@ const removeAllRelationshipsForUseCase = async (buffer, useCaseId) => {
   return currentBuffer;
 };
 
+// Add manual relationship override to workbook
+const addManualRelationshipOverride = async (buffer, riskId, controlId, relationshipType, createdBy = 'system') => {
+  // Use the existing addRelationshipToWorkbook function with manual override type
+  return await addRelationshipToWorkbook(buffer, controlId, riskId, relationshipType, 'Manual', `Manual ${relationshipType.toLowerCase()} by ${createdBy}`);
+};
+
+// Update risk control relationships - Complete implementation
+const updateRiskControlRelationships = async (buffer, riskId, controlIds, currentUser = 'system') => {
+  console.log(`Updating relationships for risk ${riskId}:`, controlIds);
+  let currentBuffer = buffer;
+  
+  try {
+    // 1. Remove all existing relationships for this risk
+    currentBuffer = await removeAllRelationshipsForRisk(currentBuffer, riskId);
+    
+    // 2. Add new relationships with proper metadata
+    for (const controlId of controlIds) {
+      currentBuffer = await addRelationshipToWorkbook(
+        currentBuffer, 
+        controlId, 
+        riskId, 
+        'Mitigates', 
+        'Medium', 
+        `Updated by ${currentUser} at ${new Date().toISOString()}`
+      );
+    }
+    
+    console.log(`Successfully updated ${controlIds.length} relationships for risk ${riskId}`);
+    return currentBuffer;
+  } catch (error) {
+    console.error('Error in updateRiskControlRelationships:', error);
+    throw error;
+  }
+};
+
+// Update control risk relationships - Complete implementation
+const updateControlRiskRelationships = async (buffer, controlId, riskIds, currentUser = 'system') => {
+  console.log(`Updating relationships for control ${controlId}:`, riskIds);
+  let currentBuffer = buffer;
+  
+  try {
+    // 1. Remove all existing relationships for this control
+    currentBuffer = await removeAllRelationshipsForControl(currentBuffer, controlId);
+    
+    // 2. Add new relationships with proper metadata
+    for (const riskId of riskIds) {
+      currentBuffer = await addRelationshipToWorkbook(
+        currentBuffer, 
+        controlId, 
+        riskId, 
+        'Mitigates', 
+        'Medium', 
+        `Updated by ${currentUser} at ${new Date().toISOString()}`
+      );
+    }
+    
+    console.log(`Successfully updated ${riskIds.length} relationships for control ${controlId}`);
+    return currentBuffer;
+  } catch (error) {
+    console.error('Error in updateControlRiskRelationships:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   parseRisksFromWorkbook,
   parseControlsFromWorkbook,
@@ -1276,10 +1425,12 @@ module.exports = {
   deleteControlFromWorkbook,
   addUseCaseToWorkbook,
   updateUseCaseInWorkbook,
-  deleteUseCaseFromWorkbook,
   addRelationshipToWorkbook,
   removeRelationshipFromWorkbook,
   removeAllRelationshipsForRisk,
   removeAllRelationshipsForControl,
-  removeAllRelationshipsForUseCase
+  removeAllRelationshipsForUseCase,
+  addManualRelationshipOverride,
+  updateRiskControlRelationships,
+  updateControlRiskRelationships
 };

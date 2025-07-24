@@ -107,7 +107,7 @@ const InteractiveRiskMatrix: React.FC<{
                           }
                         }}
                         className={cn(
-                          "absolute inset-0 flex items-center justify-center rounded font-bold cursor-pointer transition-all",
+                          "absolute inset-0 flex items-center justify-center rounded font-semibold cursor-pointer transition-all",
                           cellColor,
                           cellRisks.length > 0 ? 'text-white' : 'text-white/40',
                           isSelected && 'ring-2 ring-slate-900 ring-offset-2',
@@ -472,7 +472,7 @@ export const DashboardView: React.FC = () => {
       {/* Header */}
       <div className="bg-white border-b border-slate-200 px-4 py-2 flex-shrink-0">
         <div className="flex items-center justify-between">
-          <h1 className="text-lg font-bold text-slate-900">AI Risk Governance Command Center</h1>
+          <h1 className="text-2xl font-semibold text-slate-900">AI Risk Governance Command Center</h1>
           <div className="flex items-center space-x-3">
             <button className="flex items-center space-x-1 text-sm text-slate-600 hover:text-slate-900 transition-colors">
               <Filter className="h-4 w-4" />
@@ -494,35 +494,35 @@ export const DashboardView: React.FC = () => {
             <div className="grid grid-cols-8 gap-3 text-center">
               <div className="cursor-pointer hover:bg-slate-50 rounded p-1" onClick={() => navigate('/risks')}>
                 <div className="text-sm text-slate-500">Total</div>
-                <div className="text-2xl font-bold text-slate-900">{risks.length}</div>
+                <div className="text-2xl font-semibold text-slate-900">{risks.length}</div>
               </div>
               <div className="border-l border-slate-200 pl-3 cursor-pointer hover:bg-slate-50 rounded p-1" onClick={() => navigate('/risks?level=Critical')}>
                 <div className="text-sm text-slate-500">Critical</div>
-                <div className="text-2xl font-bold text-red-600">{metrics.riskLevels.Critical}</div>
+                <div className="text-2xl font-semibold text-red-600">{metrics.riskLevels.Critical}</div>
               </div>
               <div className="cursor-pointer hover:bg-slate-50 rounded p-1" onClick={() => navigate('/risks?level=High')}>
                 <div className="text-sm text-slate-500">High</div>
-                <div className="text-2xl font-bold text-orange-600">{metrics.riskLevels.High}</div>
+                <div className="text-2xl font-semibold text-orange-600">{metrics.riskLevels.High}</div>
               </div>
               <div className="cursor-pointer hover:bg-slate-50 rounded p-1" onClick={() => navigate('/risks?level=Medium')}>
                 <div className="text-sm text-slate-500">Medium</div>
-                <div className="text-2xl font-bold text-yellow-600">{metrics.riskLevels.Medium}</div>
+                <div className="text-2xl font-semibold text-yellow-600">{metrics.riskLevels.Medium}</div>
               </div>
               <div className="cursor-pointer hover:bg-slate-50 rounded p-1" onClick={() => navigate('/risks?level=Low')}>
                 <div className="text-sm text-slate-500">Low</div>
-                <div className="text-2xl font-bold text-green-600">{metrics.riskLevels.Low}</div>
+                <div className="text-2xl font-semibold text-green-600">{metrics.riskLevels.Low}</div>
               </div>
               <div className="border-l border-slate-200 pl-3 cursor-pointer hover:bg-slate-50 rounded p-1" onClick={() => navigate('/risks?mitigated=true')}>
                 <div className="text-sm text-slate-500">Mitigated</div>
-                <div className="text-2xl font-bold text-green-600">{metrics.mitigated}</div>
+                <div className="text-2xl font-semibold text-green-600">{metrics.mitigated}</div>
               </div>
               <div className="cursor-pointer hover:bg-slate-50 rounded p-1" onClick={() => navigate('/risks?unmitigated=true')}>
                 <div className="text-sm text-slate-500">Unmitigated</div>
-                <div className="text-2xl font-bold text-red-600">{metrics.unmitigated}</div>
+                <div className="text-2xl font-semibold text-red-600">{metrics.unmitigated}</div>
               </div>
               <div className="border-l border-slate-200 pl-3 cursor-pointer hover:bg-slate-50 rounded p-1" onClick={() => navigate('/controls')}>
                 <div className="text-sm text-slate-500">Total Controls</div>
-                <div className="text-2xl font-bold text-slate-900">{controls.length}</div>
+                <div className="text-2xl font-semibold text-slate-900">{controls.length}</div>
               </div>
             </div>
           </div>
@@ -636,7 +636,7 @@ export const DashboardView: React.FC = () => {
                         <XCircle className="h-5 w-5 text-red-600" />
                         <span className="text-sm font-medium text-slate-900">Unmitigated Risks</span>
                       </div>
-                      <span className="text-sm font-bold text-red-600">{metrics.unmitigated}</span>
+                      <span className="text-sm font-semibold text-red-600">{metrics.unmitigated}</span>
                     </div>
                   </Link>
                 )}
@@ -647,7 +647,7 @@ export const DashboardView: React.FC = () => {
                         <AlertTriangle className="h-5 w-5 text-orange-600" />
                         <span className="text-sm font-medium text-slate-900">Critical Risks</span>
                       </div>
-                      <span className="text-sm font-bold text-orange-600">{metrics.riskLevels.Critical}</span>
+                      <span className="text-sm font-semibold text-orange-600">{metrics.riskLevels.Critical}</span>
                     </div>
                   </Link>
                 )}

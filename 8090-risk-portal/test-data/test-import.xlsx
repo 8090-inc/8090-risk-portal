@@ -1,0 +1,30 @@
+This is a placeholder file. You'll need to create a proper Excel file with test data for import testing. The file should contain:
+
+1. Risk Map sheet with columns:
+   - Risk Category
+   - Risk Name  
+   - Risk Description
+   - Initial Likelihood (1-5)
+   - Initial Impact (1-5)
+   - Initial Risk Level
+   - Initial Risk Level Category
+   - Example Mitigations
+   - Agreed Mitigation
+   - Proposed Oversight Ownership
+   - Proposed Support
+   - Notes
+   - Residual Likelihood (1-5)
+   - Residual Impact (1-5)
+   - Residual Risk Level
+   - Residual Risk Level Category
+
+2. Controls Mapping sheet with columns:
+   - Mitigation ID (e.g., TEST-01)
+   - Mitigation Description
+   - 21 CFR Part 11 / Annex 11 Clause
+   - HIPAA Safeguard
+   - GDPR Article
+   - EU AI Act Article
+   - NIST 800-53 Control Family
+   - SOC 2 TSC
+   - Risk Category

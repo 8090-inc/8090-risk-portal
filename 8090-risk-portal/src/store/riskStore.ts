@@ -10,6 +10,7 @@ import {
 } from '../types';
 import { RiskValidationError } from '../types/error.types';
 import { validateRisk } from '../utils/dataTransformers';
+import { relationshipQueue } from '../utils/updateQueue';
 import axios from 'axios';
 
 interface RiskState {
@@ -24,6 +25,7 @@ interface RiskState {
   searchTerm: string;
   isLoading: boolean;
   error: Error | null;
+  updatingRelationships: Set<string>; // Track which risks are updating
   
   // Statistics
   statistics: RiskStatistics | null;
@@ -204,6 +206,7 @@ export const useRiskStore = create<RiskState>()(
         searchTerm: '',
         isLoading: false,
         error: null,
+        updatingRelationships: new Set(),
         statistics: null,
         
         // Load risks from API
@@ -211,9 +214,13 @@ export const useRiskStore = create<RiskState>()(
           set({ isLoading: true, error: null });
           
           try {
-            // Fetch all risks from API (not paginated)
-            const response = await axios.get('/api/v1/risks?limit=1000');
+            // Fetch all risks from API (not paginated) - force fresh with timestamp
+            const response = await axios.get(`/api/v1/risks?limit=1000&_t=${Date.now()}`, {
+              headers: { 'Cache-Control': 'no-cache' }
+            });
             const risks: Risk[] = response.data.data || [];
+            console.log('Fresh risk data loaded:', risks.length, 'risks');
+            console.log('Any risk with ACC-01?', risks.find(r => r.relatedControlIds?.includes('ACC-01')));
             
             // Apply initial filters and sorting
             const filtered = applyFilters(risks, get().filters, get().searchTerm);
@@ -371,38 +378,64 @@ export const useRiskStore = create<RiskState>()(
           }
         },
         
-        // Update risk controls (relationship management)
+        // Update risk controls (relationship management) with optimistic updates and queue
         updateRiskControls: async (riskId, controlIds) => {
-          set({ isLoading: true, error: null });
+          // Add to updating set
+          const updating = new Set(get().updatingRelationships);
+          updating.add(riskId);
+          set({ updatingRelationships: updating });
           
           try {
-            // Update controls for this risk
-            await axios.put(`/api/v1/risks/${riskId}/controls`, {
-              controlIds
+            return await relationshipQueue.enqueue(`risk-${riskId}`, async () => {
+              // Store original state for rollback
+              const originalRisks = get().risks;
+              const originalFilteredRisks = get().filteredRisks;
+              const originalStatistics = get().statistics;
+              
+              // Optimistic update - immediate UI response
+              const optimisticRisks = originalRisks.map(risk => 
+                risk.id === riskId 
+                  ? { ...risk, relatedControlIds: controlIds }
+                  : risk
+              );
+              
+              const filtered = applyFilters(optimisticRisks, get().filters, get().searchTerm);
+              const sorted = applySort(filtered, get().sort);
+              const statistics = calculateStatistics(optimisticRisks);
+              
+              set({ 
+                risks: optimisticRisks,
+                filteredRisks: sorted,
+                statistics
+              });
+              
+              try {
+                // Then sync with backend
+                await axios.put(`/api/v1/risks/${riskId}/controls`, {
+                  controlIds
+                });
+                
+                // Success - optimistic update stands
+                console.log(`Successfully updated controls for risk ${riskId}`);
+              } catch (error) {
+                console.error('Failed to update risk controls:', error);
+                
+                // Rollback to original state
+                set({ 
+                  risks: originalRisks,
+                  filteredRisks: originalFilteredRisks,
+                  statistics: originalStatistics,
+                  error: error instanceof Error ? error : new Error('Failed to update risk controls')
+                });
+                
+                throw error; // Re-throw for UI handling
+              }
             });
-            
-            // Update local state
-            const risks = get().risks.map(risk => 
-              risk.id === riskId 
-                ? { ...risk, relatedControlIds: controlIds }
-                : risk
-            );
-            
-            const filtered = applyFilters(risks, get().filters, get().searchTerm);
-            const sorted = applySort(filtered, get().sort);
-            const statistics = calculateStatistics(risks);
-            
-            set({ 
-              risks, 
-              filteredRisks: sorted,
-              statistics,
-              isLoading: false 
-            });
-          } catch (error) {
-            set({ 
-              error: error instanceof Error ? error : new Error('Failed to update risk controls'),
-              isLoading: false 
-            });
+          } finally {
+            // Remove from updating set
+            const updating = new Set(get().updatingRelationships);
+            updating.delete(riskId);
+            set({ updatingRelationships: updating });
           }
         },
         

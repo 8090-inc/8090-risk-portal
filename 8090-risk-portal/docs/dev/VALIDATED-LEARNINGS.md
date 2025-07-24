@@ -873,6 +873,111 @@ All valid values stored in `/server/middleware/validateUseCase.cjs`:
 
 ---
 
+## Date: July 24, 2025 - Local Development Setup
+
+### Starting Frontend and Backend Servers Locally
+
+**Problem**: Unclear how to properly start both frontend and backend servers for local development. Frontend was not accessible when only one server was started.
+
+**Root Cause**: 
+- The application requires BOTH servers to run simultaneously
+- Frontend makes API calls to backend at `/api/*` endpoints
+- Backend must be running first for authentication to work
+
+**Correct Startup Sequence**:
+
+1. **Start Backend Server (Terminal 1)**:
+```bash
+cd /Users/rohitkelapure/projects/8090DompeAIRiskPortal/8090-risk-portal
+npm run dev:server
+
+# This starts the Express backend on http://localhost:8080
+# Connects to Google Drive for Excel data
+# Provides API endpoints at /api/*
+# Shows: "Server running on port 8080"
+```
+
+2. **Start Frontend Server (Terminal 2)**:
+```bash
+cd /Users/rohitkelapure/projects/8090DompeAIRiskPortal/8090-risk-portal
+npm run dev
+
+# This starts Vite dev server on http://localhost:3000
+# Proxies API requests to backend on port 8080
+# Shows: "VITE v5.4.19 ready in XXX ms"
+```
+
+**Common Issues and Solutions**:
+
+1. **Frontend not loading**: 
+   - Ensure backend is running FIRST
+   - Check for "http proxy error: /api/auth/me" - means backend is not running
+
+2. **Alternative Method - Background Process**:
+```bash
+# Start backend in background
+npm run dev:server > server.log 2>&1 &
+
+# Then start frontend
+npm run dev
+```
+
+3. **Process Management**:
+```bash
+# Check if servers are running
+ps aux | grep -E "(vite|node.*server)" | grep -v grep
+
+# Kill existing processes if needed
+pkill -f "node server.cjs"
+lsof -ti:3000 | xargs kill -9  # Kill frontend if port in use
+```
+
+**Key Points**:
+- Backend MUST run on port 8080
+- Frontend MUST run on port 3000 (authentication breaks on other ports)
+- Both servers need to be running for the app to work
+- In dev mode, uses mock user: "Local User" (local.user@dompe.com)
+- Timeout errors when starting servers are normal - they're running in foreground
+
+---
+
+## Date: July 24, 2025 - Critical Development Setup Reminders
+
+### COMMON MISTAKE: Not Starting Both Servers
+
+**Problem**: Repeatedly forgetting to start BOTH frontend and backend servers simultaneously for local development.
+
+**Symptoms**:
+- Frontend shows "checking authentication..." indefinitely  
+- API calls fail with network errors
+- Authentication loops
+- App appears to load but functionality is broken
+
+**ROOT CAUSE**: The application is a full-stack app that requires BOTH servers running:
+- Backend (port 8080): Provides API endpoints and authentication
+- Frontend (port 3000): Serves the React app and proxies API calls
+
+**CORRECT PROCEDURE** (ALWAYS do both):
+```bash
+# Terminal 1 - Start backend FIRST
+cd 8090-risk-portal
+npm run dev:server
+
+# Terminal 2 - Start frontend SECOND  
+cd 8090-risk-portal
+npm run dev
+```
+
+**CRITICAL NOTES**:
+- Backend MUST be running before starting frontend
+- Both servers MUST run simultaneously 
+- Frontend MUST be on port 3000 (authentication breaks on other ports)
+- Never start just one server - both are required
+
+**Why This Keeps Happening**: The servers run in foreground mode and get cancelled when switching focus, leading to only one running at a time.
+
+---
+
 ## Date: July 24, 2025 - IAP Authentication Bug Resolution (v2.8)
 
 ### The IAP Header Format Change Bug

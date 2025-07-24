@@ -29,7 +29,7 @@ export const RiskLevelBadge: React.FC<RiskLevelBadgeProps> = ({
   };
 
   return (
-    <Badge variant={getVariant()}>
+    <Badge variant={getVariant()} size="sm" className="font-semibold">
       {level}{showScore && score ? ` (${score})` : ''}
     </Badge>
   );

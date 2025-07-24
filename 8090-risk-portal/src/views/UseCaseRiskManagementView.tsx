@@ -104,19 +104,21 @@ export function UseCaseRiskManagementView() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Manage Associated Risks</h1>
-          <p className="text-gray-600 mt-1">{selectedUseCase.title}</p>
+          <h1 className="text-xl font-semibold">Manage Associated Risks</h1>
+          <p className="text-sm text-gray-600 mt-1">{selectedUseCase.title}</p>
         </div>
         <div className="flex gap-2">
           <Button
             variant="outline"
             onClick={handleBack}
+            size="sm"
           >
             Cancel
           </Button>
           <Button
             onClick={handleSave}
             disabled={saving}
+            size="sm"
             className="gap-2"
           >
             {saving ? <Spinner size="sm" /> : <Plus className="h-4 w-4" />}
@@ -130,7 +132,7 @@ export function UseCaseRiskManagementView() {
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
         <Input
           type="search"
-          placeholder="Search risks by description or category..."
+          placeholder="Search risks by description..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pl-10"
@@ -168,18 +170,21 @@ export function UseCaseRiskManagementView() {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <Badge className={getRiskLevelColor(risk.initialScoring.riskLevelCategory)}>
+                    <Badge 
+                      className={getRiskLevelColor(risk.initialScoring.riskLevelCategory)}
+                      size="sm"
+                    >
                       {risk.initialScoring.riskLevelCategory}
                     </Badge>
-                    <span className="text-sm font-semibold text-gray-700">ID: {risk.id}</span>
-                    <span className="text-sm text-gray-600">• {risk.riskCategory}</span>
+                    <span className="text-xs font-semibold text-gray-700">ID: {risk.id}</span>
+                    <span className="text-xs text-gray-600">• {risk.riskCategory}</span>
                   </div>
-                  <h3 className="font-medium text-gray-900 mb-2">{risk.riskDescription}</h3>
-                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                  <h3 className="text-sm font-medium text-gray-900 mb-2">{risk.riskDescription}</h3>
+                  <div className="flex items-center gap-4 text-xs text-gray-600">
                     <span>Impact: <span className="font-medium">{risk.initialScoring.impact}</span></span>
                     <span>Likelihood: <span className="font-medium">{risk.initialScoring.likelihood}</span></span>
                     {risk.relatedControlIds.length > 0 && (
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1 text-xs">
                         <span className="text-gray-500">•</span>
                         {risk.relatedControlIds.length} control{risk.relatedControlIds.length !== 1 ? 's' : ''}
                       </span>

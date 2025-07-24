@@ -113,7 +113,7 @@ export const transformControlRow = (row: ControlsMappingRow, relatedRiskIds: str
   };
 };
 
-// Build risk-control relationships from Excel data
+// Build risk-control relationships from Excel data only
 export const buildRelationships = (data: ExcelData): {
   riskToControls: Map<string, string[]>;
   controlToRisks: Map<string, string[]>;
@@ -121,39 +121,70 @@ export const buildRelationships = (data: ExcelData): {
   const riskToControls = new Map<string, string[]>();
   const controlToRisks = new Map<string, string[]>();
   
-  // Simple keyword-based matching for now
+  // Build relationships based on Excel data - using risk names and control IDs directly
   data.riskMap.forEach((risk: RiskMapRow) => {
-    const riskId = generateId(risk.risk);
-    const relatedControls: string[] = [];
+    const riskName = risk.risk; // Use actual risk name, not generated ID
+    let relatedControls: string[] = [];
     
+    // Parse the "Agreed Mitigation" field for control references
+    const agreedMitigation = risk.mitigation?.toLowerCase() || '';
+    
+    // Look for control ID patterns (ACC-XX, SEC-XX, LOG-XX, GOV-XX) in mitigation text
     data.controlsMapping.forEach((control: ControlsMappingRow) => {
-      const riskKeywords = risk.risk.toLowerCase().split(' ').filter((w: string) => w.length > 3);
-      const controlDesc = control.mitigationDescription.toLowerCase();
+      const controlId = control.mitigationID;
+      const controlDesc = control.mitigationDescription?.toLowerCase() || '';
       
-      // Check if control description mentions risk keywords
-      const isRelated = riskKeywords.some((keyword: string) => controlDesc.includes(keyword));
+      // Check if control ID is mentioned in mitigation
+      const controlMentioned = agreedMitigation.includes(controlId.toLowerCase());
       
-      // Also check specific mappings based on risk categories
+      // Check if mitigation text mentions control description keywords
+      const controlKeywords = controlDesc.split(' ').filter((w: string) => w.length > 4);
+      const keywordMatch = controlKeywords.some((keyword: string) => 
+        agreedMitigation.includes(keyword)
+      );
+      
+      // Check compliance references (e.g., "21 CFR 11.10(a)" matches "11.10(a)")
+      const complianceMatch = [
+        control.cfrPart11Annex11,
+        control.hipaaSafeguard,
+        control.gdprArticle,
+        control.euAiActArticle,
+        control.nist80053,
+        control.soc2TSC
+      ].some(complianceRef => {
+        if (!complianceRef) return false;
+        const complianceText = complianceRef.toLowerCase();
+        // Match patterns like "11.10(a)" in both texts
+        return agreedMitigation.includes(complianceText) || 
+               complianceText.split(/[;\s,]+/).some(ref => 
+                 ref.trim() && agreedMitigation.includes(ref.trim())
+               );
+      });
+      
+      // Category-based matching as backup
       const categoryMatch = (
         (risk.riskCategory === 'Behavioral Risks' && control.category === 'Accuracy & Judgment') ||
         (risk.riskCategory === 'Security and Data Risks' && control.category === 'Security & Data Privacy') ||
-        (risk.riskCategory === 'Transparency Risks' && control.category === 'Audit & Traceability')
+        (risk.riskCategory === 'Transparency Risks' && control.category === 'Audit & Traceability') ||
+        (risk.riskCategory === 'Other Risks' && control.category === 'Governance & Compliance')
       );
       
-      if (isRelated || categoryMatch) {
-        relatedControls.push(control.mitigationID);
-        
-        // Update control to risks mapping
-        const existingRisks = controlToRisks.get(control.mitigationID) || [];
-        if (!existingRisks.includes(riskId)) {
-          existingRisks.push(riskId);
-          controlToRisks.set(control.mitigationID, existingRisks);
-        }
+      if (controlMentioned || keywordMatch || complianceMatch || categoryMatch) {
+        relatedControls.push(controlId);
+      }
+    });
+    
+    // Update control to risks mapping for all found controls
+    relatedControls.forEach(controlId => {
+      const existingRisks = controlToRisks.get(controlId) || [];
+      if (!existingRisks.includes(riskName)) {
+        existingRisks.push(riskName);
+        controlToRisks.set(controlId, existingRisks);
       }
     });
     
     if (relatedControls.length > 0) {
-      riskToControls.set(riskId, relatedControls);
+      riskToControls.set(riskName, relatedControls);
     }
   });
   
@@ -172,13 +203,15 @@ export const transformExcelData = (data: ExcelData): {
   const { riskToControls, controlToRisks } = buildRelationships(data);
   
   const risks = data.riskMap.map((row: RiskMapRow) => {
-    const riskId = generateId(row.risk);
-    const relatedControlIds = riskToControls.get(riskId) || [];
+    const riskName = row.risk; // Use actual risk name
+    const relatedControlIds = riskToControls.get(riskName) || [];
     return transformRiskMapRow(row, relatedControlIds);
   });
   
   const controls = data.controlsMapping.map((row: ControlsMappingRow) => {
-    const relatedRiskIds = controlToRisks.get(row.mitigationID) || [];
+    const relatedRiskNames = controlToRisks.get(row.mitigationID) || [];
+    // Convert risk names to risk IDs for the frontend (for now keep compatibility)
+    const relatedRiskIds = relatedRiskNames.map(riskName => generateId(riskName));
     return transformControlRow(row, relatedRiskIds);
   });
   

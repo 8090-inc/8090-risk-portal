@@ -10,7 +10,7 @@ import {
   type SortingState,
   type FilterFn
 } from '@tanstack/react-table';
-import { ChevronUp, ChevronDown, ExternalLink } from 'lucide-react';
+import { ChevronUp, ChevronDown, ArrowRight } from 'lucide-react';
 import type { Control } from '../../types';
 import { Badge } from '../ui/Badge';
 import { cn } from '../../utils/cn';
@@ -53,7 +53,7 @@ export const ControlsTable: React.FC<ControlsTableProps> = ({
       columnHelper.accessor('mitigationID', {
         header: 'Control ID',
         cell: info => (
-          <Link to={`/controls/${info.getValue()}`} className="text-accent hover:underline font-medium">
+          <Link to={`/controls/${info.getValue()}`} className="text-accent hover:text-accent-700 font-semibold text-sm">
             {info.getValue().toUpperCase()}
           </Link>
         )
@@ -61,7 +61,7 @@ export const ControlsTable: React.FC<ControlsTableProps> = ({
       columnHelper.accessor('mitigationDescription', {
         header: 'Description',
         cell: info => (
-          <div className="max-w-xl">
+          <div className="max-w-xs lg:max-w-xl">
             <p className="text-sm text-slate-900 line-clamp-2">{info.getValue()}</p>
           </div>
         )
@@ -69,7 +69,7 @@ export const ControlsTable: React.FC<ControlsTableProps> = ({
       columnHelper.accessor('category', {
         header: 'Category',
         cell: info => (
-          <Badge variant="default" className="text-xs">
+          <Badge variant="default" className="text-sm font-medium bg-slate-100 text-slate-700 border-slate-200">
             {info.getValue()}
           </Badge>
         )
@@ -78,12 +78,21 @@ export const ControlsTable: React.FC<ControlsTableProps> = ({
         header: 'Status',
         cell: info => {
           const status = info.getValue() || 'Not Started';
-          const variant = status === 'Implemented' ? 'success' : 
-                          status === 'In Progress' ? 'warning' : 'default';
+          const statusConfig = {
+            'Implemented': { bg: 'bg-green-100', text: 'text-green-700', dot: 'bg-green-500' },
+            'In Progress': { bg: 'bg-yellow-100', text: 'text-yellow-700', dot: 'bg-yellow-500' },
+            'Planned': { bg: 'bg-blue-100', text: 'text-blue-700', dot: 'bg-blue-500' },
+            'Not Started': { bg: 'bg-slate-100', text: 'text-slate-600', dot: 'bg-slate-400' }
+          };
+          const config = statusConfig[status] || statusConfig['Not Started'];
+          
           return (
-            <Badge variant={variant}>
-              {status}
-            </Badge>
+            <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md ${config.bg}`}>
+              <div className={`w-2 h-2 rounded-full ${config.dot}`} />
+              <span className={`text-sm font-medium ${config.text}`}>
+                {status}
+              </span>
+            </div>
           );
         }
       }),
@@ -94,11 +103,11 @@ export const ControlsTable: React.FC<ControlsTableProps> = ({
           const score = info.getValue();
           const percentage = Math.round(score * 100);
           return (
-            <div className="flex items-center space-x-2">
-              <div className="w-24 bg-slate-200 rounded-full h-2">
+            <div className="flex items-center gap-2">
+              <div className="relative w-20 bg-slate-100 rounded-full h-1.5 overflow-hidden">
                 <div 
                   className={cn(
-                    "h-2 rounded-full transition-all",
+                    "absolute inset-y-0 left-0 rounded-full transition-all duration-500",
                     percentage >= 80 ? "bg-green-500" :
                     percentage >= 60 ? "bg-yellow-500" :
                     percentage >= 40 ? "bg-orange-500" : "bg-red-500"
@@ -106,7 +115,14 @@ export const ControlsTable: React.FC<ControlsTableProps> = ({
                   style={{ width: `${percentage}%` }}
                 />
               </div>
-              <span className="text-sm font-medium text-slate-700">{percentage}%</span>
+              <span className={cn(
+                "text-xs font-semibold tabular-nums",
+                percentage >= 80 ? "text-green-700" :
+                percentage >= 60 ? "text-yellow-700" :
+                percentage >= 40 ? "text-orange-700" : "text-red-700"
+              )}>
+                {percentage}%
+              </span>
             </div>
           );
         }
@@ -115,14 +131,12 @@ export const ControlsTable: React.FC<ControlsTableProps> = ({
         id: 'actions',
         header: 'Actions',
         cell: info => (
-          <div className="flex items-center space-x-2">
-            <Link 
-              to={`/controls/${info.row.original.mitigationID}`}
-              className="text-slate-500 hover:text-slate-700 transition-colors"
-            >
-              <ExternalLink className="h-4 w-4" />
-            </Link>
-          </div>
+          <Link 
+            to={`/controls/${info.row.original.mitigationID}`}
+            className="inline-flex items-center justify-center w-8 h-8 rounded-md text-slate-500 hover:text-accent hover:bg-blue-50 transition-all group"
+          >
+            <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+          </Link>
         )
       })
     ],
@@ -144,15 +158,16 @@ export const ControlsTable: React.FC<ControlsTableProps> = ({
   });
 
   return (
-    <div className="overflow-hidden bg-white shadow ring-1 ring-black ring-opacity-5 rounded-md">
-      <table className="min-w-full divide-y divide-slate-300">
-        <thead className="bg-slate-50">
+    <div className="w-full">
+      <div className="overflow-x-auto bg-white shadow-sm ring-1 ring-slate-200 rounded-lg">
+        <table className="min-w-full divide-y divide-slate-200">
+        <thead className="bg-gradient-to-b from-slate-50 to-slate-100/50">
           {table.getHeaderGroups().map(headerGroup => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map(header => (
                 <th
                   key={header.id}
-                  className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"
+                  className="px-4 py-2.5 text-left text-sm font-medium text-slate-700"
                 >
                   {header.isPlaceholder ? null : (
                     <div
@@ -185,11 +200,11 @@ export const ControlsTable: React.FC<ControlsTableProps> = ({
             </tr>
           ))}
         </thead>
-        <tbody className="bg-white divide-y divide-slate-200">
+        <tbody className="bg-white divide-y divide-slate-100">
           {table.getRowModel().rows.map(row => (
-            <tr key={row.id} className="hover:bg-slate-50 transition-colors">
+            <tr key={row.id} className="hover:bg-blue-50/50 transition-all duration-150 group">
               {row.getVisibleCells().map(cell => (
-                <td key={cell.id} className="px-6 py-4 whitespace-nowrap text-sm">
+                <td key={cell.id} className="px-4 py-3 text-sm">
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </td>
               ))}
@@ -202,6 +217,7 @@ export const ControlsTable: React.FC<ControlsTableProps> = ({
           <p className="text-slate-500">No controls found matching your criteria.</p>
         </div>
       )}
+      </div>
     </div>
   );
 };
