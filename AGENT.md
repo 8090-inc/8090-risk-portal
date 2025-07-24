@@ -1,6 +1,6 @@
 # AGENT.md - 8090 AI Risk Portal Development Guide
 
-## Current Version: v2.8 (July 24, 2025)
+## Current Version: v2.9.0 (July 24, 2025)
 **Production URL**: https://risk-portal-290017403746.us-central1.run.app
 
 ## Commands
