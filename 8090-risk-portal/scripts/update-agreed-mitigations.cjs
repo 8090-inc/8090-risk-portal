@@ -27,10 +27,10 @@ const RISK_UPDATES = [
   {
     riskName: 'Copyright Infringements',
     newAgreedMitigation: `**Acceptable-Use Policy** forbids GenAI for public-facing marketing.  
-**Plagiarism Detection & Human Originality Review (ACC-04)** before any external release.  
+**Plagiarism Detection & Human Originality Review (ACC-04)** before any external release :contentReference[oaicite:11]{index=11}.  
 **Content-filters** for verbatim text; maintain traceability of sources.  
 **Vendor IP-Indemnification (GOV-02)** – mandatory during selection.  
-**3rd-party service T&C register** (MeSH, PubMed, Embase, ReadCube) maintained by Legal / Privacy.`
+**3rd-party service T&C register** (MeSH, PubMed, Embase, ReadCube) maintained by Legal / Privacy :contentReference[oaicite:12]{index=12}.`
   },
   {
     riskName: 'Hackers Abuse In-House GenAI Solutions',

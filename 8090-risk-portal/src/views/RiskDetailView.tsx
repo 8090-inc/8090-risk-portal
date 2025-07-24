@@ -4,11 +4,12 @@ import { ArrowLeft, Shield, Users, AlertTriangle, FileText, Brain, ExternalLink,
 import { useRiskStore, useControlStore } from '../store';
 import { RiskLevelBadge } from '../components/risks/RiskLevelBadge';
 import { MitigationDisplay } from '../components/risks/MitigationDisplay';
+import { EditRiskModal } from '../components/risks/EditRiskModal';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
-import type { Risk, Control } from '../types';
+import type { Risk, Control, UpdateRiskInput } from '../types';
 
 interface TabContentProps {
   risk: Risk;
@@ -581,9 +582,10 @@ Given the risk category "${risk.riskCategory}", this should be evaluated against
 export const RiskDetailView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { risks, loadRisks } = useRiskStore();
+  const { risks, loadRisks, updateRisk } = useRiskStore();
   const { controls, loadControls } = useControlStore();
   const [activeTab, setActiveTab] = useState<'details' | 'controls' | 'ai'>('details');
+  const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
     if (risks.length === 0) {
@@ -611,6 +613,20 @@ export const RiskDetailView: React.FC = () => {
       </div>
     );
   }
+
+  const handleSaveRisk = async (updatedRisk: Partial<Risk>) => {
+    try {
+      await updateRisk({
+        ...updatedRisk,
+        id: risk.id // Ensure ID is always included
+      } as UpdateRiskInput);
+      setShowEditModal(false);
+      // The store will handle the refresh automatically
+    } catch (error) {
+      // Error will be displayed by the modal
+      console.error('Failed to update risk:', error);
+    }
+  };
 
   const tabs = [
     { id: 'details', label: 'Details', icon: FileText },
@@ -641,6 +657,17 @@ export const RiskDetailView: React.FC = () => {
             />
           </div>
           <p className="text-sm text-slate-600 mt-1">Risk ID: {risk.id.toUpperCase()}</p>
+        </div>
+        
+        <div className="flex items-center space-x-3">
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setShowEditModal(true)}
+            icon={<Edit className="h-4 w-4" />}
+          >
+            Edit Risk
+          </Button>
         </div>
       </div>
 
@@ -673,6 +700,14 @@ export const RiskDetailView: React.FC = () => {
         {activeTab === 'controls' && <ControlsTab risk={risk} relatedControls={relatedControls} />}
         {activeTab === 'ai' && <AIAnalysisTab risk={risk} relatedControls={relatedControls} />}
       </div>
+
+      {/* Edit Risk Modal */}
+      <EditRiskModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        risk={risk}
+        onSave={handleSaveRisk}
+      />
     </div>
   );
 };
