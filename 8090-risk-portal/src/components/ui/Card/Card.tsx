@@ -1,7 +1,7 @@
 import React from 'react';
 import classNames from 'classnames';
 
-interface CardProps {
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   title?: string;
   subtitle?: string;
@@ -18,7 +18,8 @@ export const Card: React.FC<CardProps> = ({
   className,
   padding = 'md',
   shadow = 'sm',
-  hover = false
+  hover = false,
+  ...rest
 }) => {
   const paddingClasses = {
     none: '',
@@ -36,6 +37,7 @@ export const Card: React.FC<CardProps> = ({
   
   return (
     <div
+      {...rest}
       className={classNames(
         'bg-white rounded-lg border border-slate-200',
         paddingClasses[padding],

@@ -11,6 +11,11 @@ import { SimpleRiskMatrixView } from './views/SimpleRiskMatrixView';
 import { ReportsView } from './views/ReportsView';
 import { SettingsView } from './views/SettingsView';
 import { AccountSettingsView } from './views/AccountSettingsView';
+import { UseCasesView } from './views/UseCasesView';
+import { UseCaseDetailView } from './views/UseCaseDetailView';
+import { UseCaseCreateView } from './views/UseCaseCreateView';
+import { UseCaseEditView } from './views/UseCaseEditView';
+import { UseCaseRiskManagementView } from './views/UseCaseRiskManagementView';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { useUIStore, useAuthStore } from './store';
 import { initializeStores } from './store';
@@ -64,6 +69,13 @@ function App() {
               {/* Control routes */}
               <Route path="controls" element={<ControlsView />} />
               <Route path="controls/:id" element={<ControlDetailView />} />
+              
+              {/* Use Case routes */}
+              <Route path="usecases" element={<UseCasesView />} />
+              <Route path="usecases/new" element={<UseCaseCreateView />} />
+              <Route path="usecases/:id" element={<UseCaseDetailView />} />
+              <Route path="usecases/:id/edit" element={<UseCaseEditView />} />
+              <Route path="usecases/:id/risks" element={<UseCaseRiskManagementView />} />
               
               {/* Other views */}
               <Route path="matrix" element={<SimpleRiskMatrixView />} />

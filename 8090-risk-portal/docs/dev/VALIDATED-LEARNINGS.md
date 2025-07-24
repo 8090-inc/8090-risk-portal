@@ -659,3 +659,188 @@ git commit --author="Rohit Kelapure <kelapure@gmail.com>" -m "commit message"
 ```
 
 This is a mandatory requirement for all commits in this project. The --author flag must be included in every git commit command.
+
+---
+
+## Date: July 23, 2025 - Use Cases Feature Implementation (Phase 1)
+
+### Backend Implementation for Use Cases
+
+**Challenge**: Implementing a comprehensive Use Cases feature with 26 fields organized into nested structures.
+
+**Implementation Details**:
+
+1. **Excel Schema Design**:
+   - 26 columns (A-Z) for Use Cases sheet
+   - Nested object structure: objective, impact, execution
+   - Array fields: aiCategories, stakeholders, impactPoints, functionsImpacted
+   - UC-XXX ID format (UC-001 to UC-999)
+
+2. **Key Files Created/Modified**:
+   ```
+   /server/utils/excelParser.cjs - Added use case parsing functions
+   /server/persistence/GoogleDrivePersistenceProvider.cjs - Added use case CRUD
+   /server/services/UseCaseService.cjs - Business logic layer
+   /server/middleware/validateUseCase.cjs - Validation middleware
+   /server/api/v1/usecases.cjs - RESTful API endpoints
+   ```
+
+3. **Validation Middleware Pattern**:
+   - Initially tried express-validator (not installed in project)
+   - Switched to manual validation matching existing patterns
+   - Fixed to use ErrorCodes pattern for consistent error responses
+
+4. **API Endpoints Implemented**:
+   - GET /api/v1/usecases - List with filtering
+   - GET /api/v1/usecases/:id - Get single use case
+   - POST /api/v1/usecases - Create new use case
+   - PUT /api/v1/usecases/:id - Update use case
+   - DELETE /api/v1/usecases/:id - Delete use case
+   - GET /api/v1/usecases/statistics - Aggregated statistics
+   - PUT /api/v1/usecases/:id/risks - Associate risks
+   - GET /api/v1/usecases/:id/risks - Get associated risks
+
+### Validation Issues and Fixes
+
+1. **Risk ID Format Mismatch**:
+   - **Problem**: Validation expected AIR-XXX format
+   - **Reality**: Actual risks use RISK-XXX format
+   - **Fix**: Changed regex from `/^AIR-\d{3}$/` to `/^RISK-/`
+
+2. **Validation Error Details Not Showing**:
+   - **Problem**: ApiError constructor usage inconsistent
+   - **Fix**: Updated to use ErrorCodes pattern:
+   ```javascript
+   throw new ApiError(400, ErrorCodes.INVALID_USE_CASE_DATA, {
+     details: `${errors.length} validation error(s)`,
+     errors
+   });
+   ```
+
+3. **Server Restart Requirements**:
+   - Multiple server restarts needed during development
+   - Changes to middleware require full restart
+   - Used: `pkill -f "node server.cjs" && npm run dev:server`
+
+### Valid Values for Use Cases
+
+All valid values stored in `/server/middleware/validateUseCase.cjs`:
+
+**Business Areas**: General, Medical, R&D, Commercial, Manufacturing, Pharmacovigilance, Legal, Clinical, Quality Management, Supply Chain, Finance
+
+**AI Categories**: Content Generation, Data Analysis, Image Analysis, Natural Language Processing, Speech Recognition, Machine Learning, Computer Vision, Predictive Analytics, Process Automation, Decision Support
+
+**Statuses**: Concept, Under Review, Approved, In Development, Pilot, In Production, On Hold, Cancelled
+
+**Complexity/Level Values**: Low, Medium, High
+
+### Testing Results
+
+**All endpoints tested successfully**:
+- ✅ CRUD operations working
+- ✅ Filtering by businessArea, status, search
+- ✅ Statistics calculation accurate
+- ✅ Risk associations functional
+- ✅ Error handling with detailed messages
+- ✅ Excel persistence via Google Drive
+- ✅ Transaction support for batch operations
+
+**Test Data Cleanup**:
+- Created UC-001 and UC-002 for testing
+- Successfully deleted both after validation
+- Excel file restored to original state
+
+### Key Learnings
+
+1. **Reuse Existing Patterns**: The codebase has established patterns for validation, error handling, and persistence. Following these patterns avoided introducing new dependencies.
+
+2. **Excel Column Mapping**: Careful mapping of 26 columns to nested object structure required. Arrays stored as comma-separated values in Excel.
+
+3. **Service Layer Benefits**: Separating business logic (UseCaseService) from persistence (GoogleDrivePersistenceProvider) and API routes made testing and debugging easier.
+
+4. **Validation Middleware**: Manual validation following existing patterns was simpler than introducing express-validator dependency.
+
+5. **Error Response Consistency**: Using the established ErrorCodes pattern ensures consistent error responses across the API.
+
+---
+
+## Date: July 23, 2025 - Use Cases Feature Implementation (Phase 2)
+
+### Frontend Implementation for Use Cases
+
+**Objective**: Build complete frontend UI for Use Cases feature with CRUD operations.
+
+**User Directive**: Simplify the create/edit form to use a single-step form instead of multi-step.
+
+**Implementation Details**:
+
+1. **TypeScript Types Created**:
+   ```
+   /src/types/useCase.types.ts - UseCase interface with all 26 fields
+   - Exported all valid values as constants for dropdowns
+   ```
+
+2. **Zustand Store Implementation**:
+   ```
+   /src/store/useCaseStore.ts - State management with:
+   - CRUD operations matching backend API
+   - Filtering and search functionality
+   - Statistics aggregation
+   - Error handling
+   ```
+
+3. **View Components Created**:
+   - **UseCasesView**: Main list view with filters and grid
+   - **UseCaseDetailView**: Comprehensive detail view with all fields
+   - **UseCaseCreateView**: Create new use case
+   - **UseCaseEditView**: Edit existing use case
+   - **Routes added to App.tsx**
+
+4. **UI Components Created**:
+   - **UseCaseGrid**: Grid layout for use case cards
+   - **UseCaseCard**: Individual card with key information
+   - **UseCaseFilters**: Filtering by business area, status, AI categories
+   - **UseCaseForm**: Single-step form for create/edit (per user request)
+   - **Textarea**: Missing UI component needed for form fields
+
+5. **Key Design Decisions**:
+   - **Single-step form**: User specifically requested simplification from multi-step
+   - **Visual consistency**: Matched existing patterns from risks/controls
+   - **Card-based layout**: Similar to risks view for consistency
+   - **Comprehensive detail view**: Shows all 26 fields organized logically
+
+### TypeScript Issues Fixed
+
+1. **Badge Variant Issue**:
+   - Badge component doesn't support "outline" variant
+   - Changed to use existing variants: default, secondary, success, danger
+
+2. **React Import Cleanup**:
+   - Removed unused React imports (not needed in React 17+)
+   - Fixed ESLint warnings for unused imports
+
+3. **Type Safety**:
+   - Replaced all `any` types with proper TypeScript types
+   - Used Record<string, unknown> for generic objects
+   - Properly typed array operations
+
+### Testing Results
+
+- ✅ Use Cases list view loading from API
+- ✅ Create/Edit forms working with all fields
+- ✅ Detail view showing comprehensive information
+- ✅ Filtering and search functionality
+- ✅ Navigation between views
+- ✅ Error handling and loading states
+
+### Key Learnings
+
+1. **UI Component Reusability**: The existing UI component library provided most needed components. Only Textarea was missing and had to be created.
+
+2. **Form Simplification**: User feedback led to simplifying from multi-step to single-step form, improving UX for the 26-field form.
+
+3. **Type Safety**: Proper TypeScript types for all 26 fields helped catch errors early and improve IDE support.
+
+4. **Consistent Patterns**: Following existing patterns from risks/controls views made implementation faster and more maintainable.
+
+5. **Zustand Store Benefits**: The store pattern with proper error handling and loading states made the UI responsive and user-friendly.

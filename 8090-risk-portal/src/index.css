@@ -1,5 +1,8 @@
 /* Figtree font is loaded in index.html for better performance */
 
+/* Import Tailwind CSS variables - temporary fix for v4 */
+@import './styles/tailwind-vars.css';
+
 /* Import 8090 theme */
 @import './styles/8090-theme.css';
 

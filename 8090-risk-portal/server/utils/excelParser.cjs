@@ -66,8 +66,41 @@ const RELATIONSHIP_COLUMNS = {
   LAST_UPDATED: 6                     // "Updated"
 };
 
+// Column mappings for use cases
+const USE_CASE_COLUMNS = {
+  ID: 0,                              // "Use Case ID"
+  TITLE: 1,                           // "Title"
+  DESCRIPTION: 2,                     // "Description"
+  BUSINESS_AREA: 3,                   // "Business Area"
+  AI_CATEGORIES: 4,                   // "AI Categories"
+  CURRENT_STATE: 5,                   // "Current State"
+  FUTURE_STATE: 6,                    // "Future State"
+  SOLUTION: 7,                        // "Solution"
+  BENEFITS: 8,                        // "Benefits"
+  IMPACT_POINTS: 9,                   // "Impact Points"
+  COST_SAVING: 10,                    // "Cost Saving"
+  EFFORT_MONTHS: 11,                  // "Effort (Months)"
+  FUNCTIONS_IMPACTED: 12,             // "Functions Impacted"
+  DATA_REQUIREMENTS: 13,              // "Data Requirements"
+  AI_COMPLEXITY: 14,                  // "AI Complexity"
+  FEASIBILITY: 15,                    // "Feasibility"
+  VALUE: 16,                          // "Value"
+  RISK: 17,                           // "Risk"
+  STATUS: 18,                         // "Status"
+  IMPLEMENTATION_START: 19,           // "Implementation Start"
+  IMPLEMENTATION_END: 20,             // "Implementation End"
+  OWNER: 21,                          // "Owner"
+  STAKEHOLDERS: 22,                   // "Stakeholders"
+  NOTES: 23,                          // "Notes"
+  CREATED_DATE: 24,                   // "Created Date"
+  LAST_UPDATED: 25                    // "Last Updated"
+};
+
 // Valid control ID pattern
 const CONTROL_ID_PATTERN = /^(ACC|SEC|LOG|GOV|TEST)-\d{2}$/;
+
+// Valid use case ID pattern
+const USE_CASE_ID_PATTERN = /^UC-\d{3}$/;
 
 // Helper to parse cell value
 const getCellValue = (cell) => {
@@ -398,6 +431,88 @@ const parseControlsFromWorkbook = async (buffer) => {
   });
   
   return controls;
+};
+
+// Parse use cases from workbook
+const parseUseCasesFromWorkbook = async (buffer) => {
+  const workbook = XLSX.read(buffer, { type: 'buffer' });
+  
+  // Look for Use Cases sheet
+  const useCasesSheetName = workbook.SheetNames.find(name => 
+    name.toLowerCase().includes('use') && name.toLowerCase().includes('case')
+  );
+  
+  if (!useCasesSheetName) {
+    return [];
+  }
+  
+  const sheet = workbook.Sheets[useCasesSheetName];
+  const useCases = [];
+  const range = XLSX.utils.decode_range(sheet['!ref']);
+  
+  console.log(`[ExcelParser] Parsing use cases from sheet: ${useCasesSheetName}`);
+  console.log(`[ExcelParser] Sheet range: ${sheet['!ref']}, Last row: ${range.e.r}`);
+  
+  // Start from row 1 (skip header row at row 0)
+  for (let row = 1; row <= range.e.r; row++) {
+    const useCaseId = getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: USE_CASE_COLUMNS.ID })]);
+    const title = getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: USE_CASE_COLUMNS.TITLE })]);
+    
+    // Skip if no valid use case ID
+    if (!useCaseId || !USE_CASE_ID_PATTERN.test(useCaseId)) {
+      if (useCaseId) {
+        console.log(`[ExcelParser] Row ${row}: Skipping invalid use case ID: ${useCaseId}`);
+      }
+      continue;
+    }
+    if (!title) {
+      console.log(`[ExcelParser] Row ${row}: Skipping ${useCaseId} - no title`);
+      continue;
+    }
+    
+    const useCase = {
+      id: useCaseId,
+      title: title,
+      description: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: USE_CASE_COLUMNS.DESCRIPTION })]),
+      businessArea: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: USE_CASE_COLUMNS.BUSINESS_AREA })]),
+      aiCategories: parseArrayValue(getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: USE_CASE_COLUMNS.AI_CATEGORIES })]) || ''),
+      objective: {
+        currentState: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: USE_CASE_COLUMNS.CURRENT_STATE })]),
+        futureState: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: USE_CASE_COLUMNS.FUTURE_STATE })]),
+        solution: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: USE_CASE_COLUMNS.SOLUTION })]),
+        benefits: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: USE_CASE_COLUMNS.BENEFITS })])
+      },
+      impact: {
+        impactPoints: parseArrayValue(getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: USE_CASE_COLUMNS.IMPACT_POINTS })]) || ''),
+        costSaving: Number(getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: USE_CASE_COLUMNS.COST_SAVING })])) || 0,
+        effortMonths: Number(getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: USE_CASE_COLUMNS.EFFORT_MONTHS })])) || 0
+      },
+      execution: {
+        functionsImpacted: parseArrayValue(getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: USE_CASE_COLUMNS.FUNCTIONS_IMPACTED })]) || ''),
+        dataRequirements: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: USE_CASE_COLUMNS.DATA_REQUIREMENTS })]),
+        aiComplexity: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: USE_CASE_COLUMNS.AI_COMPLEXITY })]),
+        feasibility: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: USE_CASE_COLUMNS.FEASIBILITY })]),
+        value: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: USE_CASE_COLUMNS.VALUE })]),
+        risk: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: USE_CASE_COLUMNS.RISK })])
+      },
+      status: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: USE_CASE_COLUMNS.STATUS })]) || 'Concept',
+      implementationStart: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: USE_CASE_COLUMNS.IMPLEMENTATION_START })]),
+      implementationEnd: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: USE_CASE_COLUMNS.IMPLEMENTATION_END })]),
+      owner: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: USE_CASE_COLUMNS.OWNER })]),
+      stakeholders: parseArrayValue(getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: USE_CASE_COLUMNS.STAKEHOLDERS })]) || ''),
+      notes: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: USE_CASE_COLUMNS.NOTES })]),
+      createdDate: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: USE_CASE_COLUMNS.CREATED_DATE })]) || new Date().toISOString(),
+      lastUpdated: getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: USE_CASE_COLUMNS.LAST_UPDATED })]) || new Date().toISOString(),
+      relatedRiskIds: [] // Will be populated from relationships sheet
+    };
+    
+    useCases.push(useCase);
+  }
+  
+  console.log(`[ExcelParser] Total use cases parsed: ${useCases.length}`);
+  console.log(`[ExcelParser] Use case IDs: ${useCases.map(uc => uc.id).join(', ')}`);
+  
+  return useCases;
 };
 
 // Add risk to workbook
@@ -917,18 +1032,254 @@ const removeAllRelationshipsForControl = async (buffer, controlId) => {
   return currentBuffer;
 };
 
+// Get next use case ID
+const getNextUseCaseId = async (buffer) => {
+  const useCases = await parseUseCasesFromWorkbook(buffer);
+  if (useCases.length === 0) {
+    return 'UC-001';
+  }
+  
+  // Extract numeric parts and find highest
+  const ids = useCases.map(uc => {
+    const match = uc.id.match(/^UC-(\d{3})$/);
+    return match ? parseInt(match[1], 10) : 0;
+  });
+  
+  const maxId = Math.max(...ids);
+  const nextId = maxId + 1;
+  
+  // Format with leading zeros
+  return `UC-${nextId.toString().padStart(3, '0')}`;
+};
+
+// Add use case to workbook
+const addUseCaseToWorkbook = async (buffer, newUseCase) => {
+  const workbook = XLSX.read(buffer, { type: 'buffer' });
+  
+  // Find or create Use Cases sheet
+  let useCasesSheetName = workbook.SheetNames.find(name => 
+    name.toLowerCase().includes('use') && name.toLowerCase().includes('case')
+  );
+  
+  if (!useCasesSheetName) {
+    // Create new Use Cases sheet with headers
+    useCasesSheetName = 'Use Cases';
+    const newSheet = XLSX.utils.aoa_to_sheet([
+      ['Use Case ID', 'Title', 'Description', 'Business Area', 'AI Categories',
+       'Current State', 'Future State', 'Solution', 'Benefits', 'Impact Points',
+       'Cost Saving', 'Effort (Months)', 'Functions Impacted', 'Data Requirements',
+       'AI Complexity', 'Feasibility', 'Value', 'Risk', 'Status',
+       'Implementation Start', 'Implementation End', 'Owner', 'Stakeholders',
+       'Notes', 'Created Date', 'Last Updated']
+    ]);
+    workbook.Sheets[useCasesSheetName] = newSheet;
+    workbook.SheetNames.push(useCasesSheetName);
+  }
+  
+  const sheet = workbook.Sheets[useCasesSheetName];
+  const range = XLSX.utils.decode_range(sheet['!ref']);
+  const newRow = range.e.r + 1;
+  
+  // Generate ID if not provided
+  if (!newUseCase.id) {
+    newUseCase.id = await getNextUseCaseId(buffer);
+  }
+  
+  // Add new use case data
+  const rowData = [
+    newUseCase.id,
+    newUseCase.title,
+    newUseCase.description || '',
+    newUseCase.businessArea || '',
+    Array.isArray(newUseCase.aiCategories) ? newUseCase.aiCategories.join(', ') : (newUseCase.aiCategories || ''),
+    newUseCase.objective?.currentState || '',
+    newUseCase.objective?.futureState || '',
+    newUseCase.objective?.solution || '',
+    newUseCase.objective?.benefits || '',
+    Array.isArray(newUseCase.impact?.impactPoints) ? newUseCase.impact.impactPoints.join(', ') : (newUseCase.impact?.impactPoints || ''),
+    newUseCase.impact?.costSaving || 0,
+    newUseCase.impact?.effortMonths || 0,
+    Array.isArray(newUseCase.execution?.functionsImpacted) ? newUseCase.execution.functionsImpacted.join(', ') : (newUseCase.execution?.functionsImpacted || ''),
+    newUseCase.execution?.dataRequirements || '',
+    newUseCase.execution?.aiComplexity || '',
+    newUseCase.execution?.feasibility || '',
+    newUseCase.execution?.value || '',
+    newUseCase.execution?.risk || '',
+    newUseCase.status || 'Concept',
+    newUseCase.implementationStart || '',
+    newUseCase.implementationEnd || '',
+    newUseCase.owner || '',
+    Array.isArray(newUseCase.stakeholders) ? newUseCase.stakeholders.join(', ') : (newUseCase.stakeholders || ''),
+    newUseCase.notes || '',
+    new Date().toISOString(),
+    new Date().toISOString()
+  ];
+  
+  rowData.forEach((value, colIndex) => {
+    const cell = { t: typeof value === 'number' ? 'n' : 's', v: value };
+    sheet[XLSX.utils.encode_cell({ r: newRow, c: colIndex })] = cell;
+  });
+  
+  // Update range
+  range.e.r = newRow;
+  sheet['!ref'] = XLSX.utils.encode_range(range);
+  
+  return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+};
+
+// Update use case in workbook
+const updateUseCaseInWorkbook = async (buffer, useCaseId, updatedUseCase) => {
+  const workbook = XLSX.read(buffer, { type: 'buffer' });
+  
+  const useCasesSheetName = workbook.SheetNames.find(name => 
+    name.toLowerCase().includes('use') && name.toLowerCase().includes('case')
+  );
+  
+  if (!useCasesSheetName) {
+    throw new Error('Use Cases sheet not found');
+  }
+  
+  const sheet = workbook.Sheets[useCasesSheetName];
+  const range = XLSX.utils.decode_range(sheet['!ref']);
+  let useCaseRow = -1;
+  
+  // Find the use case row
+  for (let row = 1; row <= range.e.r; row++) {
+    const id = getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: USE_CASE_COLUMNS.ID })]);
+    if (id === useCaseId) {
+      useCaseRow = row;
+      break;
+    }
+  }
+  
+  if (useCaseRow === -1) {
+    throw new Error(`Use case with ID ${useCaseId} not found`);
+  }
+  
+  // Update use case data
+  const rowData = [
+    updatedUseCase.id || useCaseId,
+    updatedUseCase.title || '',
+    updatedUseCase.description || '',
+    updatedUseCase.businessArea || '',
+    Array.isArray(updatedUseCase.aiCategories) ? updatedUseCase.aiCategories.join(', ') : (updatedUseCase.aiCategories || ''),
+    updatedUseCase.objective?.currentState || '',
+    updatedUseCase.objective?.futureState || '',
+    updatedUseCase.objective?.solution || '',
+    updatedUseCase.objective?.benefits || '',
+    Array.isArray(updatedUseCase.impact?.impactPoints) ? updatedUseCase.impact.impactPoints.join(', ') : (updatedUseCase.impact?.impactPoints || ''),
+    updatedUseCase.impact?.costSaving || 0,
+    updatedUseCase.impact?.effortMonths || 0,
+    Array.isArray(updatedUseCase.execution?.functionsImpacted) ? updatedUseCase.execution.functionsImpacted.join(', ') : (updatedUseCase.execution?.functionsImpacted || ''),
+    updatedUseCase.execution?.dataRequirements || '',
+    updatedUseCase.execution?.aiComplexity || '',
+    updatedUseCase.execution?.feasibility || '',
+    updatedUseCase.execution?.value || '',
+    updatedUseCase.execution?.risk || '',
+    updatedUseCase.status || 'Concept',
+    updatedUseCase.implementationStart || '',
+    updatedUseCase.implementationEnd || '',
+    updatedUseCase.owner || '',
+    Array.isArray(updatedUseCase.stakeholders) ? updatedUseCase.stakeholders.join(', ') : (updatedUseCase.stakeholders || ''),
+    updatedUseCase.notes || '',
+    getCellValue(sheet[XLSX.utils.encode_cell({ r: useCaseRow, c: USE_CASE_COLUMNS.CREATED_DATE })]) || new Date().toISOString(),
+    new Date().toISOString()
+  ];
+  
+  rowData.forEach((value, colIndex) => {
+    const cell = { t: typeof value === 'number' ? 'n' : 's', v: value };
+    sheet[XLSX.utils.encode_cell({ r: useCaseRow, c: colIndex })] = cell;
+  });
+  
+  return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+};
+
+// Delete use case from workbook
+const deleteUseCaseFromWorkbook = async (buffer, useCaseId) => {
+  const workbook = XLSX.read(buffer, { type: 'buffer' });
+  
+  const useCasesSheetName = workbook.SheetNames.find(name => 
+    name.toLowerCase().includes('use') && name.toLowerCase().includes('case')
+  );
+  
+  if (!useCasesSheetName) {
+    throw new Error('Use Cases sheet not found');
+  }
+  
+  const sheet = workbook.Sheets[useCasesSheetName];
+  const range = XLSX.utils.decode_range(sheet['!ref']);
+  let useCaseRow = -1;
+  
+  // Find the use case row
+  for (let row = 1; row <= range.e.r; row++) {
+    const id = getCellValue(sheet[XLSX.utils.encode_cell({ r: row, c: USE_CASE_COLUMNS.ID })]);
+    if (id === useCaseId) {
+      useCaseRow = row;
+      break;
+    }
+  }
+  
+  if (useCaseRow === -1) {
+    throw new Error(`Use case with ID ${useCaseId} not found`);
+  }
+  
+  // Delete row by shifting all rows below up
+  for (let row = useCaseRow; row < range.e.r; row++) {
+    for (let col = 0; col <= range.e.c; col++) {
+      const sourceCell = sheet[XLSX.utils.encode_cell({ r: row + 1, c: col })];
+      const targetCell = XLSX.utils.encode_cell({ r: row, c: col });
+      
+      if (sourceCell) {
+        sheet[targetCell] = sourceCell;
+      } else {
+        delete sheet[targetCell];
+      }
+    }
+  }
+  
+  // Delete the last row
+  for (let col = 0; col <= range.e.c; col++) {
+    delete sheet[XLSX.utils.encode_cell({ r: range.e.r, c: col })];
+  }
+  
+  // Update range
+  range.e.r--;
+  sheet['!ref'] = XLSX.utils.encode_range(range);
+  
+  return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+};
+
+// Remove all relationships for a use case
+const removeAllRelationshipsForUseCase = async (buffer, useCaseId) => {
+  const relationships = await parseRelationshipsFromWorkbook(buffer);
+  let currentBuffer = buffer;
+  
+  for (const rel of relationships) {
+    if (rel.linkType === 'UseCase-Risk' && rel.controlId === useCaseId) {
+      currentBuffer = await removeRelationshipFromWorkbook(currentBuffer, useCaseId, rel.riskId);
+    }
+  }
+  
+  return currentBuffer;
+};
+
 module.exports = {
   parseRisksFromWorkbook,
   parseControlsFromWorkbook,
   parseRelationshipsFromWorkbook,
+  parseUseCasesFromWorkbook,
   addRiskToWorkbook,
   updateRiskInWorkbook,
   deleteRiskFromWorkbook,
   addControlToWorkbook,
   updateControlInWorkbook,
   deleteControlFromWorkbook,
+  addUseCaseToWorkbook,
+  updateUseCaseInWorkbook,
+  deleteUseCaseFromWorkbook,
   addRelationshipToWorkbook,
   removeRelationshipFromWorkbook,
   removeAllRelationshipsForRisk,
-  removeAllRelationshipsForControl
+  removeAllRelationshipsForControl,
+  removeAllRelationshipsForUseCase
 };

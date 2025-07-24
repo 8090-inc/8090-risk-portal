@@ -27,6 +27,11 @@ const ErrorCodes = {
     message: 'Control with ID "{id}" not found in the system',
     suggestion: 'Verify the control ID exists. List all controls: GET /api/v1/controls'
   },
+  USE_CASE_NOT_FOUND: {
+    code: 'USE_CASE_NOT_FOUND',
+    message: 'Use case with ID "{id}" not found in the system',
+    suggestion: 'Verify the use case ID exists. List all use cases: GET /api/v1/usecases'
+  },
   
   // Validation Errors (400)
   INVALID_RISK_DATA: {
@@ -71,6 +76,16 @@ const ErrorCodes = {
     message: 'A control with ID "{id}" already exists',
     suggestion: 'Use a unique control ID'
   },
+  DUPLICATE_USE_CASE_ID: {
+    code: 'DUPLICATE_USE_CASE_ID',
+    message: 'A use case with ID "{id}" already exists',
+    suggestion: 'Use a unique use case ID or update the existing use case'
+  },
+  DUPLICATE_USE_CASE_TITLE: {
+    code: 'DUPLICATE_USE_CASE_TITLE',
+    message: 'A use case with title "{title}" already exists',
+    suggestion: 'Use a unique title or update the existing use case'
+  },
   DUPLICATE_RELATIONSHIP: {
     code: 'DUPLICATE_RELATIONSHIP',
     message: 'This relationship already exists',
@@ -80,6 +95,11 @@ const ErrorCodes = {
     code: 'INVALID_CONTROL_PATTERN',
     message: 'Control ID "{id}" does not match required pattern (XXX-00)',
     suggestion: 'Use format: ACC-01, SEC-02, LOG-03, GOV-04, TEST-99'
+  },
+  INVALID_USE_CASE_PATTERN: {
+    code: 'INVALID_USE_CASE_PATTERN',
+    message: 'Use case ID "{id}" does not match required pattern (UC-XXX)',
+    suggestion: 'Use format: UC-001, UC-002, ..., UC-999'
   },
   CIRCULAR_RELATIONSHIP: {
     code: 'CIRCULAR_RELATIONSHIP',

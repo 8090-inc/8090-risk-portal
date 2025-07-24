@@ -10,16 +10,21 @@ const {
   parseRisksFromWorkbook,
   parseControlsFromWorkbook,
   parseRelationshipsFromWorkbook,
+  parseUseCasesFromWorkbook,
   addRiskToWorkbook,
   updateRiskInWorkbook,
   deleteRiskFromWorkbook,
   addControlToWorkbook,
   updateControlInWorkbook,
   deleteControlFromWorkbook,
+  addUseCaseToWorkbook,
+  updateUseCaseInWorkbook,
+  deleteUseCaseFromWorkbook,
   addRelationshipToWorkbook,
   removeRelationshipFromWorkbook,
   removeAllRelationshipsForRisk,
-  removeAllRelationshipsForControl
+  removeAllRelationshipsForControl,
+  removeAllRelationshipsForUseCase
 } = require('../utils/excelParser.cjs');
 
 class GoogleDrivePersistenceProvider extends IPersistenceProvider {
@@ -49,9 +54,10 @@ class GoogleDrivePersistenceProvider extends IPersistenceProvider {
       const risks = await parseRisksFromWorkbook(buffer);
       const controls = await parseControlsFromWorkbook(buffer);
       const relationships = await parseRelationshipsFromWorkbook(buffer);
+      const useCases = await parseUseCasesFromWorkbook(buffer);
       
       // Build relationships
-      const data = this.buildRelationships(risks, controls, relationships);
+      const data = this.buildRelationships(risks, controls, useCases, relationships);
       
       this.cache = {
         data: { ...data, buffer },
@@ -67,35 +73,61 @@ class GoogleDrivePersistenceProvider extends IPersistenceProvider {
   }
   
   /**
-   * Build bidirectional relationships between risks and controls
+   * Build bidirectional relationships between risks, controls, and use cases
    */
-  buildRelationships(risks, controls, relationships) {
+  buildRelationships(risks, controls, useCases, relationships) {
     // Build maps from relationships data
     const riskControlMap = new Map();
     const controlRiskMap = new Map();
+    const useCaseRiskMap = new Map();
+    const riskUseCaseMap = new Map();
     
     // Process relationships from dedicated sheet
     relationships.forEach(rel => {
-      // Add to risk → controls map
-      if (!riskControlMap.has(rel.riskId)) {
-        riskControlMap.set(rel.riskId, []);
-      }
-      if (!riskControlMap.get(rel.riskId).includes(rel.controlId)) {
-        riskControlMap.get(rel.riskId).push(rel.controlId);
-      }
-      
-      // Add to control → risks map
-      if (!controlRiskMap.has(rel.controlId)) {
-        controlRiskMap.set(rel.controlId, []);
-      }
-      if (!controlRiskMap.get(rel.controlId).includes(rel.riskId)) {
-        controlRiskMap.get(rel.controlId).push(rel.riskId);
+      if (rel.linkType === 'UseCase-Risk') {
+        // Handle use case-risk relationships
+        const useCaseId = rel.controlId; // In this case, controlId is actually the use case ID
+        const riskId = rel.riskId;
+        
+        // Add to use case → risks map
+        if (!useCaseRiskMap.has(useCaseId)) {
+          useCaseRiskMap.set(useCaseId, []);
+        }
+        if (!useCaseRiskMap.get(useCaseId).includes(riskId)) {
+          useCaseRiskMap.get(useCaseId).push(riskId);
+        }
+        
+        // Add to risk → use cases map
+        if (!riskUseCaseMap.has(riskId)) {
+          riskUseCaseMap.set(riskId, []);
+        }
+        if (!riskUseCaseMap.get(riskId).includes(useCaseId)) {
+          riskUseCaseMap.get(riskId).push(useCaseId);
+        }
+      } else {
+        // Handle control-risk relationships (existing logic)
+        // Add to risk → controls map
+        if (!riskControlMap.has(rel.riskId)) {
+          riskControlMap.set(rel.riskId, []);
+        }
+        if (!riskControlMap.get(rel.riskId).includes(rel.controlId)) {
+          riskControlMap.get(rel.riskId).push(rel.controlId);
+        }
+        
+        // Add to control → risks map
+        if (!controlRiskMap.has(rel.controlId)) {
+          controlRiskMap.set(rel.controlId, []);
+        }
+        if (!controlRiskMap.get(rel.controlId).includes(rel.riskId)) {
+          controlRiskMap.get(rel.controlId).push(rel.riskId);
+        }
       }
     });
     
     // Apply relationships to risks
     risks.forEach(risk => {
       risk.relatedControlIds = riskControlMap.get(risk.id) || [];
+      risk.relatedUseCaseIds = riskUseCaseMap.get(risk.id) || [];
     });
     
     // Apply relationships to controls
@@ -103,7 +135,12 @@ class GoogleDrivePersistenceProvider extends IPersistenceProvider {
       control.relatedRiskIds = controlRiskMap.get(control.mitigationID) || [];
     });
     
-    return { risks, controls, relationships };
+    // Apply relationships to use cases
+    useCases.forEach(useCase => {
+      useCase.relatedRiskIds = useCaseRiskMap.get(useCase.id) || [];
+    });
+    
+    return { risks, controls, useCases, relationships };
   }
   
   /**
@@ -424,6 +461,140 @@ class GoogleDrivePersistenceProvider extends IPersistenceProvider {
     }
   }
   
+  // Use case operations
+  async getAllUseCases(options = {}) {
+    const data = await this.getData();
+    return data.useCases;
+  }
+  
+  async getUseCaseById(id) {
+    const data = await this.getData();
+    const useCase = data.useCases.find(uc => uc.id === id);
+    
+    if (!useCase) {
+      throw new ApiError(404, ErrorCodes.USE_CASE_NOT_FOUND, { id });
+    }
+    
+    return useCase;
+  }
+  
+  async createUseCase(useCase) {
+    console.log('[GoogleDrivePersistenceProvider] createUseCase called with:', JSON.stringify(useCase, null, 2));
+    const data = await this.getData();
+    
+    // Check for duplicate
+    const existing = data.useCases.find(uc => uc.id === useCase.id);
+    if (existing) {
+      console.log('[GoogleDrivePersistenceProvider] Duplicate use case found:', useCase.id);
+      throw new ApiError(422, ErrorCodes.DUPLICATE_USE_CASE_ID, { id: useCase.id });
+    }
+    
+    // If in transaction, work with transaction buffer
+    const buffer = this.inTransaction ? this.transactionBuffer : data.buffer;
+    console.log(`[GoogleDrivePersistenceProvider] Using ${this.inTransaction ? 'transaction' : 'data'} buffer`);
+    
+    const updatedBuffer = await addUseCaseToWorkbook(buffer, useCase);
+    console.log('[GoogleDrivePersistenceProvider] Use case added to workbook buffer');
+    
+    if (this.inTransaction) {
+      console.log('[GoogleDrivePersistenceProvider] In transaction - buffering changes');
+      this.transactionBuffer = updatedBuffer;
+    } else {
+      console.log('[GoogleDrivePersistenceProvider] Not in transaction - uploading to Google Drive');
+      await this.uploadFile(updatedBuffer);
+      // Update cache
+      data.useCases.push(useCase);
+      data.buffer = updatedBuffer;
+      console.log('[GoogleDrivePersistenceProvider] Cache updated with new use case');
+    }
+    
+    return useCase;
+  }
+  
+  async updateUseCase(id, useCaseUpdates) {
+    const data = await this.getData();
+    
+    // Ensure use case exists
+    const existingIndex = data.useCases.findIndex(uc => uc.id === id);
+    if (existingIndex === -1) {
+      throw new ApiError(404, ErrorCodes.USE_CASE_NOT_FOUND, { id });
+    }
+    
+    // Merge updates with existing use case
+    const existingUseCase = data.useCases[existingIndex];
+    const updatedUseCase = {
+      ...existingUseCase,
+      ...useCaseUpdates,
+      id: existingUseCase.id, // Preserve ID
+      lastUpdated: new Date().toISOString()
+    };
+    
+    // Handle nested objects
+    if (useCaseUpdates.objective) {
+      updatedUseCase.objective = {
+        ...existingUseCase.objective,
+        ...useCaseUpdates.objective
+      };
+    }
+    
+    if (useCaseUpdates.impact) {
+      updatedUseCase.impact = {
+        ...existingUseCase.impact,
+        ...useCaseUpdates.impact
+      };
+    }
+    
+    if (useCaseUpdates.execution) {
+      updatedUseCase.execution = {
+        ...existingUseCase.execution,
+        ...useCaseUpdates.execution
+      };
+    }
+    
+    const buffer = this.inTransaction ? this.transactionBuffer : data.buffer;
+    const updatedBuffer = await updateUseCaseInWorkbook(buffer, id, updatedUseCase);
+    
+    if (this.inTransaction) {
+      this.transactionBuffer = updatedBuffer;
+    } else {
+      await this.uploadFile(updatedBuffer);
+      // Update cache
+      data.useCases[existingIndex] = updatedUseCase;
+      data.buffer = updatedBuffer;
+    }
+    
+    return updatedUseCase;
+  }
+  
+  async deleteUseCase(id) {
+    const data = await this.getData();
+    const useCase = data.useCases.find(uc => uc.id === id);
+    
+    if (!useCase) {
+      throw new ApiError(404, ErrorCodes.USE_CASE_NOT_FOUND, { id });
+    }
+    
+    let buffer = this.inTransaction ? this.transactionBuffer : data.buffer;
+    
+    // Remove all relationships for this use case
+    buffer = await removeAllRelationshipsForUseCase(buffer, id);
+    
+    // Delete the use case
+    const updatedBuffer = await deleteUseCaseFromWorkbook(buffer, id);
+    
+    if (this.inTransaction) {
+      this.transactionBuffer = updatedBuffer;
+    } else {
+      await this.uploadFile(updatedBuffer);
+      // Update cache
+      data.useCases = data.useCases.filter(uc => uc.id !== id);
+      data.relationships = data.relationships.filter(rel => 
+        !(rel.linkType === 'UseCase-Risk' && rel.controlId === id)
+      );
+      data.buffer = updatedBuffer;
+    }
+  }
+  
   // Relationship operations
   async addRiskControlRelationship(riskId, controlId) {
     // Verify both exist
@@ -515,6 +686,108 @@ class GoogleDrivePersistenceProvider extends IPersistenceProvider {
     
     return data.risks.filter(r => 
       control.relatedRiskIds.includes(r.id)
+    );
+  }
+  
+  async addUseCaseRiskRelationship(useCaseId, riskId) {
+    // Verify both exist
+    const useCase = await this.getUseCaseById(useCaseId);
+    const risk = await this.getRiskById(riskId);
+    const data = await this.getData();
+    
+    // Check if relationship already exists
+    const existingRelationship = data.relationships.find(
+      rel => rel.linkType === 'UseCase-Risk' && rel.controlId === useCaseId && rel.riskId === riskId
+    );
+    
+    if (existingRelationship) {
+      return; // Relationship already exists
+    }
+    
+    // Create new relationship
+    const relationship = {
+      controlId: useCaseId, // Using controlId field to store use case ID
+      riskId,
+      linkType: 'UseCase-Risk',
+      effectiveness: '', // Not applicable for use case-risk
+      notes: '',
+      createdDate: new Date().toISOString(),
+      lastUpdated: new Date().toISOString()
+    };
+    
+    const buffer = this.inTransaction ? this.transactionBuffer : data.buffer;
+    const updatedBuffer = await addRelationshipToWorkbook(
+      buffer, 
+      relationship.controlId, 
+      relationship.riskId, 
+      relationship.linkType, 
+      relationship.effectiveness, 
+      relationship.notes
+    );
+    
+    if (this.inTransaction) {
+      this.transactionBuffer = updatedBuffer;
+    } else {
+      await this.uploadFile(updatedBuffer);
+      // Update cache
+      data.relationships.push(relationship);
+      if (!useCase.relatedRiskIds.includes(riskId)) {
+        useCase.relatedRiskIds.push(riskId);
+      }
+      if (!risk.relatedUseCaseIds) {
+        risk.relatedUseCaseIds = [];
+      }
+      if (!risk.relatedUseCaseIds.includes(useCaseId)) {
+        risk.relatedUseCaseIds.push(useCaseId);
+      }
+      data.buffer = updatedBuffer;
+    }
+  }
+  
+  async removeUseCaseRiskRelationship(useCaseId, riskId) {
+    // Verify both exist
+    const useCase = await this.getUseCaseById(useCaseId);
+    const risk = await this.getRiskById(riskId);
+    const data = await this.getData();
+    
+    const buffer = this.inTransaction ? this.transactionBuffer : data.buffer;
+    const updatedBuffer = await removeRelationshipFromWorkbook(buffer, useCaseId, riskId);
+    
+    if (this.inTransaction) {
+      this.transactionBuffer = updatedBuffer;
+    } else {
+      await this.uploadFile(updatedBuffer);
+      // Update cache
+      data.relationships = data.relationships.filter(
+        rel => !(rel.linkType === 'UseCase-Risk' && rel.controlId === useCaseId && rel.riskId === riskId)
+      );
+      useCase.relatedRiskIds = useCase.relatedRiskIds.filter(id => id !== riskId);
+      if (risk.relatedUseCaseIds) {
+        risk.relatedUseCaseIds = risk.relatedUseCaseIds.filter(id => id !== useCaseId);
+      }
+      data.buffer = updatedBuffer;
+    }
+  }
+  
+  async getRisksForUseCase(useCaseId) {
+    const useCase = await this.getUseCaseById(useCaseId);
+    const data = await this.getData();
+    
+    return data.risks.filter(r => 
+      useCase.relatedRiskIds.includes(r.id)
+    );
+  }
+  
+  async getUseCasesForRisk(riskId) {
+    const risk = await this.getRiskById(riskId);
+    const data = await this.getData();
+    
+    if (!risk.relatedUseCaseIds) {
+      return [];
+    }
+    
+    return data.useCases.filter(uc => 
+      risk.relatedUseCaseIds.includes(uc.id)
     );
   }
   

@@ -9,7 +9,8 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  User
+  User,
+  Lightbulb
 } from 'lucide-react';
 import { useUIStore, useCurrentUser } from '../../store';
 import { cn } from '../../utils/cn';
@@ -53,6 +54,7 @@ export const Sidebar: React.FC = () => {
     { to: '/dashboard', icon: <LayoutDashboard className={iconSize} />, label: 'Dashboard' },
     { to: '/controls', icon: <Shield className={iconSize} />, label: 'Controls' },
     { to: '/risks', icon: <FileWarning className={iconSize} />, label: 'Risk Register' },
+    { to: '/usecases', icon: <Lightbulb className={iconSize} />, label: 'Use Cases' },
     { to: '/matrix', icon: <Grid3X3 className={iconSize} />, label: 'Risk Matrix' },
     { to: '/reports', icon: <FileText className={iconSize} />, label: 'Reports' },
   ];

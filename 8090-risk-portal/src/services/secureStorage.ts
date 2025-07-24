@@ -257,7 +257,7 @@ class SecureStorageService {
     
     const user = await this.mockDb.getUserByEmail(email);
     if (!user) return null;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     const { password, ...safeUser } = user;
     return safeUser as Omit<User, 'password'>;
   }

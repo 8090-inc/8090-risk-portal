@@ -2107,6 +2107,277 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /usecases:
+    get:
+      tags:
+        - Use Cases
+      summary: List all use cases
+      description: |
+        Retrieve all AI use cases in the system with optional filtering.
+        
+        **Features:**
+        - Filter by business area, AI category, status, owner
+        - Search across title, description, and notes
+        - Results include key metrics and risk associations
+      operationId: listUseCases
+      parameters:
+        - name: businessArea
+          in: query
+          description: Filter by business area
+          schema:
+            type: string
+            enum: [General, Medical, R&D, Commercial, Manufacturing, Pharmacovigilance, Legal, Clinical, Quality Management, Supply Chain, Finance]
+        - name: aiCategory
+          in: query
+          description: Filter by AI category
+          schema:
+            type: string
+            enum: [Content Generation, Data Analysis, Image Analysis, Natural Language Processing, Speech Recognition, Machine Learning, Computer Vision, Predictive Analytics, Process Automation, Decision Support]
+        - name: status
+          in: query
+          description: Filter by status
+          schema:
+            type: string
+            enum: [Concept, Under Review, Approved, In Development, Pilot, In Production, On Hold, Cancelled]
+        - name: owner
+          in: query
+          description: Filter by owner name
+          schema:
+            type: string
+        - name: search
+          in: query
+          description: Search across title, description, and notes
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Use cases retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UseCasesListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      tags:
+        - Use Cases
+      summary: Create a new use case
+      description: |
+        Create a new AI use case in the system.
+        
+        **Required fields:**
+        - title: Use case name/title
+        
+        **Auto-generated:**
+        - id: UC-XXX format (e.g., UC-001)
+        - createdDate: Current timestamp
+        - lastUpdated: Current timestamp
+      operationId: createUseCase
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UseCaseCreateRequest'
+      responses:
+        '201':
+          description: Use case created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UseCaseResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /usecases/statistics:
+    get:
+      tags:
+        - Use Cases
+      summary: Get use case statistics
+      description: |
+        Retrieve aggregated statistics about use cases.
+        
+        **Includes:**
+        - Total count
+        - Distribution by status
+        - Distribution by business area
+        - Distribution by AI category
+        - Total cost savings
+        - Average effort months
+      operationId: getUseCaseStatistics
+      responses:
+        '200':
+          description: Statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UseCaseStatisticsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /usecases/{useCaseId}:
+    get:
+      tags:
+        - Use Cases
+      summary: Get a specific use case
+      description: Retrieve detailed information about a specific use case including all fields and associations
+      operationId: getUseCaseById
+      parameters:
+        - $ref: '#/components/parameters/UseCaseId'
+      responses:
+        '200':
+          description: Use case retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UseCaseResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/UseCaseNotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    put:
+      tags:
+        - Use Cases
+      summary: Update a use case
+      description: |
+        Update an existing use case.
+        
+        **Notes:**
+        - All fields are optional in update
+        - Only provided fields will be updated
+        - lastUpdated timestamp auto-updated
+      operationId: updateUseCase
+      parameters:
+        - $ref: '#/components/parameters/UseCaseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UseCaseUpdateRequest'
+      responses:
+        '200':
+          description: Use case updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UseCaseResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/UseCaseNotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      tags:
+        - Use Cases
+      summary: Delete a use case
+      description: |
+        Permanently delete a use case from the system.
+        
+        **Cascade effects:**
+        - Use case removed from Use Cases sheet
+        - All risk associations deleted
+        - Audit trail updated
+      operationId: deleteUseCase
+      parameters:
+        - $ref: '#/components/parameters/UseCaseId'
+      responses:
+        '204':
+          description: Use case deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/UseCaseNotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /usecases/{useCaseId}/risks:
+    get:
+      tags:
+        - Use Cases
+        - Relationships
+      summary: Get risks associated with a use case
+      description: Retrieve all risks associated with a specific use case
+      operationId: getRisksForUseCase
+      parameters:
+        - $ref: '#/components/parameters/UseCaseId'
+      responses:
+        '200':
+          description: Risks retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RisksListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/UseCaseNotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    put:
+      tags:
+        - Use Cases
+        - Relationships
+      summary: Update risk associations for a use case
+      description: |
+        Replace all risk associations for a use case.
+        
+        **Notes:**
+        - This replaces ALL existing associations
+        - To add/remove individual risks, first GET current associations
+        - Risk IDs must exist in the system
+      operationId: updateUseCaseRisks
+      parameters:
+        - $ref: '#/components/parameters/UseCaseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - riskIds
+              properties:
+                riskIds:
+                  type: array
+                  description: Array of risk IDs to associate
+                  items:
+                    type: string
+                    pattern: '^RISK-'
+                  example: ["RISK-ACCURACY", "RISK-BIASED-OUTPUTS"]
+      responses:
+        '200':
+          description: Risk associations updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UseCaseResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/UseCaseNotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
 components:
   securitySchemes:
     GoogleIAP:
@@ -2162,6 +2433,18 @@ components:
         type: string
         pattern: '^(ACC|SEC|LOG|GOV|TEST)-\d{2}$'
         example: ACC-01
+
+    UseCaseId:
+      name: useCaseId
+      in: path
+      required: true
+      description: |
+        Use case identifier in format UC-XXX.
+        Example: UC-001
+      schema:
+        type: string
+        pattern: '^UC-\d{3}$'
+        example: UC-001
 
     CategoryFilter:
       name: category
@@ -3073,6 +3356,370 @@ components:
               type: string
               format: date-time
 
+    UseCase:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: '^UC-\d{3}$'
+          description: Unique identifier in UC-XXX format
+          example: UC-001
+        title:
+          type: string
+          description: Use case title
+          example: AI-Powered Customer Service Assistant
+        description:
+          type: string
+          description: Detailed description of the use case
+        businessArea:
+          type: string
+          enum: [General, Medical, R&D, Commercial, Manufacturing, Pharmacovigilance, Legal, Clinical, Quality Management, Supply Chain, Finance]
+          description: Business area this use case belongs to
+        aiCategories:
+          type: array
+          items:
+            type: string
+            enum: [Content Generation, Data Analysis, Image Analysis, Natural Language Processing, Speech Recognition, Machine Learning, Computer Vision, Predictive Analytics, Process Automation, Decision Support]
+          description: AI technology categories used
+        objective:
+          type: object
+          properties:
+            currentState:
+              type: string
+              description: Description of current state/problem
+            futureState:
+              type: string
+              description: Desired future state
+            solution:
+              type: string
+              description: Proposed AI solution
+            benefits:
+              type: string
+              description: Expected benefits
+        impact:
+          type: object
+          properties:
+            impactPoints:
+              type: array
+              items:
+                type: string
+              description: Key impact areas
+            costSaving:
+              type: number
+              description: Estimated annual cost savings in USD
+              example: 500000
+            effortMonths:
+              type: number
+              description: Implementation effort in months
+              example: 6
+        execution:
+          type: object
+          properties:
+            functionsImpacted:
+              type: array
+              items:
+                type: string
+              description: Business functions affected
+            dataRequirements:
+              type: string
+              description: Data needed for the AI solution
+            aiComplexity:
+              type: string
+              enum: [Low, Medium, High]
+            feasibility:
+              type: string
+              enum: [Low, Medium, High]
+            value:
+              type: string
+              enum: [Low, Medium, High]
+            risk:
+              type: string
+              enum: [Low, Medium, High]
+        status:
+          type: string
+          enum: [Concept, Under Review, Approved, In Development, Pilot, In Production, On Hold, Cancelled]
+          description: Current status
+        implementationStart:
+          type: string
+          format: date
+          description: Implementation start date
+        implementationEnd:
+          type: string
+          format: date
+          description: Implementation end date
+        owner:
+          type: string
+          description: Primary owner/sponsor
+        stakeholders:
+          type: array
+          items:
+            type: string
+          description: Key stakeholders
+        notes:
+          type: string
+          description: Additional notes
+        createdDate:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+        lastUpdated:
+          type: string
+          format: date-time
+        lastUpdatedBy:
+          type: string
+        relatedRiskIds:
+          type: array
+          items:
+            type: string
+            pattern: '^RISK-'
+          description: Associated risk IDs
+        riskCount:
+          type: integer
+          description: Number of associated risks
+
+    UseCaseCreateRequest:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 2000
+        businessArea:
+          type: string
+          enum: [General, Medical, R&D, Commercial, Manufacturing, Pharmacovigilance, Legal, Clinical, Quality Management, Supply Chain, Finance]
+        aiCategories:
+          type: array
+          items:
+            type: string
+            enum: [Content Generation, Data Analysis, Image Analysis, Natural Language Processing, Speech Recognition, Machine Learning, Computer Vision, Predictive Analytics, Process Automation, Decision Support]
+        objective:
+          type: object
+          properties:
+            currentState:
+              type: string
+              maxLength: 1000
+            futureState:
+              type: string
+              maxLength: 1000
+            solution:
+              type: string
+              maxLength: 1000
+            benefits:
+              type: string
+              maxLength: 1000
+        impact:
+          type: object
+          properties:
+            impactPoints:
+              type: array
+              items:
+                type: string
+            costSaving:
+              type: number
+              minimum: 0
+            effortMonths:
+              type: number
+              minimum: 0
+              maximum: 120
+        execution:
+          type: object
+          properties:
+            functionsImpacted:
+              type: array
+              items:
+                type: string
+            dataRequirements:
+              type: string
+            aiComplexity:
+              type: string
+              enum: [Low, Medium, High]
+            feasibility:
+              type: string
+              enum: [Low, Medium, High]
+            value:
+              type: string
+              enum: [Low, Medium, High]
+            risk:
+              type: string
+              enum: [Low, Medium, High]
+        status:
+          type: string
+          enum: [Concept, Under Review, Approved, In Development, Pilot, In Production, On Hold, Cancelled]
+        owner:
+          type: string
+        stakeholders:
+          type: array
+          items:
+            type: string
+        notes:
+          type: string
+
+    UseCaseUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 2000
+        businessArea:
+          type: string
+          enum: [General, Medical, R&D, Commercial, Manufacturing, Pharmacovigilance, Legal, Clinical, Quality Management, Supply Chain, Finance]
+        aiCategories:
+          type: array
+          items:
+            type: string
+            enum: [Content Generation, Data Analysis, Image Analysis, Natural Language Processing, Speech Recognition, Machine Learning, Computer Vision, Predictive Analytics, Process Automation, Decision Support]
+        objective:
+          type: object
+          properties:
+            currentState:
+              type: string
+              maxLength: 1000
+            futureState:
+              type: string
+              maxLength: 1000
+            solution:
+              type: string
+              maxLength: 1000
+            benefits:
+              type: string
+              maxLength: 1000
+        impact:
+          type: object
+          properties:
+            impactPoints:
+              type: array
+              items:
+                type: string
+            costSaving:
+              type: number
+              minimum: 0
+            effortMonths:
+              type: number
+              minimum: 0
+              maximum: 120
+        execution:
+          type: object
+          properties:
+            functionsImpacted:
+              type: array
+              items:
+                type: string
+            dataRequirements:
+              type: string
+            aiComplexity:
+              type: string
+              enum: [Low, Medium, High]
+            feasibility:
+              type: string
+              enum: [Low, Medium, High]
+            value:
+              type: string
+              enum: [Low, Medium, High]
+            risk:
+              type: string
+              enum: [Low, Medium, High]
+        status:
+          type: string
+          enum: [Concept, Under Review, Approved, In Development, Pilot, In Production, On Hold, Cancelled]
+        implementationStart:
+          type: string
+          format: date
+        implementationEnd:
+          type: string
+          format: date
+        owner:
+          type: string
+        stakeholders:
+          type: array
+          items:
+            type: string
+        notes:
+          type: string
+
+    UseCaseResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/UseCase'
+        message:
+          type: string
+          description: Success message
+        meta:
+          type: object
+          properties:
+            timestamp:
+              type: string
+              format: date-time
+
+    UseCasesListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/UseCase'
+        metadata:
+          type: object
+          properties:
+            count:
+              type: integer
+              description: Number of results
+            filters:
+              type: array
+              items:
+                type: string
+              description: Applied filters
+
+    UseCaseStatisticsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            total:
+              type: integer
+              description: Total number of use cases
+            byStatus:
+              type: object
+              additionalProperties:
+                type: integer
+              description: Count by status
+            byBusinessArea:
+              type: object
+              additionalProperties:
+                type: integer
+              description: Count by business area
+            byAiCategory:
+              type: object
+              additionalProperties:
+                type: integer
+              description: Count by AI category
+            totalCostSaving:
+              type: number
+              description: Sum of all cost savings
+            averageEffortMonths:
+              type: number
+              description: Average implementation effort
+
   responses:
     Unauthorized:
       description: Authentication required or invalid
@@ -3138,10 +3785,22 @@ components:
             error:
               code: CONTROL_NOT_FOUND
               message: Control with ID 'ACC-99' not found in the system
+
+    UseCaseNotFound:
+      description: Use case not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: USE_CASE_NOT_FOUND
+              message: Use case with ID 'UC-999' not found in the system
               details:
-                resourceId: ACC-99
-                resourceType: control
-              suggestion: Verify the control ID exists. List all controls using GET /api/v1/controls
+                resourceId: UC-999
+                resourceType: useCase
+              suggestion: Verify the use case ID exists. List all use cases using GET /api/v1/usecases
 
     UnprocessableEntity:
       description: Business logic or validation error

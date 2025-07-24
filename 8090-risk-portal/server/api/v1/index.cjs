@@ -4,6 +4,7 @@ const risksApi = require('./risks.cjs');
 const controlsApi = require('./controls.cjs');
 const relationshipsApi = require('./relationships.cjs');
 const uploadApi = require('./upload.cjs');
+const useCasesApi = require('./usecases.cjs');
 const { authenticate } = require('../../middleware/auth.cjs');
 
 // Initialize services function to be called from main server
@@ -11,6 +12,7 @@ const initializeServices = (driveService, fileId) => {
   risksApi.initializeService(driveService, fileId);
   controlsApi.initializeService(driveService, fileId);
   relationshipsApi.initializeService(driveService, fileId);
+  useCasesApi.initializeService(driveService, fileId);
   
   // Get services to pass to upload
   const riskService = risksApi.getService();
@@ -25,6 +27,7 @@ router.use(authenticate);
 router.use('/risks', risksApi.router);
 router.use('/controls', controlsApi.router);
 router.use('/upload', uploadApi.router);
+router.use('/usecases', useCasesApi.router);
 
 // Mount relationship routers
 router.use('/risks/:riskId/controls', relationshipsApi.riskControlsRouter);

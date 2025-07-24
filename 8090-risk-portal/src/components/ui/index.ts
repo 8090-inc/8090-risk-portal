@@ -1,10 +1,13 @@
 export { Alert } from './Alert';
 export { Badge } from './Badge';
+export { Breadcrumb, type BreadcrumbItem } from './Breadcrumb';
 export { Button } from './Button';
 export { Card } from './Card';
 export { Input } from './Input';
+export { Label } from './Label';
 export { Modal } from './Modal';
 export { MultiSelect, type MultiSelectOption } from './MultiSelect';
 export { Select } from './Select';
 export { Spinner } from './Spinner';
+export { Textarea } from './Textarea';
 export { Tooltip } from './Tooltip';
