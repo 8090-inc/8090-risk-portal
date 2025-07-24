@@ -210,7 +210,7 @@ export const ControlsView: React.FC = () => {
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-8090-primary mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading controls...</p>
+          <p className="mt-4 text-slate-600">Loading controls...</p>
         </div>
       </div>
     );
@@ -243,7 +243,7 @@ export const ControlsView: React.FC = () => {
             <span>
               Controls
               {hasActiveFilters && (
-                <span className="ml-2 text-lg font-normal text-gray-600">
+                <span className="ml-2 text-lg font-normal text-slate-600">
                   ({filteredControls.length} of {controls.length})
                 </span>
               )}
@@ -307,7 +307,7 @@ export const ControlsView: React.FC = () => {
               <div className="space-y-4">
                 {/* Saved Filter Sets */}
                 <div>
-                  <h3 className="text-sm font-medium text-gray-700 mb-2">Saved Filters</h3>
+                  <h3 className="text-sm font-medium text-slate-700 mb-2">Saved Filters</h3>
                   <div className="flex flex-wrap gap-2">
                     {allFilterSets.map((filterSet) => (
                       <Button
@@ -317,7 +317,7 @@ export const ControlsView: React.FC = () => {
                         onClick={() => loadFilterSet(filterSet)}
                         className={cn(
                           "text-xs",
-                          filterSet.isDefault && "text-gray-600"
+                          filterSet.isDefault && "text-slate-600"
                         )}
                       >
                         {filterSet.name}
@@ -332,7 +332,7 @@ export const ControlsView: React.FC = () => {
                     const activeCount = activeFilters[group.id]?.length || 0;
                     return (
                       <div key={group.id}>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
                           {group.label}
                           {activeCount > 0 && (
                             <Badge size="sm" variant="secondary" className="ml-2">
@@ -340,13 +340,13 @@ export const ControlsView: React.FC = () => {
                             </Badge>
                           )}
                         </label>
-                        <div className="space-y-1 max-h-40 overflow-y-auto border border-gray-200 rounded p-2">
+                        <div className="space-y-1 max-h-40 overflow-y-auto border border-slate-200 rounded p-2">
                           {group.options.map((option) => {
                             const isActive = activeFilters[group.id]?.includes(option.value);
                             return (
                               <label
                                 key={option.value}
-                                className="flex items-center justify-between p-1 rounded cursor-pointer hover:bg-gray-50"
+                                className="flex items-center justify-between p-1 rounded cursor-pointer hover:bg-slate-50"
                               >
                                 <div className="flex items-center space-x-2">
                                   <input
@@ -359,11 +359,11 @@ export const ControlsView: React.FC = () => {
                                         : currentValues.filter(v => v !== option.value);
                                       updateFilter(group.id, newValues);
                                     }}
-                                    className="h-3 w-3 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                    className="h-3 w-3 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
                                   />
-                                  <span className="text-sm text-gray-700">{option.label}</span>
+                                  <span className="text-sm text-slate-700">{option.label}</span>
                                 </div>
-                                <span className="text-xs text-gray-500">{option.count}</span>
+                                <span className="text-xs text-slate-500">{option.count}</span>
                               </label>
                             );
                           })}

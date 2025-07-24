@@ -82,7 +82,7 @@ export function UseCaseRiskManagementView() {
   if (!selectedUseCase) {
     return (
       <div className="text-center py-8">
-        <p className="text-gray-500">Use case not found</p>
+        <p className="text-slate-500">Use case not found</p>
         <Button onClick={() => navigate('/usecases')} className="mt-4">
           Back to Use Cases
         </Button>
@@ -105,7 +105,7 @@ export function UseCaseRiskManagementView() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold">Manage Associated Risks</h1>
-          <p className="text-sm text-gray-600 mt-1">{selectedUseCase.title}</p>
+          <p className="text-sm text-slate-600 mt-1">{selectedUseCase.title}</p>
         </div>
         <div className="flex gap-2">
           <Button
@@ -129,7 +129,7 @@ export function UseCaseRiskManagementView() {
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
         <Input
           type="search"
           placeholder="Search risks by description..."
@@ -165,7 +165,7 @@ export function UseCaseRiskManagementView() {
                     checked={isSelected}
                     onChange={() => toggleRisk(risk.id)}
                     onClick={(e) => e.stopPropagation()}
-                    className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="h-5 w-5 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
                   />
                 </div>
                 <div className="flex-1">
@@ -176,16 +176,16 @@ export function UseCaseRiskManagementView() {
                     >
                       {risk.initialScoring.riskLevelCategory}
                     </Badge>
-                    <span className="text-xs font-semibold text-gray-700">ID: {risk.id}</span>
-                    <span className="text-xs text-gray-600">• {risk.riskCategory}</span>
+                    <span className="text-xs font-semibold text-slate-700">ID: {risk.id}</span>
+                    <span className="text-xs text-slate-600">• {risk.riskCategory}</span>
                   </div>
-                  <h3 className="text-sm font-medium text-gray-900 mb-2">{risk.riskDescription}</h3>
-                  <div className="flex items-center gap-4 text-xs text-gray-600">
+                  <h3 className="text-sm font-medium text-slate-900 mb-2">{risk.riskDescription}</h3>
+                  <div className="flex items-center gap-4 text-xs text-slate-600">
                     <span>Impact: <span className="font-medium">{risk.initialScoring.impact}</span></span>
                     <span>Likelihood: <span className="font-medium">{risk.initialScoring.likelihood}</span></span>
                     {risk.relatedControlIds.length > 0 && (
                       <span className="flex items-center gap-1 text-xs">
-                        <span className="text-gray-500">•</span>
+                        <span className="text-slate-500">•</span>
                         {risk.relatedControlIds.length} control{risk.relatedControlIds.length !== 1 ? 's' : ''}
                       </span>
                     )}
@@ -199,7 +199,7 @@ export function UseCaseRiskManagementView() {
 
       {filteredRisks.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-gray-500">No risks found matching your search</p>
+          <p className="text-slate-500">No risks found matching your search</p>
         </div>
       )}
     </div>

@@ -122,7 +122,7 @@ export function UseCaseDetailView() {
       case 'Low':
         return 'text-green-600';
       default:
-        return 'text-gray-600';
+        return 'text-slate-600';
     }
   };
   
@@ -331,7 +331,7 @@ export function UseCaseDetailView() {
                 
                 <div className="grid grid-cols-2 gap-2">
                   {selectedUseCase.execution.aiComplexity && (
-                    <div className="flex items-center justify-between p-2 bg-slate-50 rounded-md">
+                    <div className="flex items-center justify-between p-2 bg-slate-50 rounded-lg">
                       <span className="text-xs text-muted-foreground">AI Complexity</span>
                       <span className={`text-xs font-semibold ${getLevelColor(selectedUseCase.execution.aiComplexity)}`}>
                         {selectedUseCase.execution.aiComplexity}
@@ -339,7 +339,7 @@ export function UseCaseDetailView() {
                     </div>
                   )}
                   {selectedUseCase.execution.feasibility && (
-                    <div className="flex items-center justify-between p-2 bg-slate-50 rounded-md">
+                    <div className="flex items-center justify-between p-2 bg-slate-50 rounded-lg">
                       <span className="text-xs text-muted-foreground">Feasibility</span>
                       <span className={`text-xs font-semibold ${getLevelColor(selectedUseCase.execution.feasibility)}`}>
                         {selectedUseCase.execution.feasibility}
@@ -347,7 +347,7 @@ export function UseCaseDetailView() {
                     </div>
                   )}
                   {selectedUseCase.execution.value && (
-                    <div className="flex items-center justify-between p-2 bg-slate-50 rounded-md">
+                    <div className="flex items-center justify-between p-2 bg-slate-50 rounded-lg">
                       <span className="text-xs text-muted-foreground">Business Value</span>
                       <span className={`text-xs font-semibold ${getLevelColor(selectedUseCase.execution.value)}`}>
                         {selectedUseCase.execution.value}
@@ -355,7 +355,7 @@ export function UseCaseDetailView() {
                     </div>
                   )}
                   {selectedUseCase.execution.risk && (
-                    <div className="flex items-center justify-between p-2 bg-slate-50 rounded-md">
+                    <div className="flex items-center justify-between p-2 bg-slate-50 rounded-lg">
                       <span className="text-xs text-muted-foreground">Risk Level</span>
                       <span className={`text-xs font-semibold ${getLevelColor(selectedUseCase.execution.risk)}`}>
                         {selectedUseCase.execution.risk}
@@ -377,7 +377,7 @@ export function UseCaseDetailView() {
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="flex items-start gap-2.5">
-                    <div className="p-2 bg-green-50 rounded-md">
+                    <div className="p-2 bg-green-50 rounded-lg">
                       <DollarSign className="h-5 w-5 text-green-600" />
                     </div>
                     <div>
@@ -388,7 +388,7 @@ export function UseCaseDetailView() {
                     </div>
                   </div>
                   <div className="flex items-start gap-2.5">
-                    <div className="p-2 bg-blue-50 rounded-md">
+                    <div className="p-2 bg-blue-50 rounded-lg">
                       <Calendar className="h-5 w-5 text-blue-600" />
                     </div>
                     <div>
@@ -489,7 +489,7 @@ export function UseCaseDetailView() {
           <div className="bg-gradient-to-r from-orange-50 to-red-50 p-4 border-b border-orange-100">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-white rounded-md shadow-sm">
+                <div className="p-2 bg-white rounded-lg shadow-sm">
                   <Shield className="h-5 w-5 text-orange-600" />
                 </div>
                 <div>

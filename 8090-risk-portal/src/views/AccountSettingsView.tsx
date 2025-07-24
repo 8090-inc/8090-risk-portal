@@ -14,7 +14,7 @@ export const AccountSettingsView: React.FC = () => {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-          <p className="text-gray-600">Loading user information...</p>
+          <p className="text-slate-600">Loading user information...</p>
         </div>
       </div>
     );

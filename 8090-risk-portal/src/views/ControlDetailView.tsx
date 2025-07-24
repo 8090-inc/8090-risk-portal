@@ -27,7 +27,7 @@ const DetailsTab: React.FC<TabContentProps> = ({ control }) => {
       case 'Planned':
         return <AlertCircle className="h-5 w-5 text-yellow-600" />;
       default:
-        return <XCircle className="h-5 w-5 text-gray-400" />;
+        return <XCircle className="h-5 w-5 text-slate-400" />;
     }
   };
 
@@ -40,7 +40,7 @@ const DetailsTab: React.FC<TabContentProps> = ({ control }) => {
       case 'Planned':
         return 'text-yellow-600 bg-yellow-50';
       default:
-        return 'text-gray-600 bg-gray-50';
+        return 'text-slate-600 bg-slate-50';
     }
   };
 
@@ -49,7 +49,7 @@ const DetailsTab: React.FC<TabContentProps> = ({ control }) => {
       {/* Basic Information */}
       <Card>
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+          <h3 className="text-lg font-semibold text-slate-900 flex items-center">
             <Shield className="h-5 w-5 mr-2 text-8090-primary" />
             Control Details
           </h3>
@@ -57,26 +57,26 @@ const DetailsTab: React.FC<TabContentProps> = ({ control }) => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-500">Control ID</label>
-                <p className="mt-1 text-sm text-gray-900 font-mono">{control.mitigationID.toUpperCase()}</p>
+                <label className="text-sm font-medium text-slate-500">Control ID</label>
+                <p className="mt-1 text-sm text-slate-900 font-mono">{control.mitigationID.toUpperCase()}</p>
               </div>
               
               <div>
-                <label className="text-sm font-medium text-gray-500">Category</label>
+                <label className="text-sm font-medium text-slate-500">Category</label>
                 <div className="mt-1">
                   <Badge variant="default">{control.category}</Badge>
                 </div>
               </div>
               
               <div>
-                <label className="text-sm font-medium text-gray-500">Related Risks</label>
-                <p className="mt-1 text-sm text-gray-900">{control.relatedRiskIds?.length || 0} risks mitigated</p>
+                <label className="text-sm font-medium text-slate-500">Related Risks</label>
+                <p className="mt-1 text-sm text-slate-900">{control.relatedRiskIds?.length || 0} risks mitigated</p>
               </div>
             </div>
             
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-500">Implementation Status</label>
+                <label className="text-sm font-medium text-slate-500">Implementation Status</label>
                 <div className={cn(
                   "mt-1 inline-flex items-center space-x-2 px-3 py-2 rounded-lg",
                   getStatusColor(control.implementationStatus)
@@ -89,7 +89,7 @@ const DetailsTab: React.FC<TabContentProps> = ({ control }) => {
               </div>
               
               <div>
-                <label className="text-sm font-medium text-gray-500">Effectiveness</label>
+                <label className="text-sm font-medium text-slate-500">Effectiveness</label>
                 <div className="mt-1">
                   <Badge variant={
                     control.effectiveness === 'High' ? 'success' : 
@@ -103,8 +103,8 @@ const DetailsTab: React.FC<TabContentProps> = ({ control }) => {
               
               {control.complianceScore !== undefined && (
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Compliance Score</label>
-                  <p className="mt-1 text-sm font-medium text-gray-900">
+                  <label className="text-sm font-medium text-slate-500">Compliance Score</label>
+                  <p className="mt-1 text-sm font-medium text-slate-900">
                     {Math.round(control.complianceScore * 100)}%
                   </p>
                 </div>
@@ -117,20 +117,20 @@ const DetailsTab: React.FC<TabContentProps> = ({ control }) => {
       {/* Description */}
       <Card>
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900">Description</h3>
-          <p className="text-sm text-gray-700 leading-relaxed">{control.mitigationDescription}</p>
+          <h3 className="text-lg font-semibold text-slate-900">Description</h3>
+          <p className="text-sm text-slate-700 leading-relaxed">{control.mitigationDescription}</p>
         </div>
       </Card>
 
       {/* Implementation Details */}
       <Card>
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900">Implementation Details</h3>
+          <h3 className="text-lg font-semibold text-slate-900">Implementation Details</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="text-sm font-medium text-gray-500">Implementation Date</label>
-              <p className="mt-1 text-sm text-gray-900">
+              <label className="text-sm font-medium text-slate-500">Implementation Date</label>
+              <p className="mt-1 text-sm text-slate-900">
                 {control.implementationDate ? 
                   new Date(control.implementationDate).toLocaleDateString() : 
                   'Not set'}
@@ -138,8 +138,8 @@ const DetailsTab: React.FC<TabContentProps> = ({ control }) => {
             </div>
             
             <div>
-              <label className="text-sm font-medium text-gray-500">Created Date</label>
-              <p className="mt-1 text-sm text-gray-900">
+              <label className="text-sm font-medium text-slate-500">Created Date</label>
+              <p className="mt-1 text-sm text-slate-900">
                 {control.createdAt ? 
                   new Date(control.createdAt).toLocaleDateString() : 
                   'Unknown'}
@@ -147,8 +147,8 @@ const DetailsTab: React.FC<TabContentProps> = ({ control }) => {
             </div>
             
             <div>
-              <label className="text-sm font-medium text-gray-500">Last Updated</label>
-              <p className="mt-1 text-sm text-gray-900">
+              <label className="text-sm font-medium text-slate-500">Last Updated</label>
+              <p className="mt-1 text-sm text-slate-900">
                 {control.lastUpdated ? 
                   new Date(control.lastUpdated).toLocaleDateString() : 
                   'Never'}
@@ -208,23 +208,23 @@ const ComplianceTab: React.FC<TabContentProps> = ({ control }) => {
     <div className="space-y-6">
       <Card>
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+          <h3 className="text-lg font-semibold text-slate-900 flex items-center">
             <Shield className="h-5 w-5 mr-2 text-8090-primary" />
             Regulatory Compliance Mappings
           </h3>
           
           {applicableFrameworks.length === 0 ? (
-            <p className="text-gray-500 text-sm">No regulatory mappings configured for this control.</p>
+            <p className="text-slate-500 text-sm">No regulatory mappings configured for this control.</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {applicableFrameworks.map((framework) => (
-                <div key={framework.name} className="border border-gray-200 rounded-lg p-4">
+                <div key={framework.name} className="border border-slate-200 rounded-lg p-4">
                   <div className="flex items-start space-x-3">
                     <span className="text-2xl">{framework.icon}</span>
                     <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">{framework.name}</h4>
-                      <p className="text-sm text-gray-600 mt-1">{framework.value}</p>
-                      <p className="text-xs text-gray-500 mt-2">{framework.description}</p>
+                      <h4 className="font-medium text-slate-900">{framework.name}</h4>
+                      <p className="text-sm text-slate-600 mt-1">{framework.value}</p>
+                      <p className="text-xs text-slate-500 mt-2">{framework.description}</p>
                     </div>
                   </div>
                 </div>
@@ -238,17 +238,17 @@ const ComplianceTab: React.FC<TabContentProps> = ({ control }) => {
       {control.complianceScore !== undefined && (
         <Card>
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900">Compliance Score Breakdown</h3>
+            <h3 className="text-lg font-semibold text-slate-900">Compliance Score Breakdown</h3>
             
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Overall Compliance</span>
-                <span className="text-lg font-semibold text-gray-900">
+                <span className="text-sm text-slate-600">Overall Compliance</span>
+                <span className="text-lg font-semibold text-slate-900">
                   {Math.round(control.complianceScore * 100)}%
                 </span>
               </div>
               
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-slate-200 rounded-full h-2">
                 <div 
                   className={cn(
                     "h-2 rounded-full transition-all",
@@ -260,7 +260,7 @@ const ComplianceTab: React.FC<TabContentProps> = ({ control }) => {
                 />
               </div>
               
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-slate-500">
                 Based on {applicableFrameworks.length} applicable regulatory frameworks
               </p>
             </div>
@@ -291,7 +291,7 @@ const RelatedRisksTab: React.FC<TabContentProps> = ({ control, relatedRisks }) =
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+        <h3 className="text-lg font-semibold text-slate-900 flex items-center">
           <FileWarning className="h-5 w-5 mr-2 text-8090-primary" />
           Mitigated Risks ({relatedRisks.length})
         </h3>
@@ -309,8 +309,8 @@ const RelatedRisksTab: React.FC<TabContentProps> = ({ control, relatedRisks }) =
       {relatedRisks.length === 0 ? (
         <Card>
           <div className="text-center py-8">
-            <FileWarning className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">No risks are currently mitigated by this control.</p>
+            <FileWarning className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+            <p className="text-slate-500">No risks are currently mitigated by this control.</p>
           </div>
         </Card>
       ) : (
@@ -321,7 +321,7 @@ const RelatedRisksTab: React.FC<TabContentProps> = ({ control, relatedRisks }) =
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
-                      <span className="text-sm font-mono text-gray-600">
+                      <span className="text-sm font-mono text-slate-600">
                         {risk.id.toUpperCase()}
                       </span>
                       <Badge variant="default">{risk.riskCategory}</Badge>
@@ -335,32 +335,32 @@ const RelatedRisksTab: React.FC<TabContentProps> = ({ control, relatedRisks }) =
                       </Badge>
                     </div>
                     
-                    <h4 className="text-base font-medium text-gray-900 mb-2">{risk.risk}</h4>
-                    <p className="text-sm text-gray-600 line-clamp-2">{risk.riskDescription}</p>
+                    <h4 className="text-base font-medium text-slate-900 mb-2">{risk.risk}</h4>
+                    <p className="text-sm text-slate-600 line-clamp-2">{risk.riskDescription}</p>
                     
                     <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
                       <div>
-                        <span className="text-gray-500">Initial Risk</span>
-                        <p className="font-medium text-gray-900">{risk.initialScoring.riskLevel}</p>
+                        <span className="text-slate-500">Initial Risk</span>
+                        <p className="font-medium text-slate-900">{risk.initialScoring.riskLevel}</p>
                       </div>
                       <div>
-                        <span className="text-gray-500">Residual Risk</span>
-                        <p className="font-medium text-gray-900">{risk.residualScoring.riskLevel}</p>
+                        <span className="text-slate-500">Residual Risk</span>
+                        <p className="font-medium text-slate-900">{risk.residualScoring.riskLevel}</p>
                       </div>
                       <div>
-                        <span className="text-gray-500">Risk Reduction</span>
+                        <span className="text-slate-500">Risk Reduction</span>
                         <p className="font-medium text-green-600">-{risk.riskReduction}</p>
                       </div>
                       <div>
-                        <span className="text-gray-500">Effectiveness</span>
-                        <p className="font-medium text-gray-900">{risk.mitigationEffectiveness}</p>
+                        <span className="text-slate-500">Effectiveness</span>
+                        <p className="font-medium text-slate-900">{risk.mitigationEffectiveness}</p>
                       </div>
                     </div>
                   </div>
                   
                   <Link 
                     to={`/risks/${risk.id}`}
-                    className="ml-4 text-gray-400 hover:text-gray-600"
+                    className="ml-4 text-slate-400 hover:text-slate-600"
                   >
                     <ExternalLink className="h-5 w-5" />
                   </Link>
@@ -379,11 +379,11 @@ const RelatedRisksTab: React.FC<TabContentProps> = ({ control, relatedRisks }) =
         size="xl"
       >
         <div className="space-y-6">
-          <div className="border-b border-gray-200 pb-4">
-            <p className="text-sm text-gray-600 mb-2">
+          <div className="border-b border-slate-200 pb-4">
+            <p className="text-sm text-slate-600 mb-2">
               Select risks that are mitigated by this control. Changes will be saved to the Excel file.
             </p>
-            <div className="flex items-center justify-between text-xs text-gray-500">
+            <div className="flex items-center justify-between text-xs text-slate-500">
               <span>{selectedRiskIds.length} of {risks.length} risks selected</span>
               <div className="flex space-x-2">
                 <button
@@ -414,11 +414,11 @@ const RelatedRisksTab: React.FC<TabContentProps> = ({ control, relatedRisks }) =
                   return acc;
                 }, {} as Record<string, typeof risks>)
             ).map(([category, categoryRisks]) => (
-              <div key={category} className="border rounded-lg p-4 bg-gray-50">
-                <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+              <div key={category} className="border rounded-lg p-4 bg-slate-50">
+                <h4 className="font-medium text-slate-900 mb-3 flex items-center">
                   <AlertTriangle className="h-4 w-4 mr-2 text-8090-primary" />
                   {category}
-                  <span className="ml-2 text-xs text-gray-500">
+                  <span className="ml-2 text-xs text-slate-500">
                     ({categoryRisks.filter(r => selectedRiskIds.includes(r.id)).length}/{categoryRisks.length})
                   </span>
                 </h4>
@@ -428,10 +428,10 @@ const RelatedRisksTab: React.FC<TabContentProps> = ({ control, relatedRisks }) =
                     return (
                       <label
                         key={risk.id}
-                        className={`flex items-start p-3 rounded-md cursor-pointer transition-colors ${
+                        className={`flex items-start p-3 rounded-lg cursor-pointer transition-colors ${
                           isSelected 
                             ? 'bg-8090-primary/10 border border-8090-primary/20' 
-                            : 'bg-white border border-gray-200 hover:bg-gray-50'
+                            : 'bg-white border border-slate-200 hover:bg-slate-50'
                         }`}
                       >
                         <input
@@ -444,11 +444,11 @@ const RelatedRisksTab: React.FC<TabContentProps> = ({ control, relatedRisks }) =
                               setSelectedRiskIds(selectedRiskIds.filter(id => id !== risk.id));
                             }
                           }}
-                          className="mt-1 h-4 w-4 text-8090-primary border-gray-300 rounded focus:ring-8090-primary"
+                          className="mt-1 h-4 w-4 text-8090-primary border-slate-300 rounded focus:ring-8090-primary"
                         />
                         <div className="ml-3 flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-1">
-                            <span className="font-medium text-sm text-gray-900">{risk.id.toUpperCase()}</span>
+                            <span className="font-medium text-sm text-slate-900">{risk.id.toUpperCase()}</span>
                             <div className="flex items-center space-x-2">
                               <RiskLevelBadge 
                                 level={risk.initialRiskLevel} 
@@ -457,9 +457,9 @@ const RelatedRisksTab: React.FC<TabContentProps> = ({ control, relatedRisks }) =
                               />
                             </div>
                           </div>
-                          <p className="font-medium text-sm text-gray-900 mb-1">{risk.risk}</p>
-                          <p className="text-sm text-gray-600 line-clamp-2 mb-2">{risk.riskDescription}</p>
-                          <div className="flex items-center space-x-4 text-xs text-gray-500">
+                          <p className="font-medium text-sm text-slate-900 mb-1">{risk.risk}</p>
+                          <p className="text-sm text-slate-600 line-clamp-2 mb-2">{risk.riskDescription}</p>
+                          <div className="flex items-center space-x-4 text-xs text-slate-500">
                             <span>Impact: {risk.initialImpact}</span>
                             <span>•</span>
                             <span>Likelihood: {risk.initialLikelihood}</span>
@@ -468,8 +468,8 @@ const RelatedRisksTab: React.FC<TabContentProps> = ({ control, relatedRisks }) =
                           </div>
                           {risk.proposedOversightOwnership && (
                             <div className="mt-2">
-                              <span className="text-xs text-gray-500">Owner: </span>
-                              <span className="text-xs text-gray-700">{risk.proposedOversightOwnership}</span>
+                              <span className="text-xs text-slate-500">Owner: </span>
+                              <span className="text-xs text-slate-700">{risk.proposedOversightOwnership}</span>
                             </div>
                           )}
                         </div>
@@ -481,7 +481,7 @@ const RelatedRisksTab: React.FC<TabContentProps> = ({ control, relatedRisks }) =
             ))}
           </div>
           
-          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+          <div className="flex justify-end space-x-3 pt-4 border-t border-slate-200">
             <Button
               variant="secondary"
               onClick={() => {
@@ -528,9 +528,9 @@ export const ControlDetailView: React.FC = () => {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">Control Not Found</h2>
-          <p className="text-gray-600 mb-4">The control with ID "{id}" could not be found.</p>
+          <Shield className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+          <h2 className="text-lg font-semibold text-slate-900 mb-2">Control Not Found</h2>
+          <p className="text-slate-600 mb-4">The control with ID "{id}" could not be found.</p>
           <Button variant="primary" onClick={() => navigate('/controls')}>
             Back to Controls
           </Button>
@@ -574,8 +574,8 @@ export const ControlDetailView: React.FC = () => {
         </Button>
         
         <div className="flex-1">
-          <h1 className="text-2xl font-semibold text-gray-900">{control.mitigationDescription}</h1>
-          <p className="text-sm text-gray-600 mt-1">Control ID: {control.mitigationID.toUpperCase()}</p>
+          <h1 className="text-2xl font-semibold text-slate-900">{control.mitigationDescription}</h1>
+          <p className="text-sm text-slate-600 mt-1">Control ID: {control.mitigationID.toUpperCase()}</p>
         </div>
         
         <div className="flex items-center space-x-3">
@@ -591,7 +591,7 @@ export const ControlDetailView: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-slate-200">
         <nav className="-mb-px flex space-x-8">
           {tabs.map(tab => {
             const Icon = tab.icon;
@@ -603,7 +603,7 @@ export const ControlDetailView: React.FC = () => {
                   "py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2",
                   activeTab === tab.id
                     ? 'border-8090-primary text-8090-primary'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
                 )}
               >
                 <Icon className="h-4 w-4" />
