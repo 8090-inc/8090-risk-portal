@@ -101,10 +101,31 @@ app.get('/api/auth/me', (req, res) => {
   const email = req.headers['x-goog-authenticated-user-email'] || '';
   const userId = req.headers['x-goog-authenticated-user-id'] || '';
   
+  // Handle both accounts.google.com and securetoken.google.com formats
+  const cleanEmail = email.split(':').pop() || '';
+  const cleanUserId = userId.split(':').pop() || '';
+  
+  // Extract name from email (part before @)
+  const extractNameFromEmail = (email) => {
+    if (!email) return 'User';
+    const localPart = email.split('@')[0];
+    // Convert firstname.lastname to "Firstname Lastname"
+    return localPart
+      .split('.')
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+  };
+  
   const user = email ? {
-    email: email.replace('accounts.google.com:', ''),
-    id: userId.replace('accounts.google.com:', ''),
-    isAuthenticated: true
+    id: cleanUserId,
+    email: cleanEmail,
+    name: extractNameFromEmail(cleanEmail),
+    role: 'viewer', // Default role - should be determined from user database
+    department: 'IT Operations', // Default department - should be from user database
+    isActive: true,
+    emailVerified: true,
+    createdAt: new Date(),
+    lastLogin: new Date()
   } : null;
   
   // For local development, always return authenticated with a test user
@@ -112,9 +133,15 @@ app.get('/api/auth/me', (req, res) => {
     res.json({
       authenticated: true,
       user: {
-        email: 'local.user@dompe.com',
         id: 'local-user-id',
-        isAuthenticated: true
+        email: 'local.user@dompe.com',
+        name: 'Local User',
+        role: 'admin',
+        department: 'IT Operations',
+        isActive: true,
+        emailVerified: true,
+        createdAt: new Date(),
+        lastLogin: new Date()
       }
     });
   } else {

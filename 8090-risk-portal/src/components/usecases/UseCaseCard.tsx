@@ -18,18 +18,10 @@ export function UseCaseCard({ useCase, onClick, onEdit, onDelete }: UseCaseCardP
   const [isDeleting, setIsDeleting] = useState(false);
   
   const handleClick = (e: React.MouseEvent) => {
-    // Debug information
-    console.log('Click event triggered on card');
-    console.log('Event target:', e.target);
-    console.log('Current target:', e.currentTarget);
-    
     // Prevent card click when clicking action buttons
     if ((e.target as HTMLElement).closest('.action-button')) {
-      console.log('Click was on action button, ignoring');
       return;
     }
-    
-    console.log('Card clicked, navigating to:', `/usecases/${useCase.id}`);
     
     if (onClick) {
       onClick();
@@ -111,7 +103,7 @@ export function UseCaseCard({ useCase, onClick, onEdit, onDelete }: UseCaseCardP
         {/* Header with title and actions */}
         <div className="flex justify-between items-start gap-3 mb-4">
           <div className="flex-1">
-            <h3 className="text-lg font-semibold text-gray-900 line-clamp-1 group-hover:text-blue-600 transition-colors">
+            <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
               {useCase.title}
             </h3>
           </div>

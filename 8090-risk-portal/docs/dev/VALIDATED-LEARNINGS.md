@@ -833,6 +833,32 @@ All valid values stored in `/server/middleware/validateUseCase.cjs`:
 - ✅ Navigation between views
 - ✅ Error handling and loading states
 
+
+### 📊 Persistenceß
+
+   1. 🎯 Excel is the System of Record:
+      2. Current application loads ALL data from "General AI Risk Map.xlsx" in Google Drive
+      3. File ID: 1OzrkAUQTWY7VUNrX-_akCWIuU2ALR3sm
+      4. Data flows: Google Drive Excel → Backend API → Frontend Stores → UI Components
+   5. 🚫 Zero Dependencies on portal.jsx:
+      6. No imports, references, or code dependencies found
+      7. Application completely ignores portal.jsx
+      8. Static JSON data comes from Excel, not portal.jsx
+   9. 📋 Current Data Architecture:
+          Excel File (Google Drive)
+          ↓ (GoogleDrivePersistenceProvider.cjs)
+          Backend Parser (excelParser.cjs)
+          ↓ (extracted-excel-data.json)
+          Frontend Stores (Zustand)
+          ↓
+          React Components
+   10. 🔄 Data Flow Confirmed:
+      11. Risks: Loaded from Excel "Risk Map" sheet (32 risks)
+      12. Controls: Loaded from Excel "Controls Mapping" sheet
+      13. Use Cases: Loaded from Excel "Use Cases" sheet
+      14. Relationships: Parsed from Excel relationships
+
+
 ### Key Learnings
 
 1. **UI Component Reusability**: The existing UI component library provided most needed components. Only Textarea was missing and had to be created.

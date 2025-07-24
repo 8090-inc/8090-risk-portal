@@ -5,11 +5,13 @@ import { PageHeader } from '../components/layout/PageHeader';
 import { UseCaseGrid } from '../components/usecases/UseCaseGrid';
 import { UseCaseFilters } from '../components/usecases/UseCaseFilters';
 import { useUseCaseStore } from '../store/useCaseStore';
-import { Plus, Download, Filter } from 'lucide-react';
+import { Plus, Download, Filter, FileSpreadsheet } from 'lucide-react';
+import { exportUseCasesToExcel, exportUseCasesToCSV } from '../utils/exportUtils';
 
 export function UseCasesView() {
   const navigate = useNavigate();
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
   
   const {
     useCases,
@@ -29,9 +31,14 @@ export function UseCasesView() {
     navigate('/usecases/new');
   };
   
-  const handleExport = () => {
-    // TODO: Implement export functionality
-    console.log('Export use cases');
+  const handleExportExcel = () => {
+    exportUseCasesToExcel(useCases, `use-cases-${new Date().toISOString().split('T')[0]}.xlsx`);
+    setExportMenuOpen(false);
+  };
+  
+  const handleExportCSV = () => {
+    exportUseCasesToCSV(useCases, `use-cases-${new Date().toISOString().split('T')[0]}.csv`);
+    setExportMenuOpen(false);
   };
   
   const handleClearFilters = () => {
@@ -59,10 +66,35 @@ export function UseCasesView() {
                 </Badge>
               )}
             </Button>
-            <Button variant="secondary" onClick={handleExport}>
-              <Download className="mr-2 h-4 w-4" />
-              Export
-            </Button>
+            <div className="relative">
+              <Button 
+                variant="secondary" 
+                onClick={() => setExportMenuOpen(!exportMenuOpen)}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Export
+              </Button>
+              {exportMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-10">
+                  <div className="py-1">
+                    <button
+                      onClick={handleExportExcel}
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      <FileSpreadsheet className="h-4 w-4 mr-2" />
+                      Export to Excel
+                    </button>
+                    <button
+                      onClick={handleExportCSV}
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      <FileSpreadsheet className="h-4 w-4 mr-2" />
+                      Export to CSV
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
             <Button onClick={handleCreateUseCase}>
               <Plus className="mr-2 h-4 w-4" />
               Add Use Case

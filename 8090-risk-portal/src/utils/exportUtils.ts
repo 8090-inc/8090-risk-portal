@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import { Risk, Control } from '../types';
+import { UseCase } from '../types/useCase.types';
 
 export const exportRisksToExcel = (risks: Risk[], filename: string = 'risk-register.xlsx') => {
   // Prepare data for export
@@ -161,6 +162,136 @@ export const exportControlsToCSV = (controls: Control[], filename: string = 'con
     control.relatedRiskIds.length,
     control.relatedRiskIds.join(', '),
     control.complianceScore ? `${Math.round(control.complianceScore * 100)}%` : 'N/A'
+  ]);
+
+  // Create CSV content
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(row => row.map(cell => {
+      // Escape quotes and wrap in quotes if contains comma or newline
+      const cellStr = String(cell || '');
+      if (cellStr.includes(',') || cellStr.includes('\n') || cellStr.includes('"')) {
+        return `"${cellStr.replace(/"/g, '""')}"`;
+      }
+      return cellStr;
+    }).join(','))
+  ].join('\n');
+
+  // Create blob and download
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+export const exportUseCasesToExcel = (useCases: UseCase[], filename: string = 'use-cases.xlsx') => {
+  // Prepare data for export
+  const exportData = useCases.map(useCase => ({
+    'Use Case ID': useCase.id,
+    'Title': useCase.title,
+    'Description': useCase.description || '',
+    'Business Area': useCase.businessArea || '',
+    'AI Categories': useCase.aiCategories?.join(', ') || '',
+    'Status': useCase.status || '',
+    'Owner': useCase.owner || '',
+    'Stakeholders': useCase.stakeholders?.join(', ') || '',
+    // Objective fields
+    'Current State': useCase.objective?.currentState || '',
+    'Future State': useCase.objective?.futureState || '',
+    'Solution': useCase.objective?.solution || '',
+    'Benefits': useCase.objective?.benefits || '',
+    // Impact fields
+    'Impact Points': useCase.impact?.impactPoints?.join('; ') || '',
+    'Cost Saving': useCase.impact?.costSaving || '',
+    'Effort (Months)': useCase.impact?.effortMonths || '',
+    // Execution fields
+    'Functions Impacted': useCase.execution?.functionsImpacted?.join(', ') || '',
+    'Data Requirements': useCase.execution?.dataRequirements || '',
+    'AI Complexity': useCase.execution?.aiComplexity || '',
+    'Feasibility': useCase.execution?.feasibility || '',
+    'Value': useCase.execution?.value || '',
+    'Risk Level': useCase.execution?.risk || '',
+    // Dates
+    'Implementation Start': useCase.implementationStart || '',
+    'Implementation End': useCase.implementationEnd || '',
+    // Related entities
+    'Risk Count': useCase.riskCount || 0,
+    'Related Risk IDs': useCase.relatedRiskIds?.join(', ') || '',
+    // Audit fields
+    'Created Date': useCase.createdDate || '',
+    'Created By': useCase.createdBy || '',
+    'Last Updated': useCase.lastUpdated || '',
+    'Last Updated By': useCase.lastUpdatedBy || '',
+    // Notes
+    'Notes': useCase.notes || ''
+  }));
+
+  // Create workbook
+  const ws = XLSX.utils.json_to_sheet(exportData);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Use Cases');
+
+  // Auto-size columns
+  const maxWidth = 50;
+  const wscols = Object.keys(exportData[0] || {}).map(key => ({
+    wch: Math.min(maxWidth, Math.max(key.length, ...exportData.map(row => String(row[key as keyof typeof row] || '').length)))
+  }));
+  ws['!cols'] = wscols;
+
+  // Save file
+  XLSX.writeFile(wb, filename);
+};
+
+export const exportUseCasesToCSV = (useCases: UseCase[], filename: string = 'use-cases.csv') => {
+  // Prepare data
+  const headers = [
+    'Use Case ID', 'Title', 'Description', 'Business Area', 'AI Categories',
+    'Status', 'Owner', 'Stakeholders',
+    'Current State', 'Future State', 'Solution', 'Benefits',
+    'Impact Points', 'Cost Saving', 'Effort (Months)',
+    'Functions Impacted', 'Data Requirements', 'AI Complexity', 'Feasibility', 'Value', 'Risk Level',
+    'Implementation Start', 'Implementation End',
+    'Risk Count', 'Related Risk IDs',
+    'Created Date', 'Created By', 'Last Updated', 'Last Updated By',
+    'Notes'
+  ];
+
+  const rows = useCases.map(useCase => [
+    useCase.id,
+    useCase.title,
+    useCase.description || '',
+    useCase.businessArea || '',
+    useCase.aiCategories?.join(', ') || '',
+    useCase.status || '',
+    useCase.owner || '',
+    useCase.stakeholders?.join(', ') || '',
+    useCase.objective?.currentState || '',
+    useCase.objective?.futureState || '',
+    useCase.objective?.solution || '',
+    useCase.objective?.benefits || '',
+    useCase.impact?.impactPoints?.join('; ') || '',
+    useCase.impact?.costSaving || '',
+    useCase.impact?.effortMonths || '',
+    useCase.execution?.functionsImpacted?.join(', ') || '',
+    useCase.execution?.dataRequirements || '',
+    useCase.execution?.aiComplexity || '',
+    useCase.execution?.feasibility || '',
+    useCase.execution?.value || '',
+    useCase.execution?.risk || '',
+    useCase.implementationStart || '',
+    useCase.implementationEnd || '',
+    useCase.riskCount || 0,
+    useCase.relatedRiskIds?.join(', ') || '',
+    useCase.createdDate || '',
+    useCase.createdBy || '',
+    useCase.lastUpdated || '',
+    useCase.lastUpdatedBy || '',
+    useCase.notes || ''
   ]);
 
   // Create CSV content

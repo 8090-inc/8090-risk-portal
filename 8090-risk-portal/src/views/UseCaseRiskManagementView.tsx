@@ -8,7 +8,7 @@ export function UseCaseRiskManagementView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { selectedUseCase, fetchUseCase, loading: useCaseLoading } = useUseCaseStore();
-  const { risks, fetchRisks, loading: risksLoading } = useRiskStore();
+  const { risks, loadRisks, loading: risksLoading } = useRiskStore();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRiskIds, setSelectedRiskIds] = useState<Set<string>>(new Set());
@@ -17,13 +17,13 @@ export function UseCaseRiskManagementView() {
   useEffect(() => {
     if (id) {
       fetchUseCase(id);
-      fetchRisks();
+      loadRisks();
     }
-  }, [id, fetchUseCase, fetchRisks]);
+  }, [id, fetchUseCase, loadRisks]);
 
   useEffect(() => {
-    if (selectedUseCase?.associatedRisks) {
-      setSelectedRiskIds(new Set(selectedUseCase.associatedRisks));
+    if (selectedUseCase?.relatedRiskIds) {
+      setSelectedRiskIds(new Set(selectedUseCase.relatedRiskIds));
     }
   }, [selectedUseCase]);
 
@@ -57,8 +57,8 @@ export function UseCaseRiskManagementView() {
   };
 
   const filteredRisks = risks.filter(risk => 
-    risk.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    risk.category.toLowerCase().includes(searchTerm.toLowerCase())
+    risk.riskDescription?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    risk.riskCategory?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getRiskLevelColor = (level: string) => {
@@ -156,34 +156,35 @@ export function UseCaseRiskManagementView() {
               }`}
               onClick={() => toggleRisk(risk.id)}
             >
-              <div className="flex items-start justify-between">
+              <div className="flex items-start gap-4">
+                <div className="mt-1">
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => toggleRisk(risk.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <Badge className={getRiskLevelColor(risk.overallRiskLevel)}>
-                      {risk.overallRiskLevel}
+                    <Badge className={getRiskLevelColor(risk.initialScoring.riskLevelCategory)}>
+                      {risk.initialScoring.riskLevelCategory}
                     </Badge>
-                    <span className="text-sm text-gray-600">{risk.category}</span>
+                    <span className="text-sm font-semibold text-gray-700">ID: {risk.id}</span>
+                    <span className="text-sm text-gray-600">• {risk.riskCategory}</span>
                   </div>
-                  <h3 className="font-medium text-gray-900 mb-1">{risk.description}</h3>
-                  <p className="text-sm text-gray-600">
-                    Impact: {risk.impact} | Probability: {risk.probability}
-                  </p>
-                  {risk.associatedControls.length > 0 && (
-                    <p className="text-sm text-gray-500 mt-1">
-                      {risk.associatedControls.length} control{risk.associatedControls.length !== 1 ? 's' : ''} associated
-                    </p>
-                  )}
-                </div>
-                <div className="ml-4">
-                  {isSelected ? (
-                    <div className="h-6 w-6 bg-blue-500 rounded-full flex items-center justify-center">
-                      <svg className="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                  ) : (
-                    <div className="h-6 w-6 border-2 border-gray-300 rounded-full" />
-                  )}
+                  <h3 className="font-medium text-gray-900 mb-2">{risk.riskDescription}</h3>
+                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                    <span>Impact: <span className="font-medium">{risk.initialScoring.impact}</span></span>
+                    <span>Likelihood: <span className="font-medium">{risk.initialScoring.likelihood}</span></span>
+                    {risk.relatedControlIds.length > 0 && (
+                      <span className="flex items-center gap-1">
+                        <span className="text-gray-500">•</span>
+                        {risk.relatedControlIds.length} control{risk.relatedControlIds.length !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </Card>

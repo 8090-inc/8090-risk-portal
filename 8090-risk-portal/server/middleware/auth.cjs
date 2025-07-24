@@ -24,14 +24,25 @@ const authenticate = (req, res, next) => {
     const iapId = req.headers['x-goog-authenticated-user-id'];
     
     if (iapEmail && iapId) {
-      // Extract email from IAP header format: "accounts.google.com:email@example.com"
+      // Extract email from IAP header format: "securetoken.google.com/project/user:email@example.com" or "accounts.google.com:email@example.com"
       const email = iapEmail.split(':').pop();
       const id = iapId.split(':').pop();
+      
+      // Extract name from email (part before @)
+      const extractNameFromEmail = (email) => {
+        if (!email) return 'User';
+        const localPart = email.split('@')[0];
+        // Convert firstname.lastname to "Firstname Lastname"
+        return localPart
+          .split('.')
+          .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+          .join(' ');
+      };
       
       req.user = {
         email,
         id,
-        name: email.split('@')[0],
+        name: extractNameFromEmail(email),
         role: email.endsWith('@dompe.com') ? 'admin' : 'viewer',
         source: 'iap'
       };
@@ -45,7 +56,7 @@ const authenticate = (req, res, next) => {
       req.user = {
         email: 'test.user@dompe.com',
         id: 'test.user',
-        name: 'test.user',
+        name: 'Test User',
         role: 'admin',
         source: 'test'
       };

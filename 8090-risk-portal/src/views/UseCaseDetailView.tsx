@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button, Card, Badge, Breadcrumb, type BreadcrumbItem, Spinner } from '../components/ui';
 import { PageHeader } from '../components/layout/PageHeader';
 import { useUseCaseStore } from '../store/useCaseStore';
-import { useRiskStore } from '../store';
 import type { Risk } from '../types';
 import { 
   Edit, 
@@ -15,7 +14,6 @@ import {
   Building,
   Brain,
   CheckCircle,
-  AlertCircle,
   Shield,
   AlertTriangle
 } from 'lucide-react';
@@ -35,8 +33,6 @@ export function UseCaseDetailView() {
     deleteUseCase,
     clearError
   } = useUseCaseStore();
-  
-  const { risks: allRisks } = useRiskStore();
   
   useEffect(() => {
     if (id) {
@@ -145,12 +141,12 @@ export function UseCaseDetailView() {
   // Sort risks by severity
   const sortedRisks = [...associatedRisks].sort((a, b) => {
     const severityOrder = { 'Critical': 0, 'High': 1, 'Medium': 2, 'Low': 3 };
-    return (severityOrder[a.overallRiskLevel] || 4) - (severityOrder[b.overallRiskLevel] || 4);
+    return (severityOrder[a.initialScoring.riskLevelCategory] || 4) - (severityOrder[b.initialScoring.riskLevelCategory] || 4);
   });
   
   // Count risks by level
   const riskCounts = associatedRisks.reduce((acc, risk) => {
-    acc[risk.overallRiskLevel] = (acc[risk.overallRiskLevel] || 0) + 1;
+    acc[risk.initialScoring.riskLevelCategory] = (acc[risk.initialScoring.riskLevelCategory] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
   
@@ -541,20 +537,19 @@ export function UseCaseDetailView() {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <Badge variant={getRiskLevelColor(risk.overallRiskLevel)} className="font-semibold">
-                            {risk.overallRiskLevel}
+                          <Badge variant={getRiskLevelColor(risk.initialScoring.riskLevelCategory)} className="font-semibold">
+                            {risk.initialScoring.riskLevelCategory}
                           </Badge>
-                          <span className="text-sm text-muted-foreground">{risk.category}</span>
-                          <span className="text-xs text-muted-foreground">ID: {risk.id}</span>
+                          <span className="text-sm font-semibold text-gray-700">ID: {risk.id}</span>
+                          <span className="text-sm text-muted-foreground">• {risk.riskCategory}</span>
                         </div>
-                        <h4 className="font-medium text-gray-900 mb-2">{risk.description}</h4>
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span>Impact: <span className="font-medium text-gray-700">{risk.impact}</span></span>
-                          <span>Probability: <span className="font-medium text-gray-700">{risk.probability}</span></span>
-                          {risk.associatedControls.length > 0 && (
+                          <span>Impact: <span className="font-medium text-gray-700">{risk.initialScoring.impact}</span></span>
+                          <span>Likelihood: <span className="font-medium text-gray-700">{risk.initialScoring.likelihood}</span></span>
+                          {risk.relatedControlIds.length > 0 && (
                             <span className="flex items-center gap-1">
                               <Shield className="h-3 w-3" />
-                              {risk.associatedControls.length} control{risk.associatedControls.length !== 1 ? 's' : ''}
+                              {risk.relatedControlIds.length} control{risk.relatedControlIds.length !== 1 ? 's' : ''}
                             </span>
                           )}
                         </div>
