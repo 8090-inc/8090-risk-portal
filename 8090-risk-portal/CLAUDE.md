@@ -1,171 +1,198 @@
 # Claude AI Assistant Instructions
 
-# Project Context
-This is the 8090 AI Risk Portal for Dompé farmaceutici S.p.A. - a React-based web application for managing AI risks and controls.
+## 🏢 Project Context
 
+**8090 AI Risk Portal** for Dompé farmaceutici S.p.A.  
+**Current Version**: v2.8.2  
+**Production URL**: https://risk-portal-290017403746.us-central1.run.app  
+**Repository**: https://github.com/8090-inc/8090-risk-portal
 
-# Onboard
+### Tech Stack
+- **Frontend**: React 19 + TypeScript 5.8 + Tailwind CSS + Zustand
+- **Backend**: Node.js 20 + Express 4.21 + Google Drive integration
+- **Infrastructure**: Google Cloud Run + IAP + Identity Platform
+- **AI**: Google Gemini API for report generation
 
-You are given the following context:
-$ARGUMENTS
+### Key Features
+- AI risk assessment and management
+- Control effectiveness tracking
+- UseCase-to-risk relationship mapping
+- Interactive risk matrix visualization
+- AI-powered report generation with Gemini
+- Real-time collaboration with Excel backend
+- Markdown-enhanced mitigation display
 
-## Instructions
+## 🚀 Getting Started
 
-"AI models are geniuses who start from scratch on every task." - Noam Brown
+### Onboarding Process
+1. **Explore the codebase** using available tools (Read, Grep, codebase_search_agent)
+2. **Check recent changes** in AGENT.md and VALIDATED-LEARNINGS.md
+3. **Review current architecture** and recent bug fixes
+4. **Ask clarifying questions** if anything is unclear
+5. **Document your understanding** for future reference
 
-Your job is to "onboard" yourself to the current task.
+### Essential Files to Review
+- `AGENT.md` - Current version info and deployment commands
+- `docs/dev/VALIDATED-LEARNINGS.md` - Technical learnings and solutions
+- `docs/deployment/DEPLOYMENT-SUMMARY-2025-07-24.md` - Latest deployment details
+- `src/types/` - TypeScript interfaces for data structures
+- `server/api/v1/` - REST API endpoints
 
-Do this by:
+## ⚠️ Critical Guidelines
 
-- Using ultrathink
-- Exploring the codebase
-- Asking me questions if needed
+### Code Quality & Safety
+- **NO SHORTCUTS**: Always implement proper solutions, not workarounds
+- **CHECK IN FREQUENTLY**: After each phase, task, or decision point
+- **PRECISE LANGUAGE**: Use exact technical terms and factual reporting  
+- **ASK WHEN UNCLEAR**: Stop and ask questions rather than assume
+- **PRESERVE RESOURCES**: Never delete Google Cloud resources without approval
+- **DOCUMENT LEARNINGS**: Always update `docs/dev/VALIDATED-LEARNINGS.md`
 
-The goal is to get you fully prepared to start working on the task.
+### Development Workflow
+1. **Analyze requirements** thoroughly before coding
+2. **Check existing patterns** in the codebase for consistency
+3. **Test locally** before committing changes
+4. **Run quality checks** (lint, build) before deployment
+5. **Update documentation** for significant changes
 
-Take as long as you need to get yourself ready. Overdoing it is better than underdoing it.
+## 🚀 Deployment & Development
 
-Record everything in a .claude/tasks/[TASK_ID]/onboarding.md file. This file will be used to onboard you to the task in a new session if needed, so make sure it's comprehensive.
-
-# GENERAL INSTRUCTIONS
-
-### DO NOT TAKE SHORTCUTS OR WORKAROUNDS FOR ISSUES
-### DO NOT TAKE WORKAROUNDS
-### ALWAYS Checkin with me after the completion of a phase, task feature or a decision point
-### ALWAYS STICK TO FACTS AND REPORT IN PRECISE TECHNICAL LANGUAGE
-### IF SOMETHING IS NOT CLEAR STOP AND ASK THE USER
-### DO NOT DELETE ANY SERVER LEVEL GOOGLE CLOUD RESOURCES BEFORE CHECKING IN WITH ME
-### YOU WILL ALWAYS PERSIST YOUR LEARNING FROM THE SESSION IN docs/devVALIDATED-LEARNINGS.md
-
-## Important Build/Deploy Instructions
-
-### Docker Build for Cloud Run
-When building Docker images for Google Cloud Run deployment, you MUST specify the linux/amd64 platform to avoid architecture mismatch errors:
-
+### Local Development Commands
 ```bash
-docker build --platform linux/amd64 -t gcr.io/dompe-dev-439304/dompe-risk-portal:latest .
+# Start development servers
+npm run dev        # Frontend (http://localhost:3000)
+npm run dev:server # Backend (http://localhost:8080)
+
+# Quality checks
+npm run lint       # ESLint + TypeScript
+npm run build      # Production build
+npm test          # Jest tests
 ```
 
-This is necessary because Cloud Run requires linux/amd64 images. Without this flag, you may encounter the error:
-"Container manifest type 'application/vnd.oci.image.index.v1+json' must support amd64/linux."
+### Current Production Deployment (Updated July 24, 2025)
+```bash
+# Complete deployment sequence (from AGENT.md)
+npm run build
+docker build --platform linux/amd64 -t gcr.io/dompe-dev-439304/risk-portal:latest .
+gcloud auth configure-docker
+docker push gcr.io/dompe-dev-439304/risk-portal:latest
+gcloud run deploy risk-portal --image gcr.io/dompe-dev-439304/risk-portal:latest --region us-central1
+```
 
-## Authentication
-The application uses Google Cloud Identity Platform (GCIP) with Identity-Aware Proxy (IAP) for authentication.
+### Architecture Overview
+```
+Internet → Google Load Balancer → IAP → Cloud Run (risk-portal)
+                                 ↓
+                         Identity Platform (GCIP)
+                              ↓
+                    Express Backend + React Frontend
+                              ↓
+                   Google Drive Excel File + Gemini API
+```
 
-## Logout Fix
-To properly logout users, use the IAP logout URL pattern:
+**Production URL**: https://risk-portal-290017403746.us-central1.run.app  
+**Service Name**: `risk-portal` (NOT `dompe-risk-portal`)  
+**Region**: us-central1
+
+## 🔐 Authentication & Security
+
+### IAP Authentication (Current System)
+- **Identity-Aware Proxy (IAP)** with Google Cloud Identity Platform
+- **Header Format**: `securetoken.google.com/project/tenant:user@domain.com`  
+- **Local Development**: Automatic mock user (`Local User` with `local.user@dompe.com`)
+- **Production**: IAP headers automatically injected by Google Cloud
+- **Name Extraction**: Converts `firstname.lastname` to "Firstname Lastname"
+
+### Authentication Headers (v2.8 Fix)
+**Recent Fix**: IAP header format changed from `accounts.google.com:` to `securetoken.google.com/project/tenant:`
+
 ```javascript
-window.location.href = '/?gcp-iap-mode=GCIP_SIGNOUT';
+// Fixed parsing logic (both server.cjs and server/middleware/auth.cjs)  
+const cleanEmail = email.split(':').pop() || '';
+const cleanUserId = userId.split(':').pop() || '';
 ```
 
-## Commands to Run After Changes
-After making code changes, always run:
-- `npm run lint` - Check for linting errors
-- `npm run build:check` - Check for TypeScript errors (note: no typecheck script exists)
+### Legacy Code (Technical Debt)
+- `authService.ts` and `LoginView.tsx` are dead code from Firebase Auth migration
+- All authentication now flows through IAP → `/api/auth/me` → `authStore.ts`
+- Logout: `window.location.href = '/?gcp-iap-mode=GCIP_SIGNOUT';`
 
-## Important Deployment Discovery
-The application is deployed to **Cloud Run**, not Firebase Hosting. The domain `dompe.airiskportal.com` points to an IAP-protected Load Balancer that forwards to Cloud Run.
+## 📝 Git Workflow & Commit Standards
 
-### Correct Deployment Architecture:
-1. `dompe.airiskportal.com` → IAP-enabled Load Balancer
-2. Load Balancer → Cloud Run service named `risk-portal` (NOT `dompe-risk-portal`)
-3. Firebase Hosting is not used for the production site
-
-### To Deploy Changes:
-1. Build the app: `npm run build`
-2. Build Docker image: `docker build --platform linux/amd64 -t gcr.io/dompe-dev-439304/risk-portal:latest .`
-3. Push image: `docker push gcr.io/dompe-dev-439304/risk-portal:latest`
-4. Deploy to Cloud Run: `gcloud run deploy risk-portal --image gcr.io/dompe-dev-439304/risk-portal:latest --region us-central1 --port 8080`
-
-### Important: Deploy to the Correct Service
-- **Correct service**: `risk-portal` - This is what the domain uses
-- **Wrong service**: `dompe-risk-portal` - Do not deploy here
-
-## Authentication Architecture
-The app has TWO authentication implementations (technical debt):
-
-### 1. authStore.ts (Active - IAP Authentication)
-- Used throughout the app
-- Manages IAP session state
-- Gets user info from `/api/auth/me` endpoint
-- This is the PRIMARY authentication system
-
-### 2. authService.ts (Dead Code - Firebase Auth)
-- Only used by LoginView.tsx (which is also dead code)
-- Contains Firebase authentication logic
-- Not imported or used anywhere in the active app
-- Remnant from before IAP migration
-
-The app has fully transitioned to IAP authentication via `auth.html`.
-
-## Dashboard Visual Alignment Fix
-When the sidebar expands/collapses, matrix cells must maintain square proportions. We use the "padding-bottom 100%" technique instead of aspect-square:
-
-```jsx
-<div className="relative">
-  <div className="pb-[100%]"></div>  {/* Creates square space */}
-  <div className="absolute inset-0">  {/* Content positioned absolutely */}
-    {/* Cell content */}
-  </div>
-</div>
-```
-
-This ensures cells remain square regardless of container width changes.
-
-## Git Commit Instructions
-
-### IMPORTANT: Always Include Proper Author
-When making commits, ALWAYS include the proper author:
+### Required Author Attribution
+**CRITICAL**: All commits MUST include proper author attribution:
 ```bash
-git commit --author="Rohit Kelapure <kelapure@gmail.com>" -m "your commit message"
+git commit --author="Rohit Kelapure <kelapure@gmail.com>" -m "commit message"
 ```
 
-### Commit Format
-All commits must follow this format:
+### Commit Message Format
 ```bash
 git add .
 git commit --author="Rohit Kelapure <kelapure@gmail.com>" -m "type: Description
 
-- Detail 1
-- Detail 2
+- Specific change 1
+- Specific change 2  
+- Technical details
 
-🤖 Generated with Claude Code
-
-Co-Authored-By: Claude <noreply@anthropic.com>"
+Usage examples or verification steps if applicable"
 ```
 
-**NEVER forget the --author flag!**
+### Commit Types
+- `feat:` - New features
+- `fix:` - Bug fixes  
+- `docs:` - Documentation updates
+- `refactor:` - Code restructuring
+- `style:` - Code formatting
+- `test:` - Test additions
 
-## Google Drive Integration
-The backend integrates with Google Drive to read/write the risk data Excel file.
+**Never forget the --author flag!**
 
-### Current Status
-- **Working**: All read and write operations (GET/POST endpoints)
-- **Service Account**: 290017403746-compute@developer.gserviceaccount.com
-- **File ID**: 1OzrkAUQTWY7VUNrX-_akCWIuU2ALR3sm
+## 📊 Data Management & Integration
 
-### Important Testing Guidelines
-⚠️ **ALWAYS snapshot the Excel file before and after tests**:
-1. Tests that modify data MUST create a backup before running
-2. Tests MUST clean up after themselves by removing test data
-3. If cleanup fails, the backup should be used to restore the original state
+### Google Drive Backend
+- **Excel File**: `General AI Risk Map.xlsx` (File ID: `1OzrkAUQTWY7VUNrX-_akCWIuU2ALR3sm`)
+- **Service Account**: `290017403746-compute@developer.gserviceaccount.com`
+- **Data Flow**: Excel → GoogleDrivePersistenceProvider → API → Frontend Stores
+- **Real-time Updates**: Changes sync immediately to Excel backend
 
-### Test Data Cleanup
-- Test risks: Any risk with description containing "test risk created by automated testing"
-- Test controls: Any control with ID starting with "TEST-"
-- Use `cleanup-test-data.cjs` to remove test data if needed
+### Testing Safety Rules ⚠️
+**CRITICAL**: Always backup Excel file before tests that modify data
+1. Create backup before running write tests
+2. Clean up test data after tests complete  
+3. Restore from backup if cleanup fails
+4. **Test Patterns**: `TEST-*` control IDs, "test risk created by automated testing"
 
-### Parser Pattern Updates
-The Excel parser accepts control IDs matching: `(ACC|SEC|LOG|GOV|TEST)-\d{2}$`
+## 🛠️ Recent Enhancements (v2.8+)
 
-## Validated Learnings
-For detailed technical learnings, debugging solutions, and best practices discovered during development, see:
-📚 [/docs/dev/VALIDATED-LEARNINGS.md](/docs/dev/VALIDATED-LEARNINGS.md)
+### Markdown Mitigation Display (v2.8.2)
+- **react-markdown** integration for rich text formatting
+- **Auto-detection** of markdown vs plain text content
+- **Enhanced regulation references**: `GDPR`, `NIST`, `21 CFR` styled as code blocks
+- **Control references**: `(SEC-06)`, `(LOG-03)` highlighted  
+- **Backward compatibility** with legacy plain text mitigations
 
-Key topics covered:
-- Google Authentication and preventing "invalid_rapt" errors
-- Excel parser implementation details
-- Development environment setup
-- Deployment architecture
-- Visual alignment solutions
-- Testing safety rules
+### Mitigation Update Scripts
+- `scripts/update-agreed-mitigations.cjs` - Bulk updates for 4 specific risks
+- `scripts/update-sensitive-info-mitigation.cjs` - Focused updates for detailed changes
+- **Safe dry-run mode** by default (`DRY_RUN=true`)
+- **Before/after preview** and comprehensive error handling
+
+### Recent Bug Fixes (v2.8)
+- **IAP Header Parsing**: Fixed `securetoken.google.com` format handling
+- **UseCase Risk Filtering**: Fixed property name mismatches (`risk.riskDescription` vs `risk.description`)
+- **Project Cleanup**: Removed 48K+ lines of redundant files and reorganized structure
+
+## 📚 Documentation & Learning Resources
+
+### Key Documentation Files
+- **`AGENT.md`** - Version info, deployment commands, development guidelines
+- **`docs/dev/VALIDATED-LEARNINGS.md`** - Technical solutions and debugging guides
+- **`docs/deployment/DEPLOYMENT-SUMMARY-2025-07-24.md`** - Latest deployment details
+- **`docs/features/MARKDOWN-MITIGATION-RENDERING.md`** - Markdown enhancement details
+- **`scripts/README.md`** - Script usage and development guidelines
+
+### Architecture References
+- **API Structure**: `server/api/v1/` - RESTful endpoints for risks, controls, usecases
+- **Type Definitions**: `src/types/` - TypeScript interfaces for all data structures
+- **State Management**: `src/store/` - Zustand stores for risks, controls, auth, etc.
+- **UI Components**: `src/components/` - Reusable React components with consistent styling
