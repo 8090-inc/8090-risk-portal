@@ -1,11 +1,12 @@
 # Bug Report: UseCase Risk Management View - TypeError in Filter Function
 
 **Date:** 2025-07-24  
-**Status:** ✅ RESOLVED  
+**Status:** ✅ RESOLVED (v2.8)  
 **Priority:** High  
 **Reporter:** User  
 **Component:** UseCaseRiskManagementView.tsx  
-**Affected Version:** 2.1.0
+**Affected Version:** Pre-v2.8  
+**Fixed In:** v2.8
 
 ---
 
@@ -157,4 +158,7 @@ To prevent similar issues in the future:
 
 **Resolution Date:** 2025-07-24  
 **Fixed By:** Assistant  
-**Verification:** Component tested and working correctly
+**Resolution Version:** v2.8  
+**Git Commit:** 66e5467  
+**Deployment:** https://risk-portal-290017403746.us-central1.run.app  
+**Verification:** Component tested and working correctly in both local and production environments

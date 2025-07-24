@@ -870,3 +870,150 @@ All valid values stored in `/server/middleware/validateUseCase.cjs`:
 4. **Consistent Patterns**: Following existing patterns from risks/controls views made implementation faster and more maintainable.
 
 5. **Zustand Store Benefits**: The store pattern with proper error handling and loading states made the UI responsive and user-friendly.
+
+---
+
+## Date: July 24, 2025 - IAP Authentication Bug Resolution (v2.8)
+
+### The IAP Header Format Change Bug
+
+**Problem**: Users saw raw IAP header strings instead of formatted names in the UI:
+- Displayed: `"Securetoken Google Com/dompe-dev-439304/dompe8090-bf0qr:rohit Kelapure"`
+- Expected: `"Rohit Kelapure"`
+
+**Root Cause Analysis**:
+Google Cloud IAP changed header format between versions:
+- **Old format**: `accounts.google.com:user@domain.com`
+- **New format**: `securetoken.google.com/project/tenant:user@domain.com`
+
+**Discovery Process**:
+1. User reported seeing raw header string in production
+2. Investigation revealed both `server.cjs` and `server/middleware/auth.cjs` used hardcoded `.replace('accounts.google.com:', '')`
+3. IAP was actually sending `securetoken.google.com/dompe-dev-439304/dompe8090-bf0qr:rohit.kelapure@ext.dompe.com`
+4. Replace operation failed, leaving full header string in the UI
+
+**Solution Implemented**:
+```javascript
+// OLD - Hardcoded format handling
+const cleanEmail = email.replace('accounts.google.com:', '');
+const cleanUserId = userId.replace('accounts.google.com:', '');
+
+// NEW - Universal format handling  
+const cleanEmail = email.split(':').pop() || '';
+const cleanUserId = userId.split(':').pop() || '';
+```
+
+**Files Modified**:
+1. `server.cjs` - `/api/auth/me` endpoint
+2. `server/middleware/auth.cjs` - IAP authentication middleware
+
+### UseCase Risk Management Filtering Bug
+
+**Problem**: `TypeError: Cannot read properties of undefined (reading 'toLowerCase')` when filtering risks in UseCase Risk Management view.
+
+**Root Cause**: Property name mismatches in filtering logic:
+```javascript
+// WRONG - Using incorrect property names
+risk.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+risk.category?.toLowerCase().includes(searchTerm.toLowerCase())
+
+// CORRECT - Using actual Risk interface properties
+risk.riskDescription?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+risk.riskCategory?.toLowerCase().includes(searchTerm.toLowerCase())
+```
+
+**Investigation Process**:
+1. Used `codebase_search_agent` to locate the bug in `UseCaseRiskManagementView.tsx`
+2. Compared with `src/types/risk.types.ts` Risk interface definition
+3. Found multiple property name mismatches in filtering logic
+4. Fixed all instances to use correct property names
+
+**Files Modified**:
+1. `src/views/UseCaseRiskManagementView.tsx` - Fixed filtering logic
+2. `docs/bugs/BUG-REPORT-USECASE-RISK-MANAGEMENT.md` - Comprehensive bug documentation
+
+### Authentication Architecture Learnings
+
+**IAP Header Format Variations**:
+Google Cloud IAP can use different header formats depending on:
+- Authentication provider (Google, SAML, OIDC)
+- Identity Platform tenant configuration  
+- Cloud Identity vs Workspace setup
+- Regional deployment differences
+
+**Best Practice for Header Parsing**:
+```javascript
+// ✅ ROBUST - Works with any prefix format
+const extractFromHeader = (headerValue) => {
+  if (!headerValue) return '';
+  return headerValue.split(':').pop() || '';
+};
+
+// ❌ FRAGILE - Breaks when format changes
+const extractFromHeader = (headerValue) => {
+  return headerValue.replace('accounts.google.com:', '');
+};
+```
+
+**Name Extraction Enhancement**:
+```javascript
+// Enhanced name extraction for email formats
+const extractNameFromEmail = (email) => {
+  if (!email) return 'User';
+  const localPart = email.split('@')[0];
+  // Convert firstname.lastname to "Firstname Lastname"
+  return localPart
+    .split('.')
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+};
+```
+
+### Key Technical Learnings
+
+1. **IAP Header Format Robustness**:
+   - Never hardcode specific provider prefixes
+   - Use `.split(':').pop()` for universal parsing
+   - Always handle empty/malformed headers gracefully
+
+2. **TypeScript Property Validation**:
+   - Always cross-reference with type definitions when accessing object properties
+   - Use optional chaining (`?.`) for safe property access
+   - Consider using type guards for runtime validation
+
+3. **Authentication Testing Challenges**:
+   - IAP only works in production Google Cloud environment
+   - Local development uses mock users with different data structure
+   - Production testing requires actual deployment and user access
+
+4. **Debugging IAP Issues**:
+   - Log actual header values for debugging: `console.log('Headers:', req.headers)`
+   - Test with different user types (@dompe.com vs @ext.dompe.com)
+   - Verify name extraction works with various email formats
+
+5. **Component Property Debugging**:
+   - Use `codebase_search_agent` to find all property usage patterns
+   - Compare component code with type definitions
+   - Test filtering/search functionality with various data combinations
+
+### Future Prevention Strategies
+
+1. **Header Format Resilience**:
+   - Create utility functions for header parsing
+   - Add unit tests for different header formats
+   - Monitor for new IAP format changes
+
+2. **Type Safety Improvements**:
+   - Add runtime type validation for API responses
+   - Use stricter TypeScript settings
+   - Consider using Zod schemas for runtime validation
+
+3. **Authentication Testing**:
+   - Create test IAP headers for local testing
+   - Document different header formats encountered
+   - Set up automated tests for authentication flows
+
+4. **Property Access Safety**:
+   - Use TypeScript strict mode
+   - Add ESLint rules for unsafe property access
+   - Consider using typed property access helpers

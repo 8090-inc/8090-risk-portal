@@ -5,6 +5,7 @@
 [![Node.js](https://img.shields.io/badge/Node.js-20+-green.svg)](https://nodejs.org/)
 [![Google Cloud](https://img.shields.io/badge/Google%20Cloud-Ready-blue.svg)](https://cloud.google.com/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/Version-v2.8-brightgreen.svg)](https://github.com/8090-inc/8090-risk-portal/releases)
 
 An enterprise-grade AI-powered risk assessment and management platform built for Dompe Farmaceutici S.p.A. This platform leverages Google Cloud services and AI to streamline risk management processes, generate comprehensive reports, and provide real-time collaboration capabilities.
 
@@ -24,7 +25,7 @@ An enterprise-grade AI-powered risk assessment and management platform built for
 │  ┌────────────────────────────────────────────────────────────┐           │
 │  │                    Identity Platform (GCIP)                 │           │
 │  │  ┌──────────────┐  ┌──────────────┐  ┌─────────────────┐ │           │
-│  │  │Firebase Auth │  │  FirebaseUI  │  │  Tenant:        │ │           │
+│  │  │Google Auth   │  │  IAP Headers │  │  Tenant:        │ │           │
 │  │  │              │  │              │  │dompe8090-bf0qr  │ │           │
 │  │  └──────────────┘  └──────────────┘  └─────────────────┘ │           │
 │  └────────────────────────────────────────────────────────────┘           │
@@ -48,28 +49,11 @@ An enterprise-grade AI-powered risk assessment and management platform built for
 └───────────────────────────────────────────────────────────────────────────┘
 ```
 
-## 📸 Screenshots
+## 🚀 Live Demo
 
-<details>
-<summary>Dashboard View</summary>
+**Production URL:** [https://risk-portal-290017403746.us-central1.run.app](https://risk-portal-290017403746.us-central1.run.app)
 
-![Dashboard](./screenshots/dashboard.png)
-*Real-time risk metrics and key performance indicators*
-</details>
-
-<details>
-<summary>Risk Matrix</summary>
-
-![Risk Matrix](./screenshots/risk-matrix.png)
-*Interactive 5x5 risk matrix with drag-and-drop functionality*
-</details>
-
-<details>
-<summary>AI Report Generation</summary>
-
-![Reports](./screenshots/reports.png)
-*AI-powered report generation using Google Gemini*
-</details>
+*Note: Access requires Google IAP authentication with authorized domain (@dompe.com or @ext.dompe.com)*
 
 ## ✨ Features
 
@@ -130,7 +114,7 @@ An enterprise-grade AI-powered risk assessment and management platform built for
 - **Google Cloud Run** - Container hosting
 - **Identity-Aware Proxy (IAP)** - Access control
 - **Google Cloud Identity Platform** - User authentication
-- **Firebase Hosting** - Static assets
+- **Google Cloud Run** - Static assets + API hosting
 - **Google Load Balancer** - Traffic distribution
 
 ### AI/ML
@@ -197,7 +181,9 @@ npm run dev
 npm run dev:server
 ```
 
-Access the application at `http://localhost:5173`
+Access the application at:
+- Frontend: `http://localhost:3000`
+- Backend API: `http://localhost:8080`
 
 ### 5. Testing
 
@@ -239,8 +225,11 @@ gcloud services enable \
 ### 3. Build and Deploy
 
 ```bash
-# Build Docker image
-docker build -t gcr.io/$PROJECT_ID/risk-portal:latest .
+# Build Docker image for Linux/AMD64 platform
+docker build --platform linux/amd64 -t gcr.io/$PROJECT_ID/risk-portal:latest .
+
+# Configure Docker authentication
+gcloud auth configure-docker
 
 # Push to Container Registry
 docker push gcr.io/$PROJECT_ID/risk-portal:latest
@@ -249,8 +238,7 @@ docker push gcr.io/$PROJECT_ID/risk-portal:latest
 gcloud run deploy risk-portal \
   --image gcr.io/$PROJECT_ID/risk-portal:latest \
   --platform managed \
-  --region us-central1 \
-  --allow-unauthenticated
+  --region us-central1
 ```
 
 ### 4. Configure IAP
@@ -260,18 +248,14 @@ gcloud run deploy risk-portal \
 3. Add authorized users/groups
 4. Set up custom domain with SSL
 
-### 5. Firebase Hosting Setup
+### 5. Production URL
 
-```bash
-# Install Firebase CLI
-npm install -g firebase-tools
-
-# Initialize Firebase
-firebase init hosting
-
-# Deploy authentication page
-firebase deploy --only hosting
+Once deployed and IAP is configured, your application will be available at:
 ```
+https://risk-portal-<PROJECT_NUMBER>.us-central1.run.app
+```
+
+Example production URL: https://risk-portal-290017403746.us-central1.run.app
 
 ## 🔧 Configuration
 
@@ -313,22 +297,23 @@ Set up tenant in `gcip_settings.json`:
   - [Infrastructure](docs/infrastructure/) - GCP and infrastructure details
 
 - **[8090-risk-portal/docs/](8090-risk-portal/docs/)** - Application-specific documentation
-  - [Architecture](8090-risk-portal/docs/architecture/) - System design and testing
-  - [Deployment](8090-risk-portal/docs/deployment/) - IAP and deployment guides
+  - [Bugs](8090-risk-portal/docs/bugs/) - Bug reports and fixes
+  - [Features](8090-risk-portal/docs/features/) - Feature specifications
   - [Development](8090-risk-portal/docs/dev/) - Developer guides and learnings
-  - [Guides](8090-risk-portal/docs/guides/) - User guides and templates
 
 ## 📚 API Documentation
 
 ### Authentication
 
-All API endpoints require IAP authentication headers:
+All API endpoints require IAP authentication headers. These are automatically injected by Google Cloud IAP:
 
 ```http
 GET /api/auth/me
-X-Goog-Authenticated-User-Email: user@dompe.com
-X-Goog-Authenticated-User-Id: 123456
+X-Goog-Authenticated-User-Email: securetoken.google.com/project/tenant:user@dompe.com
+X-Goog-Authenticated-User-Id: securetoken.google.com/project/tenant:123456
 ```
+
+The authentication system automatically extracts user information from these headers and converts email formats (e.g., `firstname.lastname` → "Firstname Lastname").
 
 ### Risk Management
 
@@ -401,6 +386,15 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Google Cloud Identity Platform team for authentication guidance
 - Firebase team for excellent documentation
 - React and TypeScript communities
+
+## 🔄 Recent Updates (v2.8)
+
+- ✅ Fixed IAP authentication header parsing for `securetoken.google.com` format
+- ✅ Improved user name extraction from email addresses
+- ✅ Resolved UseCase Risk Management filtering bugs
+- ✅ Major project cleanup and file reorganization
+- ✅ Enhanced documentation and bug reporting
+- ✅ Successfully deployed to Google Cloud Run with IAP
 
 ## 📞 Support
 

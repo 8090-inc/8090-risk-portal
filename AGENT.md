@@ -1,11 +1,22 @@
 # AGENT.md - 8090 AI Risk Portal Development Guide
 
+## Current Version: v2.8 (July 24, 2025)
+**Production URL**: https://risk-portal-290017403746.us-central1.run.app
+
 ## Commands
 - **Build**: `npm run build` or `npm run build:check` (includes typecheck)
 - **Lint**: `npm run lint` (ESLint with TypeScript)
 - **Test**: `npm test` (single test: `npm test -- filename`)
 - **Dev**: `npm run dev` (frontend:3000) + `npm run dev:server` (backend:8080)
-- **Deploy**: Build Docker with `--platform linux/amd64`, push to gcr.io/dompe-dev-439304/risk-portal:latest
+- **Deploy**: 
+  ```bash
+  # Build & deploy sequence
+  npm run build
+  docker build --platform linux/amd64 -t gcr.io/dompe-dev-439304/risk-portal:latest .
+  gcloud auth configure-docker
+  docker push gcr.io/dompe-dev-439304/risk-portal:latest
+  gcloud run deploy risk-portal --image gcr.io/dompe-dev-439304/risk-portal:latest --region us-central1
+  ```
 
 ## Architecture
 - **Stack**: React 19 + TypeScript 5.8 + Tailwind CSS + Express backend
@@ -23,5 +34,18 @@
 - **Error Handling**: Use errorService.ts, throw errors with proper types
 - **Commits**: Include author `--author="Rohit Kelapure <kelapure@gmail.com>"`
 
+## Authentication (IAP)
+- **Local Development**: Automatic mock user (`Local User` with `local.user@dompe.com`)
+- **Production**: IAP headers automatically injected by Google Cloud
+- **Header Format**: `securetoken.google.com/project/tenant:user@domain.com`
+- **Name Extraction**: Converts `firstname.lastname` to "Firstname Lastname"
+
 ## Testing Guidelines
 ⚠️ **CRITICAL**: Always backup Excel file before tests that modify data. Use cleanup-test-data.cjs to remove test data.
+
+## Recent Updates (v2.8)
+- Fixed IAP authentication header parsing for securetoken.google.com format
+- Resolved UseCase Risk Management filtering bugs (property name mismatches)
+- Major project cleanup - removed 48K+ lines of redundant files
+- Enhanced user name extraction from email addresses
+- Updated authentication middleware for consistent name handling
