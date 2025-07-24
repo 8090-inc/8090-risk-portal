@@ -7,7 +7,10 @@
 - **Build**: `npm run build` or `npm run build:check` (includes typecheck)
 - **Lint**: `npm run lint` (ESLint with TypeScript)
 - **Test**: `npm test` (single test: `npm test -- filename`)
-- **Dev**: `npm run dev` (frontend:3000) + `npm run dev:server` (backend:8080)
+- **Dev**: **CRITICAL - BOTH SERVERS REQUIRED:**
+  - Backend FIRST: `npm run dev:server` (port 8080)
+  - Frontend SECOND: `npm run dev` (port 3000)
+  - **NEVER start only one server - both are required for local development**
 - **Deploy**: 
   ```bash
   # Build & deploy sequence
