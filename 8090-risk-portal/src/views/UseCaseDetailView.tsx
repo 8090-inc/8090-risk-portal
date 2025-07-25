@@ -14,7 +14,8 @@ import {
   Brain,
   CheckCircle,
   Shield,
-  AlertTriangle
+  AlertTriangle,
+  ExternalLink
 } from 'lucide-react';
 
 export function UseCaseDetailView() {
@@ -142,6 +143,17 @@ export function UseCaseDetailView() {
     const severityOrder = { 'Critical': 0, 'High': 1, 'Medium': 2, 'Low': 3 };
     return (severityOrder[a.initialScoring.riskLevelCategory] || 4) - (severityOrder[b.initialScoring.riskLevelCategory] || 4);
   });
+
+  // Helper function for border colors
+  const getBorderColor = (level: string) => {
+    switch (level) {
+      case 'Critical': return 'bg-red-500';
+      case 'High': return 'bg-orange-500';
+      case 'Medium': return 'bg-yellow-500';
+      case 'Low': return 'bg-green-500';
+      default: return 'bg-slate-400';
+    }
+  };
   
   // Count risks by level
   const riskCounts = associatedRisks.reduce((acc, risk) => {
@@ -513,10 +525,8 @@ export function UseCaseDetailView() {
               <div className="flex gap-4 mt-4">
                 {Object.entries(riskCounts).map(([level, count]) => (
                   <div key={level} className="flex items-center gap-1.5">
-                    <Badge variant={getRiskLevelColor(level)} size="sm" className="font-semibold">
-                      {level}
-                    </Badge>
-                    <span className="text-sm font-semibold text-slate-700">{count}</span>
+                    <div className={`w-2.5 h-2.5 rounded-full ${getBorderColor(level)}`} />
+                    <span className="text-sm font-medium text-slate-600">{level}: {count}</span>
                   </div>
                 ))}
               </div>
@@ -537,41 +547,47 @@ export function UseCaseDetailView() {
                 </Button>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {sortedRisks.map((risk) => (
-                  <Card key={risk.id} className="p-3 hover:shadow-sm transition-all border-slate-200 hover:border-slate-300">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                          <Badge variant={getRiskLevelColor(risk.initialScoring.riskLevelCategory)} size="sm" className="font-semibold">
-                            {risk.initialScoring.riskLevelCategory}
-                          </Badge>
-                          <span className="text-xs font-medium text-slate-600 flex items-center gap-1">
-                            <span className="text-slate-400">#</span>{risk.id.toUpperCase()}
-                          </span>
-                          <span className="text-xs text-muted-foreground">• {risk.riskCategory}</span>
-                        </div>
-                        <h4 className="text-sm font-medium text-slate-900 line-clamp-1 mb-1">{risk.risk}</h4>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          <span>Impact: <span className="font-medium text-slate-700">{risk.initialScoring.impact}</span></span>
-                          <span>Likelihood: <span className="font-medium text-slate-700">{risk.initialScoring.likelihood}</span></span>
-                          {risk.relatedControlIds.length > 0 && (
-                            <span className="flex items-center gap-1">
-                              <Shield className="h-3 w-3" />
-                              <span className="font-medium text-slate-700">{risk.relatedControlIds.length}</span>
-                            </span>
-                          )}
-                        </div>
+                  <Card 
+                    key={risk.id} 
+                    className="group p-3 hover:shadow-md transition-all border-slate-200 hover:border-slate-300 cursor-pointer relative overflow-hidden"
+                    onClick={() => navigate(`/risks/${risk.id}`)}
+                  >
+                    {/* Colored left border indicator */}
+                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${getBorderColor(risk.initialScoring.riskLevelCategory)}`} />
+                    
+                    <div className="pl-3">
+                      {/* Risk level badge */}
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <Badge 
+                          variant={getRiskLevelColor(risk.initialScoring.riskLevelCategory)} 
+                          size="sm" 
+                          className="text-xs font-medium"
+                        >
+                          {risk.initialScoring.riskLevelCategory}
+                        </Badge>
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => navigate(`/risks/${risk.id}`)}
-                        className="text-xs"
-                      >
-                        View
-                      </Button>
+                      
+                      {/* Risk name - using normal body font size */}
+                      <h4 className="text-sm font-medium text-slate-900 truncate mb-1.5" title={risk.risk}>
+                        {risk.risk}
+                      </h4>
+                      
+                      {/* Compact metrics with consistent font */}
+                      <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                        <span className="font-medium text-slate-700">{risk.initialScoring.impact}/{risk.initialScoring.likelihood}</span>
+                        {risk.relatedControlIds.length > 0 && (
+                          <span className="flex items-center gap-0.5">
+                            <Shield className="h-3.5 w-3.5" />
+                            <span className="text-slate-700">{risk.relatedControlIds.length}</span>
+                          </span>
+                        )}
+                      </div>
                     </div>
+                    
+                    {/* Hover indicator */}
+                    <ExternalLink className="absolute top-2.5 right-2.5 h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                   </Card>
                 ))}
               </div>

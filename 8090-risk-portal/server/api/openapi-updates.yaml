@@ -1,0 +1,353 @@
+# Additional endpoints to add to OpenAPI spec (that exist in code but are missing from spec)
+
+# Auth endpoint (from server.cjs)
+/api/auth/me:
+  get:
+    tags:
+      - Authentication
+    summary: Get current user information
+    description: |
+      Returns the authenticated user's information from IAP headers.
+      Used by the frontend to verify authentication status.
+    operationId: getCurrentUser
+    responses:
+      '200':
+        description: User information retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  properties:
+                    email:
+                      type: string
+                      format: email
+                      example: "user@dompe.com"
+                    name:
+                      type: string
+                      example: "John Doe"
+                    isAuthenticated:
+                      type: boolean
+                      example: true
+                    isAdmin:
+                      type: boolean
+                      example: true
+
+# PATCH endpoints for risks
+/risks/{id}:
+  patch:
+    tags:
+      - Risks
+    summary: Partially update a risk
+    description: |
+      Update specific fields of a risk without providing the complete object.
+      Useful for updating single fields like agreed mitigation.
+    operationId: patchRisk
+    parameters:
+      - $ref: '#/components/parameters/riskId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              agreedMitigation:
+                type: string
+                description: Updated mitigation text
+              relatedControlIds:
+                type: array
+                items:
+                  type: string
+                description: Updated list of control IDs
+    responses:
+      '200':
+        description: Risk partially updated successfully
+
+# PATCH endpoints for controls  
+/controls/{id}:
+  patch:
+    tags:
+      - Controls
+    summary: Partially update a control
+    description: |
+      Update specific fields of a control without providing the complete object.
+    operationId: patchControl
+    parameters:
+      - $ref: '#/components/parameters/controlId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              description:
+                type: string
+              relatedRiskIds:
+                type: array
+                items:
+                  type: string
+    responses:
+      '200':
+        description: Control partially updated successfully
+
+# Control cleanup endpoint
+/controls/cleanup-duplicates:
+  post:
+    tags:
+      - Controls
+    summary: Remove duplicate controls
+    description: |
+      Identifies and removes duplicate control entries from the system.
+      Used for data maintenance and cleanup.
+    operationId: cleanupDuplicateControls
+    responses:
+      '200':
+        description: Duplicate cleanup completed
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  type: object
+                  properties:
+                    message:
+                      type: string
+                    removed:
+                      type: integer
+                      description: Number of duplicates removed
+
+# Use Cases endpoints (completely missing from spec)
+/usecases:
+  get:
+    tags:
+      - Use Cases
+    summary: List all use cases
+    description: Retrieve all AI use cases in the system
+    operationId: listUseCases
+    parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 20
+    responses:
+      '200':
+        description: Use cases retrieved successfully
+
+/usecases/statistics:
+  get:
+    tags:
+      - Use Cases
+    summary: Get use case statistics
+    description: Retrieve statistics about use cases
+    operationId: getUseCaseStatistics
+    responses:
+      '200':
+        description: Statistics retrieved successfully
+
+/usecases/{id}:
+  get:
+    tags:
+      - Use Cases
+    summary: Get a specific use case
+    operationId: getUseCase
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Use case retrieved successfully
+  
+  put:
+    tags:
+      - Use Cases
+    summary: Update a use case
+    operationId: updateUseCase
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UseCase'
+    responses:
+      '200':
+        description: Use case updated successfully
+  
+  delete:
+    tags:
+      - Use Cases
+    summary: Delete a use case
+    operationId: deleteUseCase
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Use case deleted successfully
+
+/usecases:
+  post:
+    tags:
+      - Use Cases
+    summary: Create a new use case
+    operationId: createUseCase
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UseCase'
+    responses:
+      '201':
+        description: Use case created successfully
+
+/usecases/{id}/risks:
+  get:
+    tags:
+      - Use Cases
+    summary: Get risks associated with a use case
+    operationId: getUseCaseRisks
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Associated risks retrieved successfully
+  
+  put:
+    tags:
+      - Use Cases
+    summary: Update risks associated with a use case
+    operationId: updateUseCaseRisks
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              riskIds:
+                type: array
+                items:
+                  type: string
+    responses:
+      '200':
+        description: Use case risks updated successfully
+
+# Additional relationship endpoints that exist but might be missing
+/relationships/risks/{riskId}:
+  post:
+    tags:
+      - Relationships
+    summary: Add control to risk
+    description: Add a control relationship to a specific risk
+    parameters:
+      - name: riskId
+        in: path
+        required: true
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              controlIds:
+                type: array
+                items:
+                  type: string
+    responses:
+      '200':
+        description: Control added to risk successfully
+
+  delete:
+    tags:
+      - Relationships
+    summary: Remove control from risk
+    description: Remove a control relationship from a specific risk
+    parameters:
+      - name: riskId
+        in: path
+        required: true
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              controlIds:
+                type: array
+                items:
+                  type: string
+    responses:
+      '200':
+        description: Control removed from risk successfully
+
+/relationships/risks/bulk:
+  post:
+    tags:
+      - Relationships
+    summary: Bulk update risk relationships
+    description: Add or remove multiple control relationships for a risk
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              operations:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    riskId:
+                      type: string
+                    controlIds:
+                      type: array
+                      items:
+                        type: string
+                    action:
+                      type: string
+                      enum: [add, remove]
+    responses:
+      '200':
+        description: Bulk update completed successfully

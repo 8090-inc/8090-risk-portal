@@ -148,6 +148,9 @@ servers:
     description: Development server with test mode support
 
 tags:
+  - name: Authentication
+    description: |
+      User authentication and authorization. Handles user identity verification through Google IAP.
   - name: Risks
     description: |
       Manage AI-related risks. Risks represent potential negative outcomes from AI systems that need to be identified, assessed, and mitigated.
@@ -222,6 +225,51 @@ paths:
                 services:
                   googleDrive: connected
                   cache: active
+
+  /api/auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user information
+      description: |
+        Returns the authenticated user's information extracted from IAP headers.
+        Used by the frontend to verify authentication status and user permissions.
+        
+        **Use cases:**
+        - Initial app load authentication check
+        - User profile display
+        - Admin permission verification
+      operationId: getCurrentUser
+      responses:
+        '200':
+          description: User information retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      email:
+                        type: string
+                        format: email
+                        description: User's email address
+                        example: "john.doe@dompe.com"
+                      name:
+                        type: string
+                        description: User's display name
+                        example: "John Doe"
+                      isAuthenticated:
+                        type: boolean
+                        description: Always true for successful responses
+                        example: true
+                      isAdmin:
+                        type: boolean
+                        description: True if user email ends with @dompe.com
+                        example: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
   /risks:
     get:
@@ -729,6 +777,72 @@ paths:
                 $ref: '#/components/schemas/RiskResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/RiskNotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    patch:
+      tags:
+        - Risks
+      summary: Partially update a risk
+      description: |
+        Update specific fields of a risk without replacing the entire object.
+        Only the fields provided in the request body will be updated.
+        
+        **Common use cases:**
+        - Update only the agreed mitigation text
+        - Modify residual risk scores after control implementation
+        - Update ownership information
+        - Add or update comments
+        
+        **Advantages over PUT:**
+        - No need to send all fields
+        - Prevents accidental data loss
+        - Better for focused updates
+        - Reduces network payload
+        
+        **Side effects:**
+        - Only specified fields updated in Excel
+        - Last updated timestamp refreshed
+        - Cache invalidated
+        - Audit trail updated
+      operationId: patchRisk
+      parameters:
+        - $ref: '#/components/parameters/RiskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiskPatchRequest'
+            examples:
+              updateMitigation:
+                summary: Update only agreed mitigation
+                value:
+                  agreedMitigation: "Implement enhanced data classification and DLP controls"
+              updateScoring:
+                summary: Update residual scoring
+                value:
+                  residualScoring:
+                    likelihood: 2
+                    impact: 3
+                    riskLevel: 6
+              updateOwnership:
+                summary: Change issue owner
+                value:
+                  issueOwner: "newsecurity@dompe.com"
+      responses:
+        '200':
+          description: Risk partially updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -1469,6 +1583,126 @@ paths:
                 meta:
                   reportGeneratedAt: "2025-07-22T10:00:00Z"
                   dataFreshness: "5 minutes"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /controls/cleanup-duplicates:
+    post:
+      tags:
+        - Controls
+      summary: Remove duplicate control entries
+      description: |
+        Identify and remove duplicate controls from the system. This maintenance operation
+        helps clean up data quality issues that may arise from imports or manual entry errors.
+        
+        **Duplicate detection logic:**
+        - Controls with identical IDs but on different rows
+        - Prioritizes entries with more complete data
+        - Preserves the most recently updated entry
+        - Updates all risk relationships to point to the retained control
+        
+        **Operation effects:**
+        - Removes duplicate rows from Controls sheet
+        - Consolidates risk relationships
+        - Updates relationship mappings
+        - Returns count of duplicates removed
+        
+        **When to use:**
+        - After bulk imports
+        - Regular data maintenance
+        - Before major reporting
+        - When duplicate controls are reported
+      operationId: cleanupDuplicateControls
+      responses:
+        '200':
+          description: Duplicate cleanup completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Duplicate cleanup completed"
+                      duplicatesFound:
+                        type: integer
+                        description: Number of duplicate control IDs found
+                        example: 3
+                      duplicatesRemoved:
+                        type: integer
+                        description: Number of duplicate entries removed
+                        example: 5
+                      consolidatedRelationships:
+                        type: integer
+                        description: Number of relationships consolidated
+                        example: 12
+                      retainedControls:
+                        type: array
+                        items:
+                          type: string
+                        description: List of control IDs that were retained
+                        example: ["SEC-01", "ACC-02", "LOG-01"]
+                  meta:
+                    $ref: '#/components/schemas/ResponseMeta'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /controls/cleanup-duplicates:
+    post:
+      tags:
+        - Controls
+      summary: Remove duplicate control entries
+      description: |
+        Identifies and removes duplicate control entries from the system.
+        This endpoint is used for data maintenance and cleanup operations.
+        
+        **Duplicate detection:**
+        - Controls with identical IDs are considered duplicates
+        - The first occurrence is retained, subsequent ones are removed
+        - Relationships are preserved for the retained control
+        
+        **Use cases:**
+        - Post-import cleanup
+        - Data quality maintenance
+        - System health checks
+      operationId: cleanupDuplicateControls
+      responses:
+        '200':
+          description: Duplicate cleanup completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Duplicate cleanup completed"
+                      removed:
+                        type: integer
+                        description: Number of duplicate controls removed
+                        example: 3
+                      retained:
+                        type: array
+                        items:
+                          type: string
+                        description: IDs of controls that were retained
+                        example: ["SEC-01", "ACC-02", "LOG-01"]
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
